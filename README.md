@@ -1,5 +1,7 @@
 # ग्रामपंचायत मिळकत कर व्यवस्थापन (GP Property Tax Web App)
 
+Repo: [github.com/kirdakar/gpweb](https://github.com/kirdakar/gpweb)
+
 A web-based replacement for the legacy VB.NET / Crystal Reports / MS Access
 desktop application at `D:\grampanchyat\gp`. Same domain (property/"milkat"
 tax assessment — घरपट्टी, दिवाबत्ती, आरोग्य कर, पाणीपट्टी), rebuilt as:
