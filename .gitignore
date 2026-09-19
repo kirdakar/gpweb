@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Env / secrets
+.env
+.env.local
+
+# Logs
+*.log
+
+# Database dumps (contain real citizen data - not for version control)
+backend/backups/
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
