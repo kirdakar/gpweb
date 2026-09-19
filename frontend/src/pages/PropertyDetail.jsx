@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import client from '../api/client';
 import { useYear } from '../context/YearContext';
@@ -32,14 +32,65 @@ async function fillOwnerFromGpMaster(code, master, setMaster) {
 
 // मूळ माहिती (Property Master) चे फील्ड्स - नवीन व अस्तित्वात असलेल्या
 // दोन्ही मिळकतींसाठी वापरले जातात (नोंदी वेगळ्या पण फील्ड्स तीच).
-function MasterFields({ master, setMaster, particulars }) {
+function MasterFields({ master, setMaster, particulars, gpmasterList }) {
+  // मिळकत कोड आता साधा textbox नसून शोध-कंबो आहे - कोड किंवा मालकाचे नाव
+  // टाइप करून GPMASTER मधून निवडता येते (निवडल्यावर कोड + नाव दोन्ही भरते).
+  // अजून GPMASTER मध्ये नसलेला नवा कोडही टाइप करता यावा म्हणून शुद्ध आकडा
+  // टाइप करताच तो थेट property_code म्हणून घेतला जातो (इतर combo सारखेच
+  // pattern - onMouseDown वापरून निवड, dropdown फक्त निवड/शोध-क्लिअरने बंद होतो).
+  const [codeSearch, setCodeSearch] = useState(master.property_code ? String(master.property_code) : '');
+  const [codeDropdownOpen, setCodeDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (!codeDropdownOpen && !codeSearch && master.property_code) {
+      setCodeSearch(String(master.property_code));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [master.property_code]);
+
+  const codeSearchTerm = codeSearch.trim().toLowerCase();
+  const codeResults = useMemo(() => {
+    if (!codeSearchTerm) return gpmasterList.slice(0, 50);
+    return gpmasterList.filter((g) =>
+      String(g.code).includes(codeSearchTerm) || (g.owner_name || '').toLowerCase().includes(codeSearchTerm)
+    ).slice(0, 50);
+  }, [gpmasterList, codeSearchTerm]);
+
+  function selectGpCode(g) {
+    setMaster({ ...master, property_code: String(g.code), owner_name: g.owner_name });
+    setCodeSearch(String(g.code));
+    setCodeDropdownOpen(false);
+  }
+
+  function handleCodeChange(value) {
+    setCodeSearch(value);
+    setCodeDropdownOpen(true);
+    if (/^\d*$/.test(value)) setMaster((m) => ({ ...m, property_code: value }));
+  }
+
   return (
     <div className="form-grid">
       <div className="field">
         <label>मिळकत कोड</label>
-        <input type="number" value={master.property_code}
-          onChange={(e) => setMaster({ ...master, property_code: e.target.value })}
-          onBlur={(e) => fillOwnerFromGpMaster(e.target.value, master, setMaster)} />
+        <div className="combo-wrap">
+          <input
+            value={codeSearch}
+            onChange={(e) => handleCodeChange(e.target.value)}
+            onFocus={() => setCodeDropdownOpen(true)}
+            onBlur={(e) => fillOwnerFromGpMaster(e.target.value, master, setMaster)}
+            placeholder="कोड किंवा मालकाचे नाव टाइप करा"
+          />
+          {codeDropdownOpen && (
+            <div className="combo-dropdown">
+              {codeResults.length === 0 && <div className="combo-empty">जुळणारी नोंद सापडली नाही</div>}
+              {codeResults.map((g) => (
+                <div key={g.code} className="combo-option" onMouseDown={() => selectGpCode(g)}>
+                  {g.code} - {g.owner_name}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       <div className="field">
         <label>अ.क्र. (SRNO)</label>
@@ -174,6 +225,7 @@ export default function PropertyDetail() {
   const { can } = usePermissions();
 
   const [particulars, setParticulars] = useState([]);
+  const [gpmasterList, setGpmasterList] = useState([]);
   const [master, setMaster] = useState(emptyMaster);
   const propertyId = isNew ? null : Number(id);
   const [assessments, setAssessments] = useState([]);
@@ -189,6 +241,7 @@ export default function PropertyDetail() {
 
   useEffect(() => {
     client.get('/particulars').then(({ data }) => setParticulars(data));
+    client.get('/gpmaster').then(({ data }) => setGpmasterList(data));
   }, []);
 
   const loadProperty = useCallback(async () => {
@@ -402,7 +455,7 @@ export default function PropertyDetail() {
             <h2 style={{ fontSize: 14, marginTop: 0 }}>मूळ माहिती (Property Master)</h2>
             {masterError && <div className="error-box">{masterError}</div>}
             {masterNotice && <div className="notice-box">{masterNotice}</div>}
-            <MasterFields master={master} setMaster={setMaster} particulars={particulars} />
+            <MasterFields master={master} setMaster={setMaster} particulars={particulars} gpmasterList={gpmasterList} />
             <div className="field" style={{ marginTop: 14 }}>
               <label>शेरा</label>
               <textarea rows={2} value={master.narration} onChange={(e) => setMaster({ ...master, narration: e.target.value })} />
@@ -445,7 +498,7 @@ export default function PropertyDetail() {
             {masterError && <div className="error-box">{masterError}</div>}
             {masterNotice && <div className="notice-box">{masterNotice}</div>}
             <form onSubmit={handleMasterSubmit}>
-              <MasterFields master={master} setMaster={setMaster} particulars={particulars} />
+              <MasterFields master={master} setMaster={setMaster} particulars={particulars} gpmasterList={gpmasterList} />
               <div className="field" style={{ marginTop: 14 }}>
                 <label>शेरा</label>
                 <textarea rows={2} value={master.narration} onChange={(e) => setMaster({ ...master, narration: e.target.value })} />

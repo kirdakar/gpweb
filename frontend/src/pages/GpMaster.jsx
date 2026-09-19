@@ -25,7 +25,16 @@ export default function GpMaster() {
     }
   }
 
+  // नवीन कोड जोडताना दरवेळी हातानेच पुढचा रिकामा कोड शोधावा लागू नये म्हणून
+  // सर्वात मोठ्या कोडच्या पुढचा आकडा आपोआप सुचवतो (auto-increment) - गरज
+  // वाटल्यास तो बदलताही येतो.
+  async function loadNextCode() {
+    const { data } = await client.get('/gpmaster/next-code');
+    setForm((f) => (f.code === '' ? { ...f, code: data.next_code } : f));
+  }
+
   useEffect(() => { load(); }, [debouncedSearch]);
+  useEffect(() => { loadNextCode(); }, []);
 
   function selectRow(row) {
     setEditing(true);
@@ -37,6 +46,7 @@ export default function GpMaster() {
     setEditing(false);
     setForm(emptyForm);
     setError('');
+    loadNextCode();
   }
 
   async function handleSubmit(e) {

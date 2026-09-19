@@ -6,21 +6,30 @@ const { requirePermission } = require('../middleware/permissions');
 const router = express.Router();
 router.use(requireAuth);
 
-// यादी - शोध (कोड किंवा नाव) सह. मोठी यादी (900+) असू शकते म्हणून शोधाशिवाय
-// कॅप केलेली (500) यादी परत करतो; स्क्रीनवरचा शोध सर्व्हरवरच होतो.
+// यादी - शोध (कोड किंवा नाव) सह. एकूण संख्या (900+) 2000 च्या आतच राहील असे
+// गृहीत धरून कॅप केलेली यादी परत करतो - नवीन मिळकत नोंद स्क्रीनवरील combo
+// संपूर्ण यादी एकदाच आणून क्लायंटवरच शोधतो (इतर combo screens प्रमाणेच).
 router.get('/', async (req, res) => {
   const search = (req.query.search || '').trim();
   if (search) {
     const like = `%${search}%`;
     const asNum = Number.isFinite(Number(search)) ? Number(search) : -1;
     const [rows] = await pool.query(
-      'SELECT * FROM gpmaster WHERE owner_name LIKE ? OR code = ? ORDER BY code LIMIT 500',
+      'SELECT * FROM gpmaster WHERE owner_name LIKE ? OR code = ? ORDER BY code LIMIT 2000',
       [like, asNum]
     );
     return res.json(rows);
   }
-  const [rows] = await pool.query('SELECT * FROM gpmaster ORDER BY code LIMIT 500');
+  const [rows] = await pool.query('SELECT * FROM gpmaster ORDER BY code LIMIT 2000');
   res.json(rows);
+});
+
+// पुढचा उपलब्ध कोड सुचवण्यासाठी - GPMASTER स्क्रीनवर नवीन कोड जोडताना
+// (auto-increment सुविधा). '/:code' आधी असणे आवश्यक आहे, नाहीतर तो राऊट
+// "next-code" हाच एक कोड समजून घेईल.
+router.get('/next-code', async (req, res) => {
+  const [[row]] = await pool.query('SELECT COALESCE(MAX(code), 0) + 1 AS next_code FROM gpmaster');
+  res.json({ next_code: row.next_code });
 });
 
 // एका कोडचे नांव थेट आणण्यासाठी - नवीन मिळकत नोंद भरताना कोड टाकल्यावर
