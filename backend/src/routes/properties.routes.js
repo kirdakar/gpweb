@@ -46,7 +46,7 @@ router.get('/', async (req, res) => {
      LEFT JOIN particular_master pt ON pt.par_code = pm.construction_type
      ${joinAssessment}
      ${whereSql}
-     ORDER BY pm.id DESC
+     ORDER BY pm.property_code, pm.malmata_no
      LIMIT ? OFFSET ?`,
     [...joinParams, ...params, pageSize, offset]
   );
