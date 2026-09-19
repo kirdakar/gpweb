@@ -82,7 +82,15 @@ function MasterFields({ master, setMaster, particulars, gpmasterList }) {
           />
           {codeDropdownOpen && (
             <div className="combo-dropdown">
-              {codeResults.length === 0 && <div className="combo-empty">जुळणारी नोंद सापडली नाही</div>}
+              {codeResults.length === 0 && (
+                <div className="combo-empty">
+                  जुळणारी नोंद सापडली नाही.{' '}
+                  <a href="/gpmaster" target="_blank" rel="noopener noreferrer">
+                    नवीन कोड/नाव GPMASTER मध्ये जोडण्यासाठी इथे क्लिक करा
+                  </a>{' '}
+                  (नवीन टॅबमध्ये उघडेल, हा फॉर्म तसाच राहील).
+                </div>
+              )}
               {codeResults.map((g) => (
                 <div key={g.code} className="combo-option" onMouseDown={() => selectGpCode(g)}>
                   {g.code} - {g.owner_name}
