@@ -27,6 +27,7 @@ export default function PropertyListReport() {
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (!yearId) return;
@@ -36,9 +37,27 @@ export default function PropertyListReport() {
       .finally(() => setLoading(false));
   }, [yearId]);
 
-  const groups = useMemo(() => groupByCode(rows), [rows]);
+  // शोध कोड, मालकाचे नाव किंवा मिळकत क्रमांकावरून यादी फिल्टर करतो - एका
+  // कोडमधील कोणतीही मालमत्ता जुळली तरी त्या कोडचा संपूर्ण गट (सर्व मालमत्ता)
+  // दाखवतो, म्हणजे मालकाचे नाव वरच्या rowSpan ओळीतच राहते.
+  const searchTerm = search.trim().toLowerCase();
+  const filteredRows = useMemo(() => {
+    if (!searchTerm) return rows;
+    const matchingCodes = new Set(
+      rows
+        .filter((r) =>
+          (r.owner_name || '').toLowerCase().includes(searchTerm) ||
+          String(r.malmata_no || '').toLowerCase().includes(searchTerm) ||
+          String(r.property_code ?? '').includes(searchTerm)
+        )
+        .map((r) => r.property_code ?? `__${r.property_id}`)
+    );
+    return rows.filter((r) => matchingCodes.has(r.property_code ?? `__${r.property_id}`));
+  }, [rows, searchTerm]);
 
-  const totals = rows.reduce((acc, r) => {
+  const groups = useMemo(() => groupByCode(filteredRows), [filteredRows]);
+
+  const totals = filteredRows.reduce((acc, r) => {
     acc.gharpatti += Number(r.gharpatti || 0);
     acc.divabatti += Number(r.divabatti || 0);
     acc.arogya += Number(r.arogya || 0);
@@ -59,6 +78,23 @@ export default function PropertyListReport() {
           </select>
           <button className="btn secondary" onClick={() => window.print()} disabled={!can('reports_property_list', 'print')}>प्रिंट</button>
           <CloseReportButton />
+        </div>
+      </div>
+
+      <div className="card no-print" style={{ marginBottom: 20 }}>
+        <div className="search-bar" style={{ marginBottom: 0 }}>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="कोड, मालकाचे नाव किंवा मिळकत क्रमांक टाइप करून शोधा"
+            style={{ width: '100%', maxWidth: 400, padding: 8, border: '1px solid var(--border)', borderRadius: 6 }}
+          />
+          {searchTerm && (
+            <>
+              <span style={{ alignSelf: 'center', fontSize: 13, color: 'var(--text-muted)' }}>{groups.length} कोड जुळले</span>
+              <button className="btn secondary" type="button" onClick={() => setSearch('')}>शोध क्लिअर करा</button>
+            </>
+          )}
         </div>
       </div>
 
@@ -97,9 +133,11 @@ export default function PropertyListReport() {
                   <td className="num">{Number(r.total_tax || 0).toFixed(2)}</td>
                 </tr>
               )))}
-              {rows.length === 0 && <tr><td colSpan={10} style={{ textAlign: 'center' }}>नोंदी नाहीत</td></tr>}
+              {filteredRows.length === 0 && (
+                <tr><td colSpan={10} style={{ textAlign: 'center' }}>{searchTerm ? 'जुळणारी नोंद सापडली नाही' : 'नोंदी नाहीत'}</td></tr>
+              )}
             </tbody>
-            {rows.length > 0 && (
+            {filteredRows.length > 0 && (
               <tfoot>
                 <tr className="total-row">
                   <td colSpan={5}>एकूण</td>
