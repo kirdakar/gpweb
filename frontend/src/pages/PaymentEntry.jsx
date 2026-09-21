@@ -231,7 +231,7 @@ export default function PaymentEntry() {
 
   return (
     <div className="page">
-      <div className="page-header">
+      <div className="page-header no-print">
         <h1>कर जमा भरणे {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
       </div>
 
