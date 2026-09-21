@@ -202,6 +202,9 @@ CREATE TABLE IF NOT EXISTS tax_payments (
   notice_fee_amount DECIMAL(10,2) NOT NULL DEFAULT 0,      -- दोन्ही प्रकारच्या पावतीवर
   warrant_fee_amount DECIMAL(10,2) NOT NULL DEFAULT 0,     -- फक्त gharpatti पावतीवर
   other_amount DECIMAL(10,2) NOT NULL DEFAULT 0,           -- फक्त panipatti पावतीवर ("इतर")
+  payment_mode VARCHAR(20) NOT NULL DEFAULT 'cash',        -- 'cash' | 'cheque' | 'upi' - नमुना १० वरील जमा प्रकार
+  bank_name VARCHAR(150) NULL,                             -- फक्त cheque साठी
+  cheque_no VARCHAR(50) NULL,                              -- फक्त cheque साठी
   narration VARCHAR(255) NULL,
   created_by INT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

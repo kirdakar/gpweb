@@ -183,15 +183,19 @@ router.get('/:id/receipt', async (req, res) => {
   res.json({ payment, ...alloc });
 });
 
+const PAYMENT_MODES = ['cash', 'cheque', 'upi'];
+
 router.post('/', requirePermission('payments', 'add'), async (req, res) => {
   const {
     property_id, financial_year_id, payment_date, amount, narration, receipt_type,
     khuli_jaga_amount, notice_fee_amount, warrant_fee_amount, other_amount,
+    payment_mode, bank_name, cheque_no,
   } = req.body || {};
   if (!property_id || !financial_year_id || !payment_date || !receipt_type) {
     return res.status(400).json({ error: 'property_id, financial_year_id, payment_date and receipt_type are required' });
   }
   assertReceiptType(receipt_type);
+  const mode = PAYMENT_MODES.includes(payment_mode) ? payment_mode : 'cash';
 
   const amt = round2(amount || 0);
   const khuliJaga = round2(khuli_jaga_amount || 0);
@@ -208,6 +212,18 @@ router.post('/', requirePermission('payments', 'add'), async (req, res) => {
   const [[property]] = await pool.query('SELECT id FROM property_master WHERE id = ?', [property_id]);
   if (!property) return res.status(404).json({ error: 'Property not found' });
 
+  // कराची जमा रक्कम (amt) त्या गटाच्या सध्याच्या येणे बाकीपेक्षा जास्त
+  // भरता येऊ नये (जास्तीचे पैसे इतर घटकांत/पुढच्या वर्षी वळवायचे असतील तर
+  // वेगळी पावती करावी) - खुली जागा/नोटीस/वारंट/इतर या रकमांना बाकीच
+  // नसल्याने ही मर्यादा फक्त amt ला लागू.
+  const order = GROUP_ORDER_BY_TYPE[receipt_type];
+  const { row: dues } = await getDueBreakdownForProperty(pool, property_id, financial_year_id);
+  const alreadyPaid = await getTotalPaid(pool, property_id, receipt_type);
+  const balanceDue = round2(sumDue(dues || {}, order) - alreadyPaid);
+  if (amt > Math.max(0, balanceDue) + 0.004) {
+    return res.status(400).json({ error: `कराची जमा रक्कम येणे बाकी (₹${Math.max(0, balanceDue).toFixed(2)}) पेक्षा जास्त भरता येणार नाही` });
+  }
+
   // receipt_no हा त्याच receipt_type च्या मालिकेतला पुढचा क्रमांक -
   // छोट्या, एका-वेळी-एक-क्लर्क कार्यालयासाठी पुरेसे (जड locking नाही).
   const [[{ nextNo }]] = await pool.query(
@@ -218,10 +234,13 @@ router.post('/', requirePermission('payments', 'add'), async (req, res) => {
   const [result] = await pool.query(
     `INSERT INTO tax_payments
        (property_id, financial_year_id, payment_date, amount, receipt_type, receipt_no,
-        khuli_jaga_amount, notice_fee_amount, warrant_fee_amount, other_amount, narration, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        khuli_jaga_amount, notice_fee_amount, warrant_fee_amount, other_amount,
+        payment_mode, bank_name, cheque_no, narration, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [property_id, financial_year_id, payment_date, amt, receipt_type, nextNo,
-      khuliJaga, noticeFee, warrantFee, other, narration || null, req.user.id]
+      khuliJaga, noticeFee, warrantFee, other,
+      mode, mode === 'cheque' ? (bank_name || null) : null, mode === 'cheque' ? (cheque_no || null) : null,
+      narration || null, req.user.id]
   );
 
   const alloc = await computeReceiptAllocation(property_id, financial_year_id, result.insertId, receipt_type);

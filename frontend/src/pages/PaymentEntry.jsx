@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import client from '../api/client';
 import { useYear } from '../context/YearContext';
 import { usePermissions } from '../context/PermissionsContext';
-import useDebouncedValue from '../hooks/useDebouncedValue';
+import { amountToMarathiWords } from '../utils/numberToMarathiWords';
 
 // घरपट्टी पावती (नमुना नं. १०) = घरपट्टी + दिवाबत्ती(वीज कर) + आरोग्य कर,
 // पाणीपट्टी पावती (नमुना नं. १०, वेगळे पुस्तक) = फक्त पाणी पट्टी - दोन्ही
@@ -36,15 +36,21 @@ const EXTRA_FIELDS = {
   ],
 };
 const emptyExtras = { khuli_jaga: '', notice_fee: '', warrant_fee: '', other: '' };
+const PAYMENT_MODES = [
+  { key: 'cash', label: 'कॅश' },
+  { key: 'cheque', label: 'चेक / डी.डी.' },
+  { key: 'upi', label: 'UPI' },
+];
 
 export default function PaymentEntry() {
   const { yearId, currentYear } = useYear();
   const { can } = usePermissions();
 
-  // कोड/मालमत्ता क्रं./नाव टाइप करून शोधणारा combo - इतर स्क्रीनसारखाच पॅटर्न.
+  // कोड/मालमत्ता क्रं./नाव टाइप करून शोधणारा combo - सुरुवातीस (काहीही टाइप
+  // न करताच) संपूर्ण यादी दिसावी म्हणून इतर स्क्रीनसारखीच संपूर्ण यादी
+  // एकदाच आणून क्लायंटवरच शोधतो (backend search-per-keystroke ऐवजी).
   const [rows, setRows] = useState([]);
   const [search, setSearch] = useState('');
-  const debouncedSearch = useDebouncedValue(search, 300);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState(null);
 
@@ -54,6 +60,9 @@ export default function PaymentEntry() {
 
   const [amount, setAmount] = useState('');
   const [extras, setExtras] = useState(emptyExtras);
+  const [paymentMode, setPaymentMode] = useState('cash');
+  const [bankName, setBankName] = useState('');
+  const [chequeNo, setChequeNo] = useState('');
   const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [narration, setNarration] = useState('');
   const [error, setError] = useState('');
@@ -61,10 +70,8 @@ export default function PaymentEntry() {
   const [lastReceipt, setLastReceipt] = useState(null);
 
   useEffect(() => {
-    if (debouncedSearch.trim().length < 1) { setRows([]); return; }
-    client.get('/properties', { params: { search: debouncedSearch, page: 1, pageSize: 50, yearId } })
-      .then(({ data }) => setRows(data.data));
-  }, [debouncedSearch, yearId]);
+    client.get('/properties', { params: { page: 1, pageSize: 5000, yearId } }).then(({ data }) => setRows(data.data));
+  }, [yearId]);
 
   async function loadSummary(propertyId, type, { resetReceipt = true } = {}) {
     if (resetReceipt) setLastReceipt(null);
@@ -75,6 +82,9 @@ export default function PaymentEntry() {
       setSummary(data);
       setAmount('');
       setExtras(emptyExtras);
+      setPaymentMode('cash');
+      setBankName('');
+      setChequeNo('');
     } catch (err) {
       setError(err.response?.data?.error || 'माहिती आणताना त्रुटी आली');
       setSummary(null);
@@ -105,16 +115,23 @@ export default function PaymentEntry() {
   }
 
   const searchTerm = search.trim().toLowerCase();
-  const searchResults = rows.filter((r) =>
-    (r.owner_name || '').toLowerCase().includes(searchTerm)
-    || String(r.malmata_no || '').toLowerCase().includes(searchTerm)
-    || String(r.property_code ?? '').includes(searchTerm)
-  );
+  const searchResults = useMemo(() => {
+    if (!searchTerm) return rows;
+    return rows.filter((r) =>
+      (r.owner_name || '').toLowerCase().includes(searchTerm)
+      || String(r.malmata_no || '').toLowerCase().includes(searchTerm)
+      || String(r.property_code ?? '').includes(searchTerm)
+    );
+  }, [rows, searchTerm]);
 
   async function handlePay(e) {
     e.preventDefault();
     setError('');
     const amt = Number(amount || 0);
+    if (amt > summary.balance_due + 0.004) {
+      setError(`कराची जमा रक्कम येणे बाकी (₹${summary.balance_due.toFixed(2)}) पेक्षा जास्त भरता येणार नाही`);
+      return;
+    }
     const extraAmts = Object.fromEntries(Object.entries(extras).map(([k, v]) => [k, Number(v || 0)]));
     const totalCollected = amt + Object.values(extraAmts).reduce((s, v) => s + v, 0);
     if (totalCollected <= 0) {
@@ -133,6 +150,9 @@ export default function PaymentEntry() {
         notice_fee_amount: extraAmts.notice_fee || 0,
         warrant_fee_amount: extraAmts.warrant_fee || 0,
         other_amount: extraAmts.other || 0,
+        payment_mode: paymentMode,
+        bank_name: bankName,
+        cheque_no: chequeNo,
         narration,
       });
       setNarration('');
@@ -167,11 +187,11 @@ export default function PaymentEntry() {
               value={search}
               onChange={(e) => { setSearch(e.target.value); setSelectedProperty(null); setSummary(null); setDropdownOpen(true); }}
               onFocus={() => setDropdownOpen(true)}
-              placeholder="मालकाचे नाव, मालमत्ता क्र. किंवा कोड टाइप करा"
+              placeholder="मालकाचे नाव, मालमत्ता क्र. किंवा कोड टाइप करा - क्लिक केल्यावर संपूर्ण यादी दिसेल"
               style={{ width: '100%', padding: 8, border: '1px solid var(--border)', borderRadius: 6 }}
               autoFocus
             />
-            {dropdownOpen && searchTerm && (
+            {dropdownOpen && (
               <div className="combo-dropdown">
                 {searchResults.length === 0 && <div className="combo-empty">जुळणारी नोंद सापडली नाही</div>}
                 {searchResults.map((r) => (
@@ -270,8 +290,9 @@ export default function PaymentEntry() {
                     <input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} required />
                   </div>
                   <div className="field">
-                    <label>कराची जमा रक्कम ({components.map((c) => c.label).join('+')})</label>
-                    <input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} autoFocus />
+                    <label>कराची जमा रक्कम ({components.map((c) => c.label).join('+')}) — जास्तीत जास्त ₹{summary.balance_due.toFixed(2)}</label>
+                    <input type="number" step="0.01" min="0" max={summary.balance_due} value={amount}
+                      onChange={(e) => setAmount(e.target.value)} autoFocus />
                   </div>
                   {extraFields.map((f) => (
                     <div className="field" key={f.key}>
@@ -280,6 +301,24 @@ export default function PaymentEntry() {
                         onChange={(e) => setExtras({ ...extras, [f.key]: e.target.value })} />
                     </div>
                   ))}
+                  <div className="field">
+                    <label>जमा प्रकार</label>
+                    <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)}>
+                      {PAYMENT_MODES.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
+                    </select>
+                  </div>
+                  {paymentMode === 'cheque' && (
+                    <>
+                      <div className="field">
+                        <label>बँकेचे नांव</label>
+                        <input value={bankName} onChange={(e) => setBankName(e.target.value)} />
+                      </div>
+                      <div className="field">
+                        <label>चेक क्र.</label>
+                        <input value={chequeNo} onChange={(e) => setChequeNo(e.target.value)} />
+                      </div>
+                    </>
+                  )}
                   <div className="field">
                     <label>शेरा</label>
                     <input value={narration} onChange={(e) => setNarration(e.target.value)} />
@@ -292,7 +331,7 @@ export default function PaymentEntry() {
             </div>
           )}
 
-          {lastReceipt && <ReceiptCard receipt={lastReceipt} property={summary.property} receiptType={receiptType} canPrint={can('payments', 'print')} />}
+          {lastReceipt && <ReceiptCard receipt={lastReceipt} property={summary.property} receiptType={receiptType} settingsYear={summary.year} canPrint={can('payments', 'print')} />}
 
           <div className="card no-print">
             <h2 style={{ fontSize: 15, marginTop: 0 }}>{RECEIPT_LABELS[receiptType]} इतिहास</h2>
@@ -324,56 +363,92 @@ export default function PaymentEntry() {
   );
 }
 
-function ReceiptCard({ receipt, property, receiptType, canPrint }) {
+// प्रत्यक्ष कागदी नमुना नं. १० पावतीच्या मांडणीशी जुळणारे - प्रत्येक घटक
+// एक ओळ (मागील बाकी | चालू कर | एकूण कर रुपये), अक्षरी रु., जमा प्रकार,
+// आणि सही/तारीख ओळी.
+function ReceiptCard({ receipt, property, receiptType, settingsYear, canPrint }) {
   const components = GROUP_COMPONENTS[receiptType];
   const extraFields = EXTRA_FIELDS[receiptType];
-  const extrasTotal = extraFields.reduce((s, f) => s + Number(receipt.payment[`${f.key}_amount`] || 0), 0);
+  const p = receipt.payment;
   const taxTotal = Number(receipt.amount || 0);
+  const extrasTotal = extraFields.reduce((s, f) => s + Number(p[`${f.key}_amount`] || 0), 0);
+  const grandTotal = taxTotal + extrasTotal;
+
+  const rows = [
+    ...components.map((c) => ({
+      label: c.label,
+      previous: Number(receipt.coveredByThisReceipt[`previous_${c.key}`] || 0),
+      current: Number(receipt.coveredByThisReceipt[`current_${c.key}`] || 0),
+    })),
+    ...extraFields.map((f) => ({
+      label: f.label,
+      previous: 0,
+      current: Number(p[`${f.key}_amount`] || 0),
+    })),
+  ];
+  const totalPrevious = rows.reduce((s, r) => s + r.previous, 0);
+  const totalCurrent = rows.reduce((s, r) => s + r.current, 0);
 
   return (
     <div className="card" style={{ marginBottom: 20, borderColor: 'var(--success)' }}>
       <div className="print-header">
-        <h2>ग्रामपंचायत — {RECEIPT_LABELS[receiptType]}</h2>
-        <p>नमुना नं. १० (नियम ३२(५) पहा) | पावती नं. {receipt.payment.receipt_no} | दिनांक: {receipt.payment.payment_date} | वर्ष: {receipt.payment.year_label}</p>
+        <p style={{ margin: 0, fontSize: 12 }}>नमुना नं. १० (नियम ३२(५) पहा)</p>
+        <h2 style={{ margin: '2px 0' }}>ग्रामपंचायत — {RECEIPT_LABELS[receiptType]}</h2>
+        <p style={{ margin: 0 }}>पावती नं. {p.receipt_no} | दिनांक: {p.payment_date} | आर्थिक वर्ष: {p.year_label}</p>
       </div>
-      <p><strong>नांव:</strong> {property.owner_name}</p>
-      <p><strong>घर नं.:</strong> {property.malmata_no ?? '-'}</p>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', margin: '10px 0' }}>
+        <p style={{ margin: 0 }}><strong>नांव:</strong> {property.owner_name}</p>
+        <p style={{ margin: 0 }}><strong>घर नं.:</strong> {property.malmata_no ?? '-'}</p>
+      </div>
+      <p style={{ fontSize: 13 }}>यांस कडून सन {settingsYear?.year_label || p.year_label} या आर्थिक वर्षाबद्दल पुढील रक्कम मिळाली.</p>
+
       <div className="table-wrap" style={{ marginTop: 10 }}>
         <table>
-          <thead><tr><th></th>{components.map((c) => <th key={c.key} className="num">{c.label}</th>)}<th className="num">एकूण</th></tr></thead>
+          <thead>
+            <tr>
+              <th>कराचे नांव</th>
+              <th className="num">मागील बाकी</th>
+              <th className="num">चालू कर</th>
+              <th className="num">एकूण कर रुपये</th>
+            </tr>
+          </thead>
           <tbody>
-            <tr>
-              <td>मागील बाकीतून वसूल</td>
-              {components.map((c) => <td key={c.key} className="num">{Number(receipt.coveredByThisReceipt[`previous_${c.key}`] || 0).toFixed(2)}</td>)}
-              <td className="num">{components.reduce((s, c) => s + Number(receipt.coveredByThisReceipt[`previous_${c.key}`] || 0), 0).toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td>चालू वर्षातून वसूल</td>
-              {components.map((c) => <td key={c.key} className="num">{Number(receipt.coveredByThisReceipt[`current_${c.key}`] || 0).toFixed(2)}</td>)}
-              <td className="num">{components.reduce((s, c) => s + Number(receipt.coveredByThisReceipt[`current_${c.key}`] || 0), 0).toFixed(2)}</td>
-            </tr>
-            <tr className="total-row">
-              <td>कर एकूण</td>
-              <td className="num" colSpan={components.length}></td>
-              <td className="num">{taxTotal.toFixed(2)}</td>
-            </tr>
-            {extraFields.map((f) => (
-              Number(receipt.payment[`${f.key}_amount`] || 0) > 0 && (
-                <tr key={f.key}>
-                  <td>{f.label}</td>
-                  <td className="num" colSpan={components.length}></td>
-                  <td className="num">{Number(receipt.payment[`${f.key}_amount`]).toFixed(2)}</td>
-                </tr>
-              )
+            {rows.map((r) => (
+              <tr key={r.label}>
+                <td>{r.label}</td>
+                <td className="num">{r.previous.toFixed(2)}</td>
+                <td className="num">{r.current.toFixed(2)}</td>
+                <td className="num">{(r.previous + r.current).toFixed(2)}</td>
+              </tr>
             ))}
             <tr className="total-row">
-              <td>एकूण जमा रक्कम</td>
-              <td className="num" colSpan={components.length}></td>
-              <td className="num">{(taxTotal + extrasTotal).toFixed(2)}</td>
+              <td>एकूण</td>
+              <td className="num">{totalPrevious.toFixed(2)}</td>
+              <td className="num">{totalCurrent.toFixed(2)}</td>
+              <td className="num">{grandTotal.toFixed(2)}</td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <p style={{ fontSize: 13, marginTop: 10 }}><strong>अक्षरी रु.:</strong> {amountToMarathiWords(grandTotal)}</p>
+
+      <p style={{ fontSize: 13 }}>
+        <strong>जमा प्रकार:</strong>{' '}
+        {PAYMENT_MODES.map((m) => `${p.payment_mode === m.key ? '☑' : '☐'} ${m.label}`).join('   ')}
+      </p>
+      {p.payment_mode === 'cheque' && (
+        <p style={{ fontSize: 13 }}>
+          <strong>बँकेचे नांव:</strong> {p.bank_name || '-'} &nbsp;&nbsp; <strong>चेक क्र.:</strong> {p.cheque_no || '-'}
+        </p>
+      )}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, fontSize: 13 }}>
+        <div>तारीख: {p.payment_date}</div>
+        <div>वसुली करणाराची सही</div>
+      </div>
+
       {canPrint && (
         <div className="no-print" style={{ marginTop: 14 }}>
           <button className="btn secondary" onClick={() => window.print()}>पावती प्रिंट करा</button>
