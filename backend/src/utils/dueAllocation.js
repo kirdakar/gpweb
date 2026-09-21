@@ -1,13 +1,20 @@
 // Payment allocation logic (कर जमा वाटप), per explicit user requirement:
 // a collected amount is first applied against मागील बाकी (all prior years'
-// dues, combined), in the order घरपट्टी -> दिवाबत्ती -> आरोग्यकर ->
-// पाणीपट्टी, and only once each of those is fully covered does the
-// remainder flow into चालू वर्षातील (current/selected year's) dues, in the
-// same component order.
-const ALLOCATION_ORDER = [
-  'previous_gharpatti', 'previous_divabatti', 'previous_arogya', 'previous_panipatti',
-  'current_gharpatti', 'current_divabatti', 'current_arogya', 'current_panipatti',
+// dues, combined), then चालू वर्षातील (current/selected year's) dues.
+//
+// नमुना नं. १० प्रत्यक्ष कागदी पावती पुस्तके दोन स्वतंत्र मालिका आहेत -
+// घरपट्टी पावती (घरपट्टी+दिवाबत्ती+आरोग्य कर) आणि पाणीपट्टी पावती (फक्त
+// पाणीपट्टी) - म्हणून एकच सामायिक ALLOCATION_ORDER ऐवजी आता दोन गट-निहाय
+// order आहेत; प्रत्येक गटाचे वाटप त्या गटाच्या payments च्या cumulative
+// रकमेवरच (दुसऱ्या गटाच्या पावत्या न मोजता) चालते (पहा dueBreakdown.js).
+const GHARPATTI_GROUP_ORDER = [
+  'previous_gharpatti', 'previous_divabatti', 'previous_arogya',
+  'current_gharpatti', 'current_divabatti', 'current_arogya',
 ];
+const PANIPATTI_GROUP_ORDER = ['previous_panipatti', 'current_panipatti'];
+// संपूर्ण यादी - नमुना ९ क (कर मागणी बिल) सारख्या दोन्ही गट एकत्र
+// दाखवणाऱ्या ठिकाणी sumDue साठी वापरतो.
+const ALLOCATION_ORDER = [...GHARPATTI_GROUP_ORDER, ...PANIPATTI_GROUP_ORDER];
 
 function round2(n) {
   return Math.round((Number(n) || 0) * 100) / 100;
@@ -15,15 +22,16 @@ function round2(n) {
 
 // dues: { previous_gharpatti, previous_divabatti, previous_arogya, previous_panipatti,
 //         current_gharpatti, current_divabatti, current_arogya, current_panipatti }
-// totalPaid: cumulative amount to walk through the buckets in ALLOCATION_ORDER
-// returns: { paid: {...same keys}, balance: {...same keys}, unallocated }
+// totalPaid: cumulative amount (त्याच गटाच्या पावत्यांची बेरीज) to walk
+// through the buckets in `order` (डीफॉल्ट: संपूर्ण यादी, मागचा वापर मोडू नये म्हणून)
+// returns: { paid: {...त्या order च्या keys}, balance: {...same}, unallocated }
 //   unallocated = any amount left over after every known due is fully paid
 //   (an advance/overpayment) - surfaced rather than silently dropped.
-function allocate(dues, totalPaid) {
+function allocate(dues, totalPaid, order = ALLOCATION_ORDER) {
   let remaining = round2(totalPaid);
   const paid = {};
   const balance = {};
-  for (const key of ALLOCATION_ORDER) {
+  for (const key of order) {
     const due = round2(dues[key] || 0);
     const pay = round2(Math.min(remaining, due));
     paid[key] = pay;
@@ -34,12 +42,19 @@ function allocate(dues, totalPaid) {
   return { paid, balance, unallocated: remaining };
 }
 
-function sumDue(dues) {
-  return round2(ALLOCATION_ORDER.reduce((s, k) => s + (Number(dues[k]) || 0), 0));
+function sumDue(dues, order = ALLOCATION_ORDER) {
+  return round2(order.reduce((s, k) => s + (Number(dues[k]) || 0), 0));
 }
 
-function sumAllocation(alloc) {
-  return round2(ALLOCATION_ORDER.reduce((s, k) => s + (Number(alloc[k]) || 0), 0));
+function sumAllocation(alloc, order = ALLOCATION_ORDER) {
+  return round2(order.reduce((s, k) => s + (Number(alloc[k]) || 0), 0));
 }
 
-module.exports = { ALLOCATION_ORDER, allocate, sumDue, sumAllocation, round2 };
+// गटाच्या नावावरून (receipt_type) त्याचा order array द्यायला - राऊटमध्ये
+// वारंवार if/else लिहावे लागू नये म्हणून.
+const GROUP_ORDER_BY_TYPE = { gharpatti: GHARPATTI_GROUP_ORDER, panipatti: PANIPATTI_GROUP_ORDER };
+
+module.exports = {
+  ALLOCATION_ORDER, GHARPATTI_GROUP_ORDER, PANIPATTI_GROUP_ORDER, GROUP_ORDER_BY_TYPE,
+  allocate, sumDue, sumAllocation, round2,
+};

@@ -4,6 +4,7 @@
 // थकबाकी/येणे बाकी report. Shared so payment entry, receipts, and reports
 // all compute it identically.
 const { withOwnerNameFallback } = require('./ownerName');
+const { allocate, GHARPATTI_GROUP_ORDER, PANIPATTI_GROUP_ORDER } = require('./dueAllocation');
 
 // One property.
 async function getDueBreakdownForProperty(pool, propertyId, yearId) {
@@ -75,25 +76,59 @@ async function getDueBreakdownBulk(pool, yearId) {
 
 // Total ever paid by a property (all payments regardless of which
 // financial_year_id they were recorded under - see dueAllocation.js for why).
-async function getTotalPaid(pool, propertyId) {
+// receiptType दिला तर फक्त त्या पावती-मालिकेच्या (घरपट्टी/पाणीपट्टी)
+// payments मोजतो - FIFO वाटप आता गट-निहाय स्वतंत्र असल्याने आवश्यक.
+async function getTotalPaid(pool, propertyId, receiptType = null) {
+  const where = receiptType ? 'WHERE property_id = ? AND receipt_type = ?' : 'WHERE property_id = ?';
+  const params = receiptType ? [propertyId, receiptType] : [propertyId];
   const [[row]] = await pool.query(
-    'SELECT COALESCE(SUM(amount), 0) AS total FROM tax_payments WHERE property_id = ?',
-    [propertyId]
+    `SELECT COALESCE(SUM(amount), 0) AS total FROM tax_payments ${where}`,
+    params
   );
   return Number(row.total);
 }
 
 // Total ever paid, for many properties at once (id -> total map).
-async function getTotalPaidBulk(pool, propertyIds) {
+async function getTotalPaidBulk(pool, propertyIds, receiptType = null) {
   if (propertyIds.length === 0) return {};
+  const where = receiptType
+    ? 'WHERE property_id IN (?) AND receipt_type = ?'
+    : 'WHERE property_id IN (?)';
+  const params = receiptType ? [propertyIds, receiptType] : [propertyIds];
   const [rows] = await pool.query(
     `SELECT property_id, COALESCE(SUM(amount), 0) AS total
-     FROM tax_payments WHERE property_id IN (?) GROUP BY property_id`,
-    [propertyIds]
+     FROM tax_payments ${where} GROUP BY property_id`,
+    params
   );
   const map = {};
   for (const r of rows) map[r.property_id] = Number(r.total);
   return map;
 }
 
-module.exports = { getDueBreakdownForProperty, getDueBreakdownBulk, getTotalPaid, getTotalPaidBulk };
+// घरपट्टी-गट व पाणीपट्टी-गट या दोन्ही स्वतंत्र FIFO वाटपांना एका सामायिक
+// balance_by_component (जुन्याच 8-key आकाराचे) मध्ये एकत्र आणते - नमुना ९ क
+// (कर मागणी बिल) सारख्या ठिकाणी दोन्ही गट मिळून एकत्र दाखवावे लागतात, तिथे
+// receipt_type नुसार वेगळे बघायची गरज नाही.
+function combineGroupAllocations(gharpattiAlloc, panipattiAlloc) {
+  return {
+    paid: { ...gharpattiAlloc.paid, ...panipattiAlloc.paid },
+    balance: { ...gharpattiAlloc.balance, ...panipattiAlloc.balance },
+    unallocated: { gharpatti: gharpattiAlloc.unallocated, panipatti: panipattiAlloc.unallocated },
+  };
+}
+
+// एका मालमत्तेचे संपूर्ण (दोन्ही गट मिळून) वाटप - totalPaidGharpatti/
+// totalPaidPanipatti आधीच माहीत असतील (उदा. bulk साठी) तर तेच वापरतो,
+// नाहीतर स्वतः आणतो.
+async function getCombinedAllocation(pool, propertyId, dues, { totalPaidGharpatti, totalPaidPanipatti } = {}) {
+  const tpG = totalPaidGharpatti ?? await getTotalPaid(pool, propertyId, 'gharpatti');
+  const tpP = totalPaidPanipatti ?? await getTotalPaid(pool, propertyId, 'panipatti');
+  const gAlloc = allocate(dues, tpG, GHARPATTI_GROUP_ORDER);
+  const pAlloc = allocate(dues, tpP, PANIPATTI_GROUP_ORDER);
+  return combineGroupAllocations(gAlloc, pAlloc);
+}
+
+module.exports = {
+  getDueBreakdownForProperty, getDueBreakdownBulk, getTotalPaid, getTotalPaidBulk,
+  combineGroupAllocations, getCombinedAllocation,
+};

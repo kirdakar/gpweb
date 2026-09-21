@@ -179,17 +179,35 @@ CREATE TABLE IF NOT EXISTS property_tax_assessment (
 -- automatically as new financial years get added later, with no ledger
 -- migration needed.
 -- ---------------------------------------------------------------------
+-- receipt_type + receipt_no: प्रत्यक्ष कागदी पावती पुस्तकांप्रमाणे घरपट्टी
+-- (नमुना १०, घरपट्टी+दिवाबत्ती+आरोग्य कर) आणि पाणीपट्टी (नमुना १०, वेगळे
+-- पुस्तक) या दोन स्वतंत्र पावती-मालिका आहेत, प्रत्येकीचा स्वतःचा वाढत
+-- जाणारा receipt_no. FIFO वाटप (allocate) आता या दोन गटांसाठी स्वतंत्रपणे
+-- चालते (पहा utils/dueAllocation.js: GHARPATTI_GROUP_ORDER / PANIPATTI_GROUP_ORDER) -
+-- घरपट्टी पावतीचा पैसा फक्त घरपट्टी/दिवाबत्ती/आरोग्य बाकीतून वसूल होतो,
+-- पाणीपट्टी पावतीचा पैसा फक्त पाणीपट्टी बाकीतून.
+-- खुली जागा कर/नोटीस फी/वारंट फी/इतर - या घटकांची वर्षनिहाय आकारणी
+-- (property_tax_assessment) प्रणालीत नाही, त्यामुळे यांची बाकी आपोआप न
+-- काढता दर पावतीच्या वेळी जेवढी रक्कम प्रत्यक्ष घेतली तेवढीच नोंदवली जाते
+-- (थेट रक्कम, FIFO वाटपाचा भाग नाही) आणि पावतीवर स्वतंत्रपणे छापली जाते.
 CREATE TABLE IF NOT EXISTS tax_payments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   property_id INT NOT NULL,
   financial_year_id INT NOT NULL,   -- "चालू वर्ष" context in effect when this payment was recorded
   payment_date DATE NOT NULL,
-  amount DECIMAL(14,2) NOT NULL,
+  amount DECIMAL(14,2) NOT NULL,    -- FIFO-वाटपासाठी पात्र रक्कम (घरपट्टी/दिवाबत्ती/आरोग्य किंवा पाणीपट्टी बाकीविरुद्ध)
+  receipt_type VARCHAR(20) NOT NULL DEFAULT 'gharpatti',   -- 'gharpatti' | 'panipatti'
+  receipt_no INT NOT NULL DEFAULT 1,                       -- receipt_type नुसार स्वतंत्र क्रमांक
+  khuli_jaga_amount DECIMAL(10,2) NOT NULL DEFAULT 0,      -- फक्त gharpatti पावतीवर
+  notice_fee_amount DECIMAL(10,2) NOT NULL DEFAULT 0,      -- दोन्ही प्रकारच्या पावतीवर
+  warrant_fee_amount DECIMAL(10,2) NOT NULL DEFAULT 0,     -- फक्त gharpatti पावतीवर
+  other_amount DECIMAL(10,2) NOT NULL DEFAULT 0,           -- फक्त panipatti पावतीवर ("इतर")
   narration VARCHAR(255) NULL,
   created_by INT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_payment_property (property_id),
   INDEX idx_payment_year (financial_year_id),
+  UNIQUE KEY uq_receipt_type_no (receipt_type, receipt_no),
   CONSTRAINT fk_payment_property FOREIGN KEY (property_id)
     REFERENCES property_master(id) ON DELETE CASCADE,
   CONSTRAINT fk_payment_year FOREIGN KEY (financial_year_id)

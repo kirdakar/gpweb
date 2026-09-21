@@ -2,7 +2,7 @@ const express = require('express');
 const pool = require('../config/db');
 const { requireAuth } = require('../middleware/auth');
 const { fallbackOwnerName, withOwnerNameFallback } = require('../utils/ownerName');
-const { allocate, round2 } = require('../utils/dueAllocation');
+const { allocate, round2, GROUP_ORDER_BY_TYPE } = require('../utils/dueAllocation');
 const { getTotalPaidBulk, getDueBreakdownForProperty } = require('../utils/dueBreakdown');
 
 const router = express.Router();
@@ -184,8 +184,10 @@ router.get('/tax-demand-by-code', async (req, res) => {
 });
 
 // जमा पावती रिपोर्ट: निवडलेल्या वर्षात नोंदवलेल्या सर्व पावत्यांची यादी,
-// प्रत्येक पावतीद्वारे नेमकी कोणत्या घटकात (मागील/चालू घरपट्टी/दिवाबत्ती/
-// आरोग्य/पाणीपट्टी) किती रक्कम वसूल झाली याच्या तपशीलासह.
+// प्रत्येक पावतीद्वारे नेमकी कोणत्या घटकात किती रक्कम वसूल झाली याच्या
+// तपशीलासह. घरपट्टी व पाणीपट्टी आता दोन स्वतंत्र पावती-मालिका (receipt_type)
+// असल्याने cumulative वाटप प्रत्येक (property, receipt_type) जोडीसाठी
+// वेगळे काढतो - एका गटाची पावती दुसऱ्या गटाच्या बाकीला स्पर्श करत नाही.
 router.get('/payment-receipts', async (req, res) => {
   const yearId = req.query.yearId;
   if (!yearId) return res.status(400).json({ error: 'yearId is required' });
@@ -207,45 +209,60 @@ router.get('/payment-receipts', async (req, res) => {
   // वाटप बरोबर येण्यासाठी - एखाद्या मालमत्तेच्या पूर्वीच्या वर्षांतही
   // पावत्या असू शकतात, त्यामुळे प्रत्येक मालमत्तेच्या *सर्व* पावत्या
   // (कोणत्याही वर्षातील) कालक्रमाने घेऊन cumulative वाटप काढतो, आणि
-  // त्यातून फक्त या वर्षातल्या पावत्यांचे वाटप दाखवतो.
+  // त्यातून फक्त या वर्षातल्या पावत्यांचे वाटप दाखवतो. की = property_id|receipt_type.
   const [allPayments] = await pool.query(
-    `SELECT id, property_id, payment_date, amount FROM tax_payments
+    `SELECT id, property_id, receipt_type, payment_date, amount FROM tax_payments
      WHERE property_id IN (?) ORDER BY payment_date, id`,
     [propertyIds]
   );
-  const allByProperty = new Map();
+  const allByGroup = new Map();
   for (const p of allPayments) {
-    if (!allByProperty.has(p.property_id)) allByProperty.set(p.property_id, []);
-    allByProperty.get(p.property_id).push(p);
+    const key = `${p.property_id}|${p.receipt_type}`;
+    if (!allByGroup.has(key)) allByGroup.set(key, []);
+    allByGroup.get(key).push(p);
   }
   const wantedIds = new Set(wantedPayments.map((p) => p.id));
   const detailsById = new Map(wantedPayments.map((p) => [p.id, p]));
+  const duesByProperty = new Map();
 
   const receipts = [];
-  for (const [propertyId, propPayments] of allByProperty) {
-    const { row: dues } = await getDueBreakdownForProperty(pool, propertyId, yearId);
+  for (const [key, groupPayments] of allByGroup) {
+    const [propertyIdStr, receiptType] = key.split('|');
+    const propertyId = Number(propertyIdStr);
+    const order = GROUP_ORDER_BY_TYPE[receiptType];
+    if (!duesByProperty.has(propertyId)) {
+      duesByProperty.set(propertyId, (await getDueBreakdownForProperty(pool, propertyId, yearId)).row);
+    }
+    const dues = duesByProperty.get(propertyId);
+
     let cumulative = 0;
-    for (const p of propPayments) {
-      const before = allocate(dues || {}, cumulative);
-      const after = allocate(dues || {}, cumulative + Number(p.amount));
+    for (const p of groupPayments) {
+      const before = allocate(dues || {}, cumulative, order);
+      const after = allocate(dues || {}, cumulative + Number(p.amount), order);
       cumulative += Number(p.amount);
 
       if (!wantedIds.has(p.id)) continue; // this property has payments outside the requested year too
       const covered = {};
-      for (const key of Object.keys(after.paid)) {
-        covered[key] = round2(after.paid[key] - before.paid[key]);
+      for (const compKey of Object.keys(after.paid)) {
+        covered[compKey] = round2(after.paid[compKey] - before.paid[compKey]);
       }
       // येणे बाकी (हेड प्रमाणे) - या पावतीनंतर उरलेली बाकी, मागील+चालू
-      // दोन्ही एकत्र करून प्रत्येक घटकासाठी (घरपट्टी/दिवाबत्ती/आरोग्य/पाणीपट्टी).
+      // दोन्ही एकत्र करून त्या receipt_type च्या घटकांसाठी.
       const remaining = {};
-      for (const component of ['gharpatti', 'divabatti', 'arogya', 'panipatti']) {
+      const remainingComponents = receiptType === 'panipatti' ? ['panipatti'] : ['gharpatti', 'divabatti', 'arogya'];
+      for (const component of remainingComponents) {
         remaining[`remaining_${component}`] = round2(
           (after.balance[`previous_${component}`] || 0) + (after.balance[`current_${component}`] || 0)
         );
       }
+      const detail = detailsById.get(p.id);
       receipts.push({
-        ...detailsById.get(p.id),
-        owner_name: fallbackOwnerName(detailsById.get(p.id)),
+        ...detail,
+        owner_name: fallbackOwnerName(detail),
+        extra_charges_total: round2(
+          Number(detail.khuli_jaga_amount || 0) + Number(detail.notice_fee_amount || 0)
+          + Number(detail.warrant_fee_amount || 0) + Number(detail.other_amount || 0)
+        ),
         ...covered,
         ...remaining,
       });
