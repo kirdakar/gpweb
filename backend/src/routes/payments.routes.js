@@ -4,7 +4,7 @@ const { requireAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/permissions');
 const {
   allocate, sumDue, round2, GROUP_ORDER_BY_TYPE, GHARPATTI_GROUP_ORDER, PANIPATTI_GROUP_ORDER,
-  explodeDuesByPortion, collapseByComponent, collapseByComponentForProperty, getDetailedAllocationRows,
+  explodeDuesByPortion, collapseByComponent, getDetailedAllocationRows,
 } = require('../utils/dueAllocation');
 const {
   getDueBreakdownForProperty, getDueBreakdownForCode, getYearWiseDueRowsForCode, getTotalPaid, getTotalPaidForCode,
@@ -157,10 +157,15 @@ router.get('/due-detail', async (req, res) => {
 });
 
 // कर मागणी बिल (नमुना ९ क) "सर्व बिले एकदम तयार करा" साठी - due-summary
-// चीच गणना (allocate) प्रत्येक मालमत्तेसाठी एकाच वेळी, हजारो HTTP रिक्वेस्ट
+// चीच गणना (allocate) प्रत्येक कोडसाठी एकाच वेळी, हजारो HTTP रिक्वेस्ट
 // टाळण्यासाठी. फक्त थकबाकी/चालू देय असलेल्या मालमत्ता परत करतो. हे बिल
 // (मागणी नोटीस, पावती नव्हे) घरपट्टी+पाणीपट्टी दोन्ही एकत्र दाखवते, त्यामुळे
 // दोन्ही गटांचे स्वतंत्र वाटप एकत्र (combine) करून जुन्याच 8-key आकारात देतो.
+//
+// एका कोडखाली अनेक मालमत्ता (portions) असल्या तरी एकच बिल - मालमत्तावार
+// स्वतंत्र बिले नकोत (मालमत्ता क्रमांक बिलावर यादी म्हणून दिसतात, पहा
+// aggregatePortions) - कारण पावती नेहमी कोडमधल्या अँकर मालमत्तेवरच नोंदते,
+// त्यामुळे प्रति-मालमत्ता वेगळे बिल दाखवणे दिशाभूल करणारे ठरते.
 router.get('/due-summary-bulk', async (req, res) => {
   const { yearId } = req.query;
   if (!yearId) return res.status(400).json({ error: 'yearId is required' });
@@ -174,11 +179,6 @@ router.get('/due-summary-bulk', async (req, res) => {
     getTotalPaidBulk(pool, propertyIds, 'panipatti'),
   ]);
 
-  // कोडखालील सर्व मालमत्तांची बाकी व पावत्या एकत्रित करून कोड-निहाय FIFO
-  // वाटप (कर जमा भरणे प्रमाणेच), मग त्यातून प्रत्येक मालमत्तेचा स्वतःचा वाटा
-  // काढतो - property-scoped totalPaid वापरणे चूक ठरेल, कारण पावती नेहमी
-  // कोडमधल्या पहिल्या/अँकर मालमत्तेवरच नोंदते (पहा
-  // dueAllocation.js collapseByComponentForProperty).
   const byCode = new Map();
   for (const r of rows) {
     const key = r.property_code ?? `__${r.property_id}`;
@@ -194,11 +194,9 @@ router.get('/due-summary-bulk', async (req, res) => {
     const pExploded = explodeDuesByPortion(portions, PANIPATTI_GROUP_ORDER);
     const gAlloc = allocate(gExploded.dues, totalPaidG, gExploded.order);
     const pAlloc = allocate(pExploded.dues, totalPaidP, pExploded.order);
-    for (const portion of portions) {
-      const { balance: gBalance } = collapseByComponentForProperty(gAlloc, GHARPATTI_GROUP_ORDER, portion.property_id);
-      const { balance: pBalance } = collapseByComponentForProperty(pAlloc, PANIPATTI_GROUP_ORDER, portion.property_id);
-      summaries.push({ property: portion, balance_by_component: { ...gBalance, ...pBalance } });
-    }
+    const { balance: gBalance } = collapseByComponent(gAlloc, GHARPATTI_GROUP_ORDER);
+    const { balance: pBalance } = collapseByComponent(pAlloc, PANIPATTI_GROUP_ORDER);
+    summaries.push({ property: aggregatePortions(portions), balance_by_component: { ...gBalance, ...pBalance } });
   }
 
   res.json({ year, summaries });

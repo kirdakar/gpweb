@@ -50,7 +50,7 @@ function BillCopy({ summary, settings, periodText, billNo, billDate }) {
 
       <div className="bill-owner">
         <div>श्री./सौ. <strong>{property.owner_name}</strong></div>
-        <div>घर क्रं. <strong>{property.malmata_no ?? '-'}</strong></div>
+        <div>मालमत्ता क्रं. <strong>{property.malmata_no_list || '-'}</strong></div>
       </div>
       <p className="bill-line">यांस कडून पुढील कराची रक्कम वसुली योग्य आहे.</p>
 
@@ -185,7 +185,7 @@ export default function TaxDemandBillReport() {
     if (!resultFilterTerm) return visibleSummaries;
     return visibleSummaries.filter((s) =>
       (s.property.owner_name || '').toLowerCase().includes(resultFilterTerm) ||
-      String(s.property.malmata_no || '').toLowerCase().includes(resultFilterTerm) ||
+      String(s.property.malmata_no_list || '').toLowerCase().includes(resultFilterTerm) ||
       String(s.property.property_code ?? '').includes(resultFilterTerm)
     );
   }, [visibleSummaries, resultFilterTerm]);
@@ -193,11 +193,11 @@ export default function TaxDemandBillReport() {
   // एकदम अनेक बिले तयार करताना प्रत्येकाला वेगळा, वाढत जाणारा बिल नंबर हवा
   // (१, २, ३...) - "नंबर" इनपुट फक्त सुरुवातीचा आकडा ठरवतो. नंबर मूळ
   // (अनफिल्टर्ड) यादीतल्या क्रमानुसार ठरतो, त्यामुळे शोध फिल्टर लावला तरी
-  // एकाच मालमत्तेचा नंबर स्थिर राहतो.
-  const billNoByPropertyId = useMemo(() => {
+  // एकाच कोडचा नंबर स्थिर राहतो.
+  const billNoByCode = useMemo(() => {
     const start = parseInt(billNo, 10) || 1;
     const map = new Map();
-    visibleSummaries.forEach((s, i) => map.set(s.property.property_id, start + i));
+    visibleSummaries.forEach((s, i) => map.set(s.property.property_code, start + i));
     return map;
   }, [visibleSummaries, billNo]);
 
@@ -351,10 +351,10 @@ export default function TaxDemandBillReport() {
       </div>
 
       {filteredSummaries.map((s) => (
-        <div key={s.property.property_id} className="a4-page bill-page">
-          <BillCopy summary={s} settings={settings} periodText={periodText} billNo={billNoByPropertyId.get(s.property.property_id)} billDate={billDate} />
+        <div key={s.property.property_code} className="a4-page bill-page">
+          <BillCopy summary={s} settings={settings} periodText={periodText} billNo={billNoByCode.get(s.property.property_code)} billDate={billDate} />
           <div className="bill-cut-line" />
-          <BillCopy summary={s} settings={settings} periodText={periodText} billNo={billNoByPropertyId.get(s.property.property_id)} billDate={billDate} />
+          <BillCopy summary={s} settings={settings} periodText={periodText} billNo={billNoByCode.get(s.property.property_code)} billDate={billDate} />
         </div>
       ))}
     </div>
