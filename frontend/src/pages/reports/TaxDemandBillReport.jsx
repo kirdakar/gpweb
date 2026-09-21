@@ -50,9 +50,8 @@ function BillCopy({ summary, settings, periodText, billNo, billDate }) {
 
       <div className="bill-owner">
         <div>श्री./सौ. <strong>{property.owner_name}</strong></div>
-        <div>मालमत्ता क्रं. <strong>{property.malmata_no_list || '-'}</strong></div>
       </div>
-      <p className="bill-line">यांस कडून पुढील कराची रक्कम वसुली योग्य आहे.</p>
+      <p className="bill-line">यांस कडून पुढील कराची रक्कम वसुली योग्य आहे. (मालमत्ता क्रं. {property.malmata_no_list || '-'})</p>
 
       <table className="bill-table">
         <thead>
