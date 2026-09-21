@@ -214,6 +214,8 @@ tbody tr:hover { background: #f8fafc; }
 
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .total-row td { font-weight: 700; background: #f1f5f9; }
+.row-clickable { cursor: pointer; }
+.row-clickable:hover td { background: #eef2ff; }
 
 .col-owner { white-space: nowrap; }
 .owner-name { font-weight: 600; }

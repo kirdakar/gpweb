@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
@@ -23,6 +24,7 @@ function groupByCode(rows) {
 export default function PropertyListReport() {
   const { years, yearId, setYearId } = useYear();
   const { can } = usePermissions();
+  const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -77,7 +79,12 @@ export default function PropertyListReport() {
             </thead>
             <tbody>
               {groups.map((group) => group.map((r, idx) => (
-                <tr key={r.property_id}>
+                <tr
+                  key={r.property_id}
+                  className={can('properties', 'view') ? 'row-clickable' : undefined}
+                  title={can('properties', 'view') ? 'दुरूस्तीसाठी उघडण्यासाठी क्लिक करा' : undefined}
+                  onClick={can('properties', 'view') ? () => navigate(`/properties/${r.property_id}`) : undefined}
+                >
                   {idx === 0 && <td rowSpan={group.length}>{r.property_code ?? '-'}</td>}
                   {idx === 0 && <td rowSpan={group.length} className="col-owner">{r.owner_name}</td>}
                   <td>{r.malmata_no ?? '-'}</td>
