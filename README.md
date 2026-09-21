@@ -121,6 +121,13 @@ as PDF") rather than pixel-identical Crystal Reports layouts.
 
 ## Setup
 
+### Quick start (Windows, everything already installed)
+
+Double-click [`start.bat`](start.bat) — it starts MySQL (via XAMPP, skipped if
+already running), the backend (`http://localhost:4000`), the frontend
+(`http://localhost:5173`), then opens the site in your browser. Each server
+runs in its own window; closing a window stops that server.
+
 ### 1. Backend
 
 ```bash
