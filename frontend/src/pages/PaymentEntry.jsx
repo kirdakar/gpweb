@@ -7,7 +7,10 @@ import { amountToMarathiWords } from '../utils/numberToMarathiWords';
 // घरपट्टी पावती (नमुना नं. १०) = घरपट्टी + दिवाबत्ती(वीज कर) + आरोग्य कर,
 // पाणीपट्टी पावती (नमुना नं. १०, वेगळे पुस्तक) = फक्त पाणी पट्टी - दोन्ही
 // आता स्वतंत्र पावती-मालिका (receipt_type), स्वतंत्र वाढत जाणारा receipt_no,
-// आणि स्वतंत्र FIFO वाटप (पहा backend utils/dueAllocation.js).
+// आणि स्वतंत्र FIFO वाटप (पहा backend utils/dueAllocation.js). शिवाय आता
+// कर जमा भरणे मालमत्ता-निहाय नव्हे तर कोड-निहाय - एका कोडखालील (मालकाच्या)
+// सर्व मालमत्तांची बाकी एकत्रित करून, त्यातून मालमत्ता क्रं.च्या क्रमाने
+// (आधी पहिली मालमत्ता पूर्ण, मग पुढची) वसूल होते.
 const GROUP_COMPONENTS = {
   gharpatti: [
     { key: 'gharpatti', label: 'घरपट्टी' },
@@ -36,6 +39,12 @@ const EXTRA_FIELDS = {
   ],
 };
 const emptyExtras = { khuli_jaga: '', notice_fee: '', warrant_fee: '', other: '' };
+function formatDateDMY(dateStr) {
+  if (!dateStr) return '';
+  const [y, m, d] = String(dateStr).split('-');
+  if (!y || !m || !d) return dateStr;
+  return `${d}/${m}/${y}`;
+}
 const PAYMENT_MODES = [
   { key: 'cash', label: 'कॅश' },
   { key: 'cheque', label: 'चेक / डी.डी.' },
@@ -47,12 +56,13 @@ export default function PaymentEntry() {
   const { can } = usePermissions();
 
   // कोड/मालमत्ता क्रं./नाव टाइप करून शोधणारा combo - सुरुवातीस (काहीही टाइप
-  // न करताच) संपूर्ण यादी दिसावी म्हणून इतर स्क्रीनसारखीच संपूर्ण यादी
-  // एकदाच आणून क्लायंटवरच शोधतो (backend search-per-keystroke ऐवजी).
+  // न करताच) संपूर्ण यादी दिसावी. यादी कोड नंबरवर ग्रुप करून दाखवतो - एका
+  // कोडखाली अनेक मालमत्ता (portions) असल्या तरी ते नाव एकदाच दिसावे म्हणून
+  // (डबल-डबल नांवे नकोत, कारण आता जमा भरणे मालमत्ता-निहाय नसून कोड-निहाय आहे).
   const [rows, setRows] = useState([]);
   const [search, setSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [selectedCode, setSelectedCode] = useState(null);
 
   const [receiptType, setReceiptType] = useState('gharpatti');
   const [summary, setSummary] = useState(null);
@@ -67,18 +77,30 @@ export default function PaymentEntry() {
   const [narration, setNarration] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [lastReceipt, setLastReceipt] = useState(null);
+  const [displayedReceipt, setDisplayedReceipt] = useState(null); // नुकतीच तयार केलेली किंवा इतिहासातून पुन्हा उघडलेली पावती
 
   useEffect(() => {
     client.get('/properties', { params: { page: 1, pageSize: 5000, yearId } }).then(({ data }) => setRows(data.data));
   }, [yearId]);
 
-  async function loadSummary(propertyId, type, { resetReceipt = true } = {}) {
-    if (resetReceipt) setLastReceipt(null);
+  const codeOptions = useMemo(() => {
+    const map = new Map();
+    for (const r of rows) {
+      if (r.property_code == null) continue;
+      if (!map.has(r.property_code)) {
+        map.set(r.property_code, { property_code: r.property_code, owner_name: r.owner_name, malmata_nos: [] });
+      }
+      map.get(r.property_code).malmata_nos.push(r.malmata_no);
+    }
+    return [...map.values()].sort((a, b) => a.property_code - b.property_code);
+  }, [rows]);
+
+  async function loadSummary(code, type, { resetReceipt = true } = {}) {
+    if (resetReceipt) setDisplayedReceipt(null);
     setError('');
     setLoadingSummary(true);
     try {
-      const { data } = await client.get('/payments/due-summary', { params: { propertyId, yearId, receiptType: type } });
+      const { data } = await client.get('/payments/due-summary', { params: { propertyCode: code, yearId, receiptType: type } });
       setSummary(data);
       setAmount('');
       setExtras(emptyExtras);
@@ -93,36 +115,36 @@ export default function PaymentEntry() {
     }
   }
 
-  function selectProperty(r) {
-    setSelectedProperty(r);
-    setSearch(`${r.property_code ?? '-'} / ${r.malmata_no ?? '-'} - ${r.owner_name}`);
+  function selectCode(opt) {
+    setSelectedCode(opt.property_code);
+    setSearch(`${opt.property_code} - ${opt.owner_name}`);
     setDropdownOpen(false);
     setReceiptType('gharpatti');
-    loadSummary(r.id, 'gharpatti');
+    loadSummary(opt.property_code, 'gharpatti');
   }
 
   function clearSearch() {
     setSearch('');
-    setSelectedProperty(null);
+    setSelectedCode(null);
     setSummary(null);
-    setLastReceipt(null);
+    setDisplayedReceipt(null);
     setDropdownOpen(false);
   }
 
   function switchReceiptType(type) {
     setReceiptType(type);
-    if (selectedProperty) loadSummary(selectedProperty.id, type);
+    if (selectedCode != null) loadSummary(selectedCode, type);
   }
 
   const searchTerm = search.trim().toLowerCase();
   const searchResults = useMemo(() => {
-    if (!searchTerm) return rows;
-    return rows.filter((r) =>
-      (r.owner_name || '').toLowerCase().includes(searchTerm)
-      || String(r.malmata_no || '').toLowerCase().includes(searchTerm)
-      || String(r.property_code ?? '').includes(searchTerm)
+    if (!searchTerm) return codeOptions;
+    return codeOptions.filter((o) =>
+      (o.owner_name || '').toLowerCase().includes(searchTerm)
+      || o.malmata_nos.some((m) => String(m || '').toLowerCase().includes(searchTerm))
+      || String(o.property_code).includes(searchTerm)
     );
-  }, [rows, searchTerm]);
+  }, [codeOptions, searchTerm]);
 
   async function handlePay(e) {
     e.preventDefault();
@@ -141,7 +163,7 @@ export default function PaymentEntry() {
     setBusy(true);
     try {
       const { data } = await client.post('/payments', {
-        property_id: summary.property.property_id,
+        property_code: summary.property.property_code,
         financial_year_id: yearId,
         payment_date: paymentDate,
         amount: amt,
@@ -156,8 +178,8 @@ export default function PaymentEntry() {
         narration,
       });
       setNarration('');
-      await loadSummary(summary.property.property_id, receiptType, { resetReceipt: false });
-      setLastReceipt(data);
+      await loadSummary(summary.property.property_code, receiptType, { resetReceipt: false });
+      setDisplayedReceipt(data);
     } catch (err) {
       setError(err.response?.data?.error || 'जमा करताना त्रुटी आली');
     } finally {
@@ -168,7 +190,18 @@ export default function PaymentEntry() {
   async function handleVoid(paymentId) {
     if (!window.confirm('ही पावती रद्द (मिटवायची) करायची आहे का? ही क्रिया परत करता येणार नाही.')) return;
     await client.delete(`/payments/${paymentId}`);
-    loadSummary(summary.property.property_id, receiptType);
+    loadSummary(summary.property.property_code, receiptType);
+  }
+
+  // पावती इतिहासातील जुनी पावती पुन्हा पाहण्यासाठी/प्रिंट करण्यासाठी.
+  async function viewReceipt(paymentId) {
+    setError('');
+    try {
+      const { data } = await client.get(`/payments/${paymentId}/receipt`);
+      setDisplayedReceipt(data);
+    } catch (err) {
+      setError(err.response?.data?.error || 'पावती आणताना त्रुटी आली');
+    }
   }
 
   const components = GROUP_COMPONENTS[receiptType];
@@ -185,24 +218,34 @@ export default function PaymentEntry() {
           <div className="combo-wrap">
             <input
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setSelectedProperty(null); setSummary(null); setDropdownOpen(true); }}
+              onChange={(e) => { setSearch(e.target.value); setSelectedCode(null); setSummary(null); setDropdownOpen(true); }}
               onFocus={() => setDropdownOpen(true)}
               placeholder="मालकाचे नाव, मालमत्ता क्र. किंवा कोड टाइप करा - क्लिक केल्यावर संपूर्ण यादी दिसेल"
-              style={{ width: '100%', padding: 8, border: '1px solid var(--border)', borderRadius: 6 }}
+              style={{ width: '100%', padding: '8px 30px 8px 8px', border: '1px solid var(--border)', borderRadius: 6 }}
               autoFocus
             />
+            {search && (
+              <button
+                type="button"
+                className="combo-clear-btn"
+                title="शोध पुसा"
+                onMouseDown={(e) => { e.preventDefault(); setSearch(''); setDropdownOpen(true); }}
+              >
+                ×
+              </button>
+            )}
             {dropdownOpen && (
               <div className="combo-dropdown">
                 {searchResults.length === 0 && <div className="combo-empty">जुळणारी नोंद सापडली नाही</div>}
-                {searchResults.map((r) => (
-                  <div key={r.id} className="combo-option" onMouseDown={() => selectProperty(r)}>
-                    {r.property_code ?? '-'} / {r.malmata_no ?? '-'} - {r.owner_name}
+                {searchResults.map((o) => (
+                  <div key={o.property_code} className="combo-option" onMouseDown={() => selectCode(o)}>
+                    {o.property_code} - {o.owner_name} <span style={{ color: 'var(--text-muted)' }}>(मालमत्ता: {o.malmata_nos.join(', ')})</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
-          <button className="btn secondary" type="button" onClick={clearSearch} disabled={!search && !selectedProperty}>शोध क्लिअर करा</button>
+          <button className="btn secondary" type="button" onClick={clearSearch} disabled={!search && selectedCode == null}>शोध क्लिअर करा</button>
         </div>
       </div>
 
@@ -213,7 +256,8 @@ export default function PaymentEntry() {
         <>
           <div className="card no-print" style={{ marginBottom: 20 }}>
             <h2 style={{ fontSize: 15, marginTop: 0 }}>
-              {summary.property.owner_name} — मालमत्ता क्र. {summary.property.malmata_no ?? '-'} (कोड {summary.property.property_code ?? '-'})
+              {summary.property.owner_name} — कोड {summary.property.property_code} — मालमत्ता क्र.: {summary.property.malmata_no_list}
+              {summary.property.portion_count > 1 && ` (${summary.property.portion_count} मालमत्ता एकत्रित)`}
             </h2>
             <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
               {Object.keys(RECEIPT_LABELS).map((type) => (
@@ -276,7 +320,8 @@ export default function PaymentEntry() {
             )}
             <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               वसुली क्रम: प्रथम मागील बाकी, नंतर चालू वर्ष ({components.map((c) => c.label).join(' → ')} याच क्रमाने).
-              घरपट्टी व पाणीपट्टी यांचे वाटप एकमेकांपासून पूर्णपणे स्वतंत्र आहे.
+              {summary.property.portion_count > 1 && ' कोडखालील सर्व मालमत्तांची बाकी एकत्रित करून, मालमत्ता क्रं.च्या क्रमाने (आधी पहिली पूर्ण, मग पुढची) वसूल होते.'}
+              {' '}घरपट्टी व पाणीपट्टी यांचे वाटप एकमेकांपासून पूर्णपणे स्वतंत्र आहे.
             </p>
           </div>
 
@@ -331,7 +376,9 @@ export default function PaymentEntry() {
             </div>
           )}
 
-          {lastReceipt && <ReceiptCard receipt={lastReceipt} property={summary.property} receiptType={receiptType} settingsYear={summary.year} canPrint={can('payments', 'print')} />}
+          {displayedReceipt && (
+            <ReceiptPrintout receipt={displayedReceipt} property={summary.property} receiptType={receiptType} canPrint={can('payments', 'print')} />
+          )}
 
           <div className="card no-print">
             <h2 style={{ fontSize: 15, marginTop: 0 }}>{RECEIPT_LABELS[receiptType]} इतिहास</h2>
@@ -349,7 +396,10 @@ export default function PaymentEntry() {
                           + Number(h.warrant_fee_amount || 0) + Number(h.other_amount || 0)).toFixed(2)}
                       </td>
                       <td>{h.narration || '-'}</td>
-                      <td>{can('payments', 'delete') && <button className="btn danger small" onClick={() => handleVoid(h.id)}>रद्द करा</button>}</td>
+                      <td>
+                        <button className="btn secondary small" onClick={() => viewReceipt(h.id)}>पावती पहा</button>{' '}
+                        {can('payments', 'delete') && <button className="btn danger small" onClick={() => handleVoid(h.id)}>रद्द करा</button>}
+                      </td>
                     </tr>
                   ))}
                   {summary.history.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center' }}>अद्याप जमा नोंद नाही</td></tr>}
@@ -363,10 +413,25 @@ export default function PaymentEntry() {
   );
 }
 
-// प्रत्यक्ष कागदी नमुना नं. १० पावतीच्या मांडणीशी जुळणारे - प्रत्येक घटक
-// एक ओळ (मागील बाकी | चालू कर | एकूण कर रुपये), अक्षरी रु., जमा प्रकार,
-// आणि सही/तारीख ओळी.
-function ReceiptCard({ receipt, property, receiptType, settingsYear, canPrint }) {
+// प्रत्यक्ष कागदी नमुना नं. १० पावतीशी जुळणारे शीर्षक + A4 वर एकाच पावती
+// क्रमांकाच्या दोन प्रती (एक मालमत्ताधारकास, एक ऑफिस फाईलसाठी) - नमुना ९ क
+// (कर मागणी बिल) साठी आधीच वापरलेला .bill-page/.bill-cut-line पॅटर्न.
+function ReceiptPrintout({ receipt, property, receiptType, canPrint }) {
+  return (
+    <div className="a4-page bill-page">
+      <ReceiptCopy receipt={receipt} property={property} receiptType={receiptType} />
+      <div className="bill-cut-line" />
+      <ReceiptCopy receipt={receipt} property={property} receiptType={receiptType} />
+      {canPrint && (
+        <div className="no-print" style={{ marginTop: 14 }}>
+          <button className="btn secondary" onClick={() => window.print()}>पावती प्रिंट करा</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReceiptCopy({ receipt, property, receiptType }) {
   const components = GROUP_COMPONENTS[receiptType];
   const extraFields = EXTRA_FIELDS[receiptType];
   const p = receipt.payment;
@@ -390,70 +455,65 @@ function ReceiptCard({ receipt, property, receiptType, settingsYear, canPrint })
   const totalCurrent = rows.reduce((s, r) => s + r.current, 0);
 
   return (
-    <div className="card" style={{ marginBottom: 20, borderColor: 'var(--success)' }}>
-      <div className="print-header">
-        <p style={{ margin: 0, fontSize: 12 }}>नमुना नं. १० (नियम ३२(५) पहा)</p>
-        <h2 style={{ margin: '2px 0' }}>ग्रामपंचायत — {RECEIPT_LABELS[receiptType]}</h2>
-        <p style={{ margin: 0 }}>पावती नं. {p.receipt_no} | दिनांक: {p.payment_date} | आर्थिक वर्ष: {p.year_label}</p>
+    <div className="bill-copy">
+      <p style={{ textAlign: 'right', fontSize: 10, margin: 0 }}>ग्रामपंचायत लेखासंहिता-२०११</p>
+      <p style={{ textAlign: 'center', fontSize: 15, fontWeight: 700, margin: '2px 0' }}>ग्रामपंचायत, आनंदनगर</p>
+      <p style={{ textAlign: 'center', fontSize: 12, margin: 0 }}>नमुना नं. १० (नियम ३२(५) पहा)</p>
+      <div className="bill-head" style={{ marginTop: 6 }}>
+        <div className="bill-form-no">पुस्तक क्र. ____</div>
+        <div className="bill-title">
+          <h3>{RECEIPT_LABELS[receiptType]}</h3>
+        </div>
+        <div className="bill-meta">No. {p.receipt_no}</div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', margin: '10px 0' }}>
-        <p style={{ margin: 0 }}><strong>नांव:</strong> {property.owner_name}</p>
-        <p style={{ margin: 0 }}><strong>घर नं.:</strong> {property.malmata_no ?? '-'}</p>
+      <p className="bill-line"><strong>नांव:</strong> {property.owner_name}</p>
+      <div className="bill-owner" style={{ fontSize: 12 }}>
+        <span><strong>मालमत्ता क्र.:</strong> {property.malmata_no_list}</span>
+        <span><strong>आर्थिक वर्ष:</strong> {p.year_label}</span>
       </div>
-      <p style={{ fontSize: 13 }}>यांस कडून सन {settingsYear?.year_label || p.year_label} या आर्थिक वर्षाबद्दल पुढील रक्कम मिळाली.</p>
+      <p className="bill-line">सालात {RECEIPT_LABELS[receiptType].replace(' पावती', '')}ची रक्कम मिळाली.</p>
 
-      <div className="table-wrap" style={{ marginTop: 10 }}>
-        <table>
-          <thead>
-            <tr>
-              <th>कराचे नांव</th>
-              <th className="num">मागील बाकी</th>
-              <th className="num">चालू कर</th>
-              <th className="num">एकूण कर रुपये</th>
+      <table className="bill-table">
+        <thead>
+          <tr>
+            <th>कराचे नांव</th>
+            <th className="num">मागील बाकी</th>
+            <th className="num">चालू कर</th>
+            <th className="num">एकूण कर रुपये</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.label}>
+              <td>{r.label}</td>
+              <td className="num">{r.previous.toFixed(2)}</td>
+              <td className="num">{r.current.toFixed(2)}</td>
+              <td className="num">{(r.previous + r.current).toFixed(2)}</td>
             </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.label}>
-                <td>{r.label}</td>
-                <td className="num">{r.previous.toFixed(2)}</td>
-                <td className="num">{r.current.toFixed(2)}</td>
-                <td className="num">{(r.previous + r.current).toFixed(2)}</td>
-              </tr>
-            ))}
-            <tr className="total-row">
-              <td>एकूण</td>
-              <td className="num">{totalPrevious.toFixed(2)}</td>
-              <td className="num">{totalCurrent.toFixed(2)}</td>
-              <td className="num">{grandTotal.toFixed(2)}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          ))}
+          <tr className="total-row">
+            <td>एकूण</td>
+            <td className="num">{totalPrevious.toFixed(2)}</td>
+            <td className="num">{totalCurrent.toFixed(2)}</td>
+            <td className="num">{grandTotal.toFixed(2)}</td>
+          </tr>
+        </tbody>
+      </table>
 
-      <p style={{ fontSize: 13, marginTop: 10 }}><strong>अक्षरी रु.:</strong> {amountToMarathiWords(grandTotal)}</p>
-
-      <p style={{ fontSize: 13 }}>
+      <p className="bill-line"><strong>अक्षरी रु.:</strong> {amountToMarathiWords(grandTotal)}</p>
+      <p className="bill-line">
         <strong>जमा प्रकार:</strong>{' '}
         {PAYMENT_MODES.map((m) => `${p.payment_mode === m.key ? '☑' : '☐'} ${m.label}`).join('   ')}
       </p>
       {p.payment_mode === 'cheque' && (
-        <p style={{ fontSize: 13 }}>
-          <strong>बँकेचे नांव:</strong> {p.bank_name || '-'} &nbsp;&nbsp; <strong>चेक क्र.:</strong> {p.cheque_no || '-'}
-        </p>
+        <p className="bill-line"><strong>बँकेचे नांव:</strong> {p.bank_name || '-'} &nbsp;&nbsp; <strong>चेक क्र.:</strong> {p.cheque_no || '-'}</p>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, fontSize: 13 }}>
-        <div>तारीख: {p.payment_date}</div>
+      <div className="bill-sign-row">
+        <div>तारीख: {formatDateDMY(p.payment_date)}</div>
         <div>वसुली करणाराची सही</div>
       </div>
-
-      {canPrint && (
-        <div className="no-print" style={{ marginTop: 14 }}>
-          <button className="btn secondary" onClick={() => window.print()}>पावती प्रिंट करा</button>
-        </div>
-      )}
     </div>
   );
 }

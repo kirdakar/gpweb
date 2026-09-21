@@ -2,8 +2,8 @@ const express = require('express');
 const pool = require('../config/db');
 const { requireAuth } = require('../middleware/auth');
 const { fallbackOwnerName, withOwnerNameFallback } = require('../utils/ownerName');
-const { allocate, round2, GROUP_ORDER_BY_TYPE } = require('../utils/dueAllocation');
-const { getTotalPaidBulk, getDueBreakdownForProperty } = require('../utils/dueBreakdown');
+const { allocate, round2, GROUP_ORDER_BY_TYPE, explodeDuesByPortion, collapseByComponent } = require('../utils/dueAllocation');
+const { getTotalPaidBulk, getDueBreakdownForCode } = require('../utils/dueBreakdown');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -185,9 +185,10 @@ router.get('/tax-demand-by-code', async (req, res) => {
 
 // जमा पावती रिपोर्ट: निवडलेल्या वर्षात नोंदवलेल्या सर्व पावत्यांची यादी,
 // प्रत्येक पावतीद्वारे नेमकी कोणत्या घटकात किती रक्कम वसूल झाली याच्या
-// तपशीलासह. घरपट्टी व पाणीपट्टी आता दोन स्वतंत्र पावती-मालिका (receipt_type)
-// असल्याने cumulative वाटप प्रत्येक (property, receipt_type) जोडीसाठी
-// वेगळे काढतो - एका गटाची पावती दुसऱ्या गटाच्या बाकीला स्पर्श करत नाही.
+// तपशीलासह. कर जमा भरणे आता कोड-निहाय (एका कोडखालील सर्व मालमत्तांची बाकी
+// एकत्रित) चालते, त्यामुळे cumulative वाटपही (property_code, receipt_type)
+// जोडीसाठी - त्या कोडखालील *कोणत्याही* मालमत्तेवर नोंदलेल्या पावत्या मिळून -
+// काढतो, फक्त ज्या मालमत्तेवर पावती प्रत्यक्ष नोंदली तिच्यापुरते मर्यादित न ठेवता.
 router.get('/payment-receipts', async (req, res) => {
   const yearId = req.query.yearId;
   if (!yearId) return res.status(400).json({ error: 'yearId is required' });
@@ -204,55 +205,61 @@ router.get('/payment-receipts', async (req, res) => {
   );
   if (wantedPayments.length === 0) return res.json([]);
 
-  const propertyIds = [...new Set(wantedPayments.map((p) => p.property_id))];
+  const propertyCodes = [...new Set(wantedPayments.map((p) => p.property_code).filter((c) => c != null))];
 
-  // वाटप बरोबर येण्यासाठी - एखाद्या मालमत्तेच्या पूर्वीच्या वर्षांतही
-  // पावत्या असू शकतात, त्यामुळे प्रत्येक मालमत्तेच्या *सर्व* पावत्या
-  // (कोणत्याही वर्षातील) कालक्रमाने घेऊन cumulative वाटप काढतो, आणि
-  // त्यातून फक्त या वर्षातल्या पावत्यांचे वाटप दाखवतो. की = property_id|receipt_type.
+  // वाटप बरोबर येण्यासाठी - एखाद्या कोडखालील मालमत्तांना पूर्वीच्या
+  // वर्षांतही पावत्या असू शकतात, त्यामुळे त्या कोडच्या *सर्व* पावत्या
+  // (कोणत्याही मालमत्तेवरील, कोणत्याही वर्षातील) कालक्रमाने घेऊन cumulative
+  // वाटप काढतो, आणि त्यातून फक्त या वर्षातल्या पावत्यांचे वाटप दाखवतो.
   const [allPayments] = await pool.query(
-    `SELECT id, property_id, receipt_type, payment_date, amount FROM tax_payments
-     WHERE property_id IN (?) ORDER BY payment_date, id`,
-    [propertyIds]
+    `SELECT p.id, p.receipt_type, p.payment_date, p.amount, pm.property_code
+     FROM tax_payments p
+     JOIN property_master pm ON pm.id = p.property_id
+     WHERE pm.property_code IN (?) ORDER BY p.payment_date, p.id`,
+    [propertyCodes]
   );
   const allByGroup = new Map();
   for (const p of allPayments) {
-    const key = `${p.property_id}|${p.receipt_type}`;
+    const key = `${p.property_code}|${p.receipt_type}`;
     if (!allByGroup.has(key)) allByGroup.set(key, []);
     allByGroup.get(key).push(p);
   }
   const wantedIds = new Set(wantedPayments.map((p) => p.id));
   const detailsById = new Map(wantedPayments.map((p) => [p.id, p]));
-  const duesByProperty = new Map();
+  const contextByCode = new Map();
 
   const receipts = [];
   for (const [key, groupPayments] of allByGroup) {
-    const [propertyIdStr, receiptType] = key.split('|');
-    const propertyId = Number(propertyIdStr);
-    const order = GROUP_ORDER_BY_TYPE[receiptType];
-    if (!duesByProperty.has(propertyId)) {
-      duesByProperty.set(propertyId, (await getDueBreakdownForProperty(pool, propertyId, yearId)).row);
+    const [propertyCodeStr, receiptType] = key.split('|');
+    const baseOrder = GROUP_ORDER_BY_TYPE[receiptType];
+    if (!contextByCode.has(propertyCodeStr)) {
+      const { portions } = await getDueBreakdownForCode(pool, propertyCodeStr, yearId);
+      contextByCode.set(propertyCodeStr, portions);
     }
-    const dues = duesByProperty.get(propertyId);
+    const portions = contextByCode.get(propertyCodeStr);
+    const { dues, order } = explodeDuesByPortion(portions, baseOrder);
 
     let cumulative = 0;
     for (const p of groupPayments) {
-      const before = allocate(dues || {}, cumulative, order);
-      const after = allocate(dues || {}, cumulative + Number(p.amount), order);
+      const before = allocate(dues, cumulative, order);
+      const after = allocate(dues, cumulative + Number(p.amount), order);
       cumulative += Number(p.amount);
 
-      if (!wantedIds.has(p.id)) continue; // this property has payments outside the requested year too
-      const covered = {};
+      if (!wantedIds.has(p.id)) continue; // this code has payments outside the requested year too
+      const coveredExploded = {};
       for (const compKey of Object.keys(after.paid)) {
-        covered[compKey] = round2(after.paid[compKey] - before.paid[compKey]);
+        coveredExploded[compKey] = round2(after.paid[compKey] - before.paid[compKey]);
       }
-      // येणे बाकी (हेड प्रमाणे) - या पावतीनंतर उरलेली बाकी, मागील+चालू
-      // दोन्ही एकत्र करून त्या receipt_type च्या घटकांसाठी.
+      const { paid: covered, balance: fullBalance } = collapseByComponent(
+        { paid: coveredExploded, balance: after.balance }, baseOrder
+      );
+      // येणे बाकी (हेड प्रमाणे) - या पावतीनंतर उरलेली बाकी (संपूर्ण कोडची,
+      // मागील+चालू दोन्ही एकत्र) त्या receipt_type च्या घटकांसाठी.
       const remaining = {};
       const remainingComponents = receiptType === 'panipatti' ? ['panipatti'] : ['gharpatti', 'divabatti', 'arogya'];
       for (const component of remainingComponents) {
         remaining[`remaining_${component}`] = round2(
-          (after.balance[`previous_${component}`] || 0) + (after.balance[`current_${component}`] || 0)
+          (fullBalance[`previous_${component}`] || 0) + (fullBalance[`current_${component}`] || 0)
         );
       }
       const detail = detailsById.get(p.id);

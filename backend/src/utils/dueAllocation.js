@@ -54,7 +54,46 @@ function sumAllocation(alloc, order = ALLOCATION_ORDER) {
 // वारंवार if/else लिहावे लागू नये म्हणून.
 const GROUP_ORDER_BY_TYPE = { gharpatti: GHARPATTI_GROUP_ORDER, panipatti: PANIPATTI_GROUP_ORDER };
 
+// एका कोडखाली अनेक मालमत्ता (portions) असतील तर त्या सर्वांची बाकी
+// एकत्रित करून, "प्रत्येक घटकासाठी आधी सर्व मागील मालमत्तांचे मागील बाकी,
+// मग सर्वांचे चालू" या क्रमाने - पण कोणती नेमकी मालमत्ता आधी भरली गेली हे
+// (क्रमाने वसुल) ठरवण्यासाठी - प्रत्येक (घटक, मालमत्ता) जोडीला स्वतंत्र की
+// देऊन allocate() लाच (न बदलता) चालवतो. एकाच मालमत्तेचा कोड असेल तर हे
+// जुन्या प्रति-मालमत्ता वागणुकीशी आपसूक जुळते (फक्त एकच मालमत्ता=एकच की गट).
+// portions: मालमत्ता क्रं. नुसार क्रमवार याद्या (त्याच क्रमाने वसुल होते).
+function explodeDuesByPortion(portions, baseOrder) {
+  const dues = {};
+  const order = [];
+  for (const component of baseOrder) {
+    for (const portion of portions) {
+      const key = `${component}::${portion.property_id}`;
+      dues[key] = portion[component];
+      order.push(key);
+    }
+  }
+  return { dues, order };
+}
+
+// exploded allocate() च्या paid/balance मधील "component::propertyId" की
+// पुन्हा साध्या component-निहाय बेरजेत (सर्व मालमत्ता मिळून) आणते - due-summary
+// सारख्या ठिकाणी जिथे फक्त एकत्रित आकडे दाखवायचे असतात तिथे वापरतो.
+function collapseByComponent(alloc, baseOrder) {
+  const paid = {};
+  const balance = {};
+  for (const component of baseOrder) {
+    paid[component] = round2(
+      Object.keys(alloc.paid || {}).filter((k) => k.startsWith(`${component}::`))
+        .reduce((s, k) => s + alloc.paid[k], 0)
+    );
+    balance[component] = round2(
+      Object.keys(alloc.balance || {}).filter((k) => k.startsWith(`${component}::`))
+        .reduce((s, k) => s + alloc.balance[k], 0)
+    );
+  }
+  return { paid, balance, unallocated: alloc.unallocated };
+}
+
 module.exports = {
   ALLOCATION_ORDER, GHARPATTI_GROUP_ORDER, PANIPATTI_GROUP_ORDER, GROUP_ORDER_BY_TYPE,
-  allocate, sumDue, sumAllocation, round2,
+  allocate, sumDue, sumAllocation, round2, explodeDuesByPortion, collapseByComponent,
 };

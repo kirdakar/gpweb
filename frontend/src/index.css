@@ -177,6 +177,22 @@ tbody tr:hover { background: #f8fafc; }
 
 .combo-wrap { position: relative; flex: 1; max-width: 480px; }
 .combo-wrap input { max-width: none; width: 100%; }
+.combo-clear-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.combo-clear-btn:hover { background: #e2e8f0; color: var(--text); }
 .combo-dropdown {
   position: absolute;
   z-index: 20;
