@@ -77,6 +77,29 @@ async function getDueBreakdownForCode(pool, propertyCode, yearId) {
   return { year, portions: withOwnerNameFallback(portions) };
 }
 
+// एका कोडखालील सर्व मालमत्तांच्या (निवडलेल्या वर्षापर्यंतच्या) प्रत्येक
+// वर्षाची स्वतंत्र (pre-summed नव्हे) आकारणी नोंद - "मागील बाकी/चालू
+// बाकी/जमा" चा वर्षवार-मालमत्तावार-हेडवार तपशील दाखवण्यासाठी
+// (पहा dueAllocation.js getDetailedAllocationRows).
+async function getYearWiseDueRowsForCode(pool, propertyCode, yearId) {
+  const [[year]] = await pool.query('SELECT * FROM financial_years WHERE id = ?', [yearId]);
+  if (!year) return { year: null, rows: [] };
+
+  const [rows] = await pool.query(
+    `SELECT pm.id AS property_id, pm.malmata_no,
+            fy.id AS financial_year_id, fy.year_label,
+            COALESCE(a.gharpatti, 0) AS gharpatti, COALESCE(a.divabatti, 0) AS divabatti,
+            COALESCE(a.arogya, 0) AS arogya, COALESCE(a.panipatti, 0) AS panipatti
+     FROM property_master pm
+     JOIN property_tax_assessment a ON a.property_id = pm.id
+     JOIN financial_years fy ON fy.id = a.financial_year_id
+     WHERE pm.property_code = ? AND fy.year_label <= ?
+     ORDER BY pm.malmata_no, pm.id, fy.year_label`,
+    [propertyCode, year.year_label]
+  );
+  return { year, rows };
+}
+
 // कोडखालील सर्व मालमत्तांवर (कोणत्याही property_id वर) नोंदलेल्या त्याच
 // receipt_type च्या पावत्यांची एकत्रित बेरीज.
 async function getTotalPaidForCode(pool, propertyCode, receiptType) {
@@ -178,7 +201,7 @@ async function getCombinedAllocation(pool, propertyId, dues, { totalPaidGharpatt
 }
 
 module.exports = {
-  getDueBreakdownForProperty, getDueBreakdownForCode, getDueBreakdownBulk,
+  getDueBreakdownForProperty, getDueBreakdownForCode, getYearWiseDueRowsForCode, getDueBreakdownBulk,
   getTotalPaid, getTotalPaidForCode, getTotalPaidBulk,
   combineGroupAllocations, getCombinedAllocation,
 };

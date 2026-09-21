@@ -4,10 +4,10 @@ const { requireAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/permissions');
 const {
   allocate, sumDue, round2, GROUP_ORDER_BY_TYPE, GHARPATTI_GROUP_ORDER, PANIPATTI_GROUP_ORDER,
-  explodeDuesByPortion, collapseByComponent,
+  explodeDuesByPortion, collapseByComponent, getDetailedAllocationRows,
 } = require('../utils/dueAllocation');
 const {
-  getDueBreakdownForProperty, getDueBreakdownForCode, getTotalPaid, getTotalPaidForCode,
+  getDueBreakdownForProperty, getDueBreakdownForCode, getYearWiseDueRowsForCode, getTotalPaid, getTotalPaidForCode,
   getDueBreakdownBulk, getTotalPaidBulk, getCombinedAllocation,
 } = require('../utils/dueBreakdown');
 
@@ -131,6 +131,29 @@ router.get('/due-summary', async (req, res) => {
     balance_by_component: balance,
     history,
   });
+});
+
+// "मागील बाकी (देय)"/"चालू वर्ष (देय)"/"आजवर जमा (वसूल)" या due-summary
+// मधील एकत्रित आकड्यांचा तपशील - वर्षवार, मालमत्ता क्रं.-वार, हेड-वार
+// (पहा dueAllocation.js getDetailedAllocationRows). "जमा" रकमेचा वर्षनिहाय
+// वाटा हा गृहीतकावर आधारित आहे - सर्वात जुने वर्ष आधी भरले जाते (त्याच
+// FIFO क्रमाचा विस्तार), पण त्या गृहीतकाखालीही घटक/मालमत्तानिहाय बेरीज
+// due-summary शी नेहमी तंतोतंत जुळते.
+router.get('/due-detail', async (req, res) => {
+  const { propertyCode, yearId, receiptType } = req.query;
+  if (!propertyCode || !yearId) return res.status(400).json({ error: 'propertyCode and yearId are required' });
+  assertReceiptType(receiptType);
+
+  const { year, portions } = await getDueBreakdownForCode(pool, propertyCode, yearId);
+  if (!year) return res.status(404).json({ error: 'Financial year not found' });
+  if (portions.length === 0) return res.status(404).json({ error: 'Property not found' });
+
+  const { rows: yearRows } = await getYearWiseDueRowsForCode(pool, propertyCode, yearId);
+  const totalPaid = await getTotalPaidForCode(pool, propertyCode, receiptType);
+  const baseOrder = GROUP_ORDER_BY_TYPE[receiptType];
+  const detail = getDetailedAllocationRows(portions, yearRows, baseOrder, { id: Number(yearId), year_label: year.year_label }, totalPaid);
+
+  res.json({ year, detail });
 });
 
 // कर मागणी बिल (नमुना ९ क) "सर्व बिले एकदम तयार करा" साठी - due-summary

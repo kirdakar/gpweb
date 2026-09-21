@@ -78,6 +78,7 @@ export default function PaymentEntry() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [displayedReceipt, setDisplayedReceipt] = useState(null); // नुकतीच तयार केलेली किंवा इतिहासातून पुन्हा उघडलेली पावती
+  const [detailModal, setDetailModal] = useState(null); // मागील बाकी/चालू बाकी/जमा चा वर्षवार-मालमत्तावार-हेडवार तपशील
 
   useEffect(() => {
     client.get('/properties', { params: { page: 1, pageSize: 5000, yearId } }).then(({ data }) => setRows(data.data));
@@ -204,6 +205,27 @@ export default function PaymentEntry() {
     }
   }
 
+  // मागील बाकी (देय)/चालू वर्ष (देय)/आजवर जमा (वसूल) या एकत्रित आकड्यांचे
+  // वर्षवार, मालमत्ता क्रं.-वार, हेड-वार तपशील (पहा backend /due-detail).
+  const DETAIL_TITLES = { previous: 'मागील बाकी (देय) - तपशील', current: 'चालू वर्ष (देय) - तपशील', paid: 'आजवर जमा (वसूल) - तपशील' };
+  async function openDetail(kind) {
+    setError('');
+    try {
+      const { data } = await client.get('/payments/due-detail', {
+        params: { propertyCode: summary.property.property_code, yearId, receiptType },
+      });
+      const rows = data.detail
+        .filter((r) => (kind === 'previous' ? !r.is_current : kind === 'current' ? r.is_current : Number(r.paid) > 0))
+        .map((r) => ({ ...r, amount: kind === 'paid' ? Number(r.paid) : Number(r.due) }))
+        .filter((r) => r.amount > 0)
+        .sort((a, b) => (a.year_label !== b.year_label ? a.year_label.localeCompare(b.year_label)
+          : a.malmata_no !== b.malmata_no ? String(a.malmata_no).localeCompare(String(b.malmata_no)) : 0));
+      setDetailModal({ kind, title: DETAIL_TITLES[kind], rows });
+    } catch (err) {
+      setError(err.response?.data?.error || 'तपशील आणताना त्रुटी आली');
+    }
+  }
+
   const components = GROUP_COMPONENTS[receiptType];
   const extraFields = EXTRA_FIELDS[receiptType];
 
@@ -283,17 +305,17 @@ export default function PaymentEntry() {
                 </thead>
                 <tbody>
                   <tr>
-                    <td>मागील बाकी (देय)</td>
+                    <td>मागील बाकी (देय) <button type="button" className="detail-btn" onClick={() => openDetail('previous')}>तपशील</button></td>
                     {components.map((c) => <td key={c.key} className="num">{Number(summary.property[`previous_${c.key}`] || 0).toFixed(2)}</td>)}
                     <td className="num">{components.reduce((s, c) => s + Number(summary.property[`previous_${c.key}`] || 0), 0).toFixed(2)}</td>
                   </tr>
                   <tr>
-                    <td>चालू वर्ष (देय)</td>
+                    <td>चालू वर्ष (देय) <button type="button" className="detail-btn" onClick={() => openDetail('current')}>तपशील</button></td>
                     {components.map((c) => <td key={c.key} className="num">{Number(summary.property[`current_${c.key}`] || 0).toFixed(2)}</td>)}
                     <td className="num">{components.reduce((s, c) => s + Number(summary.property[`current_${c.key}`] || 0), 0).toFixed(2)}</td>
                   </tr>
                   <tr style={{ color: 'var(--success)' }}>
-                    <td>आजवर जमा (वसूल)</td>
+                    <td>आजवर जमा (वसूल) <button type="button" className="detail-btn" onClick={() => openDetail('paid')}>तपशील</button></td>
                     {components.map((c) => (
                       <td key={c.key} className="num">
                         {(Number(summary.paid_by_component[`previous_${c.key}`] || 0) + Number(summary.paid_by_component[`current_${c.key}`] || 0)).toFixed(2)}
@@ -407,8 +429,48 @@ export default function PaymentEntry() {
               </table>
             </div>
           </div>
+
+          {detailModal && (
+            <DueDetailModal modal={detailModal} components={components} onClose={() => setDetailModal(null)} />
+          )}
         </>
       )}
+    </div>
+  );
+}
+
+// मागील बाकी (देय)/चालू वर्ष (देय)/आजवर जमा (वसूल) चा वर्षवार-मालमत्तावार-
+// हेडवार तपशील (कोडखाली अनेक मालमत्ता/मागील अनेक वर्षे एकत्रित असल्याने
+// नेमकी कोणत्या वर्षाची/मालमत्तेची/हेडची रक्कम आहे हे इथे उघड होते).
+function DueDetailModal({ modal, components, onClose }) {
+  const total = modal.rows.reduce((s, r) => s + r.amount, 0);
+  return (
+    <div className="modal-overlay no-print" onMouseDown={onClose}>
+      <div className="modal-box" onMouseDown={(e) => e.stopPropagation()}>
+        <h3>{modal.title}</h3>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr><th>वर्ष</th><th>मालमत्ता क्र.</th><th>हेड</th><th className="num">रक्कम</th></tr>
+            </thead>
+            <tbody>
+              {modal.rows.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.year_label}</td>
+                  <td>{r.malmata_no}</td>
+                  <td>{components.find((c) => c.key === r.component)?.label || r.component}</td>
+                  <td className="num">{r.amount.toFixed(2)}</td>
+                </tr>
+              ))}
+              {modal.rows.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center' }}>तपशील उपलब्ध नाही</td></tr>}
+              <tr className="total-row"><td colSpan={3}>एकूण</td><td className="num">{total.toFixed(2)}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style={{ marginTop: 14, textAlign: 'right' }}>
+          <button className="btn secondary" type="button" onClick={onClose}>बंद करा</button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -93,7 +93,69 @@ function collapseByComponent(alloc, baseOrder) {
   return { paid, balance, unallocated: alloc.unallocated };
 }
 
+// "मागील बाकी"/"चालू बाकी"/"जमा" या एकत्रित आकड्यांचा वर्षवार, मालमत्ता
+// क्रं.-वार, हेड-वार तपशील दाखवण्यासाठी - previous_X (मालमत्तानिहाय
+// एकत्रित बाकी) चा प्रत्येक घटक त्या मालमत्तेच्या वैयक्तिक मागील वर्षांमध्ये
+// (जुने वर्ष आधी) फोडतो, त्याच क्रमांकाच्या जागी टाकून (allocate() च्या
+// एकंदर क्रमात previous_X::propertyId ऐवजी previous_X::propertyId::yearId
+// अशा क्रमवार उप-नोंदी) - त्यामुळे त्याच totalPaid वर चालवल्यास त्या
+// मालमत्तेपुरता/घटकापुरता एकूण paid/balance पहिल्यासारखाच राहतो, फक्त तो
+// नेमक्या कोणत्या वर्षात मोजला गेला हे अतिरिक्त कळते.
+// yearRows: getDueBreakdownForCode च्या यादीसारख्याच स्वरूपाचे, पण प्रत्येक
+// मालमत्तेच्या प्रत्येक (निवडलेल्या वर्षापर्यंतच्या) वर्षाची स्वतंत्र नोंद.
+function buildYearWiseDetail(portions, yearRows, baseOrder, selectedYear) {
+  const dues = {};
+  const order = [];
+  const meta = {};
+  for (const componentKey of baseOrder) {
+    const isPrevious = componentKey.startsWith('previous_');
+    const component = componentKey.slice(componentKey.indexOf('_') + 1);
+    for (const portion of portions) {
+      if (isPrevious) {
+        const yearsForPortion = yearRows
+          .filter((r) => r.property_id === portion.property_id && r.year_label < selectedYear.year_label)
+          .slice()
+          .sort((a, b) => (a.year_label < b.year_label ? -1 : a.year_label > b.year_label ? 1 : 0));
+        for (const yr of yearsForPortion) {
+          const key = `${componentKey}::${portion.property_id}::${yr.financial_year_id}`;
+          dues[key] = yr[component];
+          order.push(key);
+          meta[key] = {
+            component, property_id: portion.property_id, malmata_no: portion.malmata_no,
+            financial_year_id: yr.financial_year_id, year_label: yr.year_label, is_current: false,
+          };
+        }
+      } else {
+        const key = `${componentKey}::${portion.property_id}`;
+        dues[key] = portion[componentKey];
+        order.push(key);
+        meta[key] = {
+          component, property_id: portion.property_id, malmata_no: portion.malmata_no,
+          financial_year_id: selectedYear.id, year_label: selectedYear.year_label, is_current: true,
+        };
+      }
+    }
+  }
+  return { dues, order, meta };
+}
+
+// वरील exploded allocation चालवून, सपाट (flat) यादी परत देतो - प्रत्येक
+// (घटक, मालमत्ता, वर्ष) साठी देय/जमा/बाकी - due-detail राऊटसाठी.
+function getDetailedAllocationRows(portions, yearRows, baseOrder, selectedYear, totalPaid) {
+  const { dues, order, meta } = buildYearWiseDetail(portions, yearRows, baseOrder, selectedYear);
+  const alloc = allocate(dues, totalPaid, order);
+  return order
+    .map((key) => ({
+      ...meta[key],
+      due: round2(dues[key]),
+      paid: round2(alloc.paid[key]),
+      balance: round2(alloc.balance[key]),
+    }))
+    .filter((r) => r.due !== 0 || r.paid !== 0);
+}
+
 module.exports = {
   ALLOCATION_ORDER, GHARPATTI_GROUP_ORDER, PANIPATTI_GROUP_ORDER, GROUP_ORDER_BY_TYPE,
   allocate, sumDue, sumAllocation, round2, explodeDuesByPortion, collapseByComponent,
+  getDetailedAllocationRows,
 };
