@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
@@ -21,6 +21,21 @@ export default function TaxDemandReport() {
       .then(({ data }) => setMatches(data.data));
   }, [debouncedSearch, yearId]);
 
+  // शोध निकाल कोड नंबरवर ग्रुप करून दाखवतो - एका कोडखाली अनेक मालमत्ता
+  // असल्या तरी नाव एकदाच दिसावे (डबल-डबल नांवे नकोत); हे बिलही कोडनिहायच
+  // (सर्व मालमत्ता एकत्र) तयार होते.
+  const matchGroups = useMemo(() => {
+    const map = new Map();
+    for (const m of matches) {
+      if (m.property_code == null) continue;
+      if (!map.has(m.property_code)) {
+        map.set(m.property_code, { property_code: m.property_code, owner_name: m.owner_name, malmata_nos: [] });
+      }
+      map.get(m.property_code).malmata_nos.push(m.malmata_no);
+    }
+    return [...map.values()];
+  }, [matches]);
+
   async function loadForCode(value) {
     setCode(value);
     setPortions(null);
@@ -32,6 +47,13 @@ export default function TaxDemandReport() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function clearSearch() {
+    setSearch('');
+    setMatches([]);
+    setCode('');
+    setPortions(null);
   }
 
   const yearLabel = years.find((y) => y.id === yearId)?.year_label || '';
@@ -51,19 +73,20 @@ export default function TaxDemandReport() {
       </div>
 
       <div className="card no-print" style={{ marginBottom: 20 }}>
-        <div className="search-bar" style={{ marginBottom: matches.length ? 12 : 0 }}>
+        <div className="search-bar" style={{ marginBottom: matchGroups.length ? 12 : 0 }}>
           <input placeholder="मालकाचे नाव किंवा कोड टाइप करा (शोध आपोआप होतो)" value={search} onChange={(e) => setSearch(e.target.value)} />
           <input placeholder="किंवा थेट कोड टाका" value={code} onChange={(e) => loadForCode(e.target.value)} style={{ width: 200, padding: 8, border: '1px solid var(--border)', borderRadius: 6 }} />
+          <button className="btn secondary" type="button" onClick={clearSearch} disabled={!search && !code && !portions}>शोध क्लिअर करा</button>
         </div>
-        {matches.length > 0 && (
+        {matchGroups.length > 0 && (
           <div className="table-wrap">
             <table>
               <thead><tr><th>कोड</th><th>मालमत्ता क्र.</th><th>मालकाचे नाव</th><th></th></tr></thead>
               <tbody>
-                {matches.map((m) => (
-                  <tr key={m.id}>
-                    <td>{m.property_code}</td><td>{m.malmata_no}</td><td>{m.owner_name}</td>
-                    <td><button className="btn small" onClick={() => loadForCode(m.property_code)}>निवडा</button></td>
+                {matchGroups.map((g) => (
+                  <tr key={g.property_code}>
+                    <td>{g.property_code}</td><td>{g.malmata_nos.join(', ')}</td><td>{g.owner_name}</td>
+                    <td><button className="btn small" onClick={() => loadForCode(g.property_code)}>निवडा</button></td>
                   </tr>
                 ))}
               </tbody>

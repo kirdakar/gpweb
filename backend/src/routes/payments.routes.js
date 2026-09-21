@@ -4,11 +4,11 @@ const { requireAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/permissions');
 const {
   allocate, sumDue, round2, GROUP_ORDER_BY_TYPE, GHARPATTI_GROUP_ORDER, PANIPATTI_GROUP_ORDER,
-  explodeDuesByPortion, collapseByComponent, getDetailedAllocationRows,
+  explodeDuesByPortion, collapseByComponent, collapseByComponentForProperty, getDetailedAllocationRows,
 } = require('../utils/dueAllocation');
 const {
   getDueBreakdownForProperty, getDueBreakdownForCode, getYearWiseDueRowsForCode, getTotalPaid, getTotalPaidForCode,
-  getDueBreakdownBulk, getTotalPaidBulk, getCombinedAllocation,
+  getDueBreakdownBulk, getTotalPaidBulk, getCombinedAllocationForProperty,
 } = require('../utils/dueBreakdown');
 
 const router = express.Router();
@@ -111,7 +111,7 @@ router.get('/due-summary', async (req, res) => {
   if (!year) return res.status(404).json({ error: 'Financial year not found' });
   if (!row) return res.status(404).json({ error: 'Property not found' });
 
-  const { paid, balance, unallocated } = await getCombinedAllocation(pool, propertyId, row);
+  const { paid, balance, unallocated } = await getCombinedAllocationForProperty(pool, propertyId, yearId);
   const totalPaid = await getTotalPaid(pool, propertyId);
   const totalDue = sumDue(row);
   const [history] = await pool.query(
@@ -173,25 +173,36 @@ router.get('/due-summary-bulk', async (req, res) => {
     getTotalPaidBulk(pool, propertyIds, 'gharpatti'),
     getTotalPaidBulk(pool, propertyIds, 'panipatti'),
   ]);
-  const summaries = rows.map((row) => {
-    const { balance } = getCombinedAllocationSync(row, paidMapG[row.property_id] || 0, paidMapP[row.property_id] || 0);
-    return { property: row, balance_by_component: balance };
-  });
+
+  // कोडखालील सर्व मालमत्तांची बाकी व पावत्या एकत्रित करून कोड-निहाय FIFO
+  // वाटप (कर जमा भरणे प्रमाणेच), मग त्यातून प्रत्येक मालमत्तेचा स्वतःचा वाटा
+  // काढतो - property-scoped totalPaid वापरणे चूक ठरेल, कारण पावती नेहमी
+  // कोडमधल्या पहिल्या/अँकर मालमत्तेवरच नोंदते (पहा
+  // dueAllocation.js collapseByComponentForProperty).
+  const byCode = new Map();
+  for (const r of rows) {
+    const key = r.property_code ?? `__${r.property_id}`;
+    if (!byCode.has(key)) byCode.set(key, []);
+    byCode.get(key).push(r);
+  }
+
+  const summaries = [];
+  for (const portions of byCode.values()) {
+    const totalPaidG = round2(portions.reduce((s, p) => s + (paidMapG[p.property_id] || 0), 0));
+    const totalPaidP = round2(portions.reduce((s, p) => s + (paidMapP[p.property_id] || 0), 0));
+    const gExploded = explodeDuesByPortion(portions, GHARPATTI_GROUP_ORDER);
+    const pExploded = explodeDuesByPortion(portions, PANIPATTI_GROUP_ORDER);
+    const gAlloc = allocate(gExploded.dues, totalPaidG, gExploded.order);
+    const pAlloc = allocate(pExploded.dues, totalPaidP, pExploded.order);
+    for (const portion of portions) {
+      const { balance: gBalance } = collapseByComponentForProperty(gAlloc, GHARPATTI_GROUP_ORDER, portion.property_id);
+      const { balance: pBalance } = collapseByComponentForProperty(pAlloc, PANIPATTI_GROUP_ORDER, portion.property_id);
+      summaries.push({ property: portion, balance_by_component: { ...gBalance, ...pBalance } });
+    }
+  }
 
   res.json({ year, summaries });
 });
-
-// getCombinedAllocation (dueBreakdown.js) स्वतःच totalPaid आणते (DB कॉल) -
-// इथे bulk साठी आधीच आणलेले totals वापरायचे असल्याने समकालिक (sync) आवृत्ती.
-function getCombinedAllocationSync(dues, totalPaidGharpatti, totalPaidPanipatti) {
-  const gAlloc = allocate(dues, totalPaidGharpatti, GHARPATTI_GROUP_ORDER);
-  const pAlloc = allocate(dues, totalPaidPanipatti, PANIPATTI_GROUP_ORDER);
-  return {
-    paid: { ...gAlloc.paid, ...pAlloc.paid },
-    balance: { ...gAlloc.balance, ...pAlloc.balance },
-    unallocated: { gharpatti: gAlloc.unallocated, panipatti: pAlloc.unallocated },
-  };
-}
 
 router.get('/', async (req, res) => {
   const { propertyId } = req.query;

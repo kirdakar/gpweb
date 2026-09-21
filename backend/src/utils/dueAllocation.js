@@ -93,6 +93,23 @@ function collapseByComponent(alloc, baseOrder) {
   return { paid, balance, unallocated: alloc.unallocated };
 }
 
+// collapseByComponent प्रमाणेच, पण कोडमधल्या सर्व मालमत्ता मिळून बेरीज न
+// करता एकाच specific मालमत्तेपुरता (property::propertyId) घटकनिहाय वाटा -
+// नमुना ९ क सारख्या प्रति-मालमत्ता (प्रति-घर क्रं.) बिलासाठी - तिथे प्रत्येक
+// मालमत्तेचे स्वतःचे बिल दाखवायचे असले तरी, त्याची उरलेली बाकी कोडमधल्या
+// इतर मालमत्तांवर नोंदलेल्या (एकाच कोडवरील) पावत्या गृहीत धरूनच काढावी
+// लागते (कारण पावती नेहमी कोडमधल्या पहिल्या/अँकर मालमत्तेवरच नोंदते).
+function collapseByComponentForProperty(alloc, baseOrder, propertyId) {
+  const paid = {};
+  const balance = {};
+  for (const component of baseOrder) {
+    const key = `${component}::${propertyId}`;
+    paid[component] = round2((alloc.paid || {})[key] || 0);
+    balance[component] = round2((alloc.balance || {})[key] || 0);
+  }
+  return { paid, balance, unallocated: alloc.unallocated };
+}
+
 // "मागील बाकी"/"चालू बाकी"/"जमा" या एकत्रित आकड्यांचा वर्षवार, मालमत्ता
 // क्रं.-वार, हेड-वार तपशील दाखवण्यासाठी - previous_X (मालमत्तानिहाय
 // एकत्रित बाकी) चा प्रत्येक घटक त्या मालमत्तेच्या वैयक्तिक मागील वर्षांमध्ये
@@ -157,5 +174,5 @@ function getDetailedAllocationRows(portions, yearRows, baseOrder, selectedYear, 
 module.exports = {
   ALLOCATION_ORDER, GHARPATTI_GROUP_ORDER, PANIPATTI_GROUP_ORDER, GROUP_ORDER_BY_TYPE,
   allocate, sumDue, sumAllocation, round2, explodeDuesByPortion, collapseByComponent,
-  getDetailedAllocationRows,
+  collapseByComponentForProperty, getDetailedAllocationRows,
 };

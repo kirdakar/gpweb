@@ -105,11 +105,8 @@ export default function TaxDemandBillReport() {
   const { can } = usePermissions();
   const [rows, setRows] = useState([]);
   const [settings, setSettings] = useState({ gp_name: '', taluka: '', district: '' });
-  const [selectedId, setSelectedId] = useState('');
   const [search, setSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [periodText, setPeriodText] = useState('');
   const [billNo, setBillNo] = useState('1');
   const [billDate, setBillDate] = useState(() => {
@@ -145,15 +142,29 @@ export default function TaxDemandBillReport() {
     client.get('/properties', { params: { page: 1, pageSize: 5000 } }).then(({ data }) => setRows(data.data));
   }, [yearId]);
 
+  // शोधा कंबोमध्ये कोड नंबरवर ग्रुप करून दाखवतो - एका कोडखाली अनेक मालमत्ता
+  // (portions) असल्या तरी मालकाचे नाव एकदाच दिसावे (डबल-डबल नांवे नकोत).
+  const codeOptions = useMemo(() => {
+    const map = new Map();
+    for (const r of rows) {
+      if (r.property_code == null) continue;
+      if (!map.has(r.property_code)) {
+        map.set(r.property_code, { property_code: r.property_code, owner_name: r.owner_name, malmata_nos: [] });
+      }
+      map.get(r.property_code).malmata_nos.push(r.malmata_no);
+    }
+    return [...map.values()].sort((a, b) => a.property_code - b.property_code);
+  }, [rows]);
+
   const searchTerm = search.trim().toLowerCase();
   const searchResults = useMemo(() => {
-    if (!searchTerm) return rows;
-    return rows.filter((r) =>
-      (r.owner_name || '').toLowerCase().includes(searchTerm) ||
-      String(r.malmata_no || '').toLowerCase().includes(searchTerm) ||
-      String(r.property_code ?? '').includes(searchTerm)
+    if (!searchTerm) return codeOptions;
+    return codeOptions.filter((o) =>
+      (o.owner_name || '').toLowerCase().includes(searchTerm) ||
+      o.malmata_nos.some((m) => String(m || '').toLowerCase().includes(searchTerm)) ||
+      String(o.property_code).includes(searchTerm)
     );
-  }, [rows, searchTerm]);
+  }, [codeOptions, searchTerm]);
 
   const codeNums = useMemo(() => rows.filter((r) => r.property_code != null).map((r) => Number(r.property_code)).filter(Number.isFinite), [rows]);
   const minCode = codeNums.length ? Math.min(...codeNums) : '';
@@ -190,26 +201,23 @@ export default function TaxDemandBillReport() {
     return map;
   }, [visibleSummaries, billNo]);
 
-  function selectProperty(r) {
-    setSelectedId(r.id);
-    setSearch(`${r.property_code ?? '-'} / ${r.malmata_no ?? '-'} - ${r.owner_name}`);
+  // यादीतून एक कोड निवडला की त्या कोडखालील सर्व मालमत्तांची (portions)
+  // बिले एकदम तयार होतात (आधीच अस्तित्वात असलेल्या कोड-टप्पा यंत्रणेचाच
+  // एका कोडपुरता वापर) - वेगळी प्रति-मालमत्ता निवड करायची गरज नाही.
+  function selectCode(opt) {
+    setSearch('');
     setDropdownOpen(false);
+    setResultFilter('');
+    setGenerating(true);
+    ensureBulkSummaries().then(() => {
+      setRangeMode({ from: opt.property_code, to: opt.property_code });
+    }).finally(() => setGenerating(false));
   }
 
   function clearSearch() {
     setSearch('');
-    setSelectedId('');
-    setSummary(null);
     setDropdownOpen(false);
   }
-
-  useEffect(() => {
-    if (!selectedId || !yearId) { setSummary(null); return; }
-    setLoading(true);
-    client.get('/payments/due-summary', { params: { propertyId: selectedId, yearId } })
-      .then(({ data }) => setSummary(data))
-      .finally(() => setLoading(false));
-  }, [selectedId, yearId]);
 
   useEffect(() => {
     setBulkSummaries(null);
@@ -223,7 +231,7 @@ export default function TaxDemandBillReport() {
   }
 
   function handleShowAllBills() {
-    setSelectedId(''); setSearch(''); setSummary(null); setDropdownOpen(false);
+    setSearch(''); setDropdownOpen(false);
     setResultFilter('');
     setGenerating(true);
     ensureBulkSummaries().then((summaries) => {
@@ -236,7 +244,7 @@ export default function TaxDemandBillReport() {
 
   function handleRangeSubmit(e) {
     e.preventDefault();
-    setSelectedId(''); setSearch(''); setSummary(null); setDropdownOpen(false);
+    setSearch(''); setDropdownOpen(false);
     setResultFilter('');
     setGenerating(true);
     ensureBulkSummaries().then(() => {
@@ -261,7 +269,7 @@ export default function TaxDemandBillReport() {
             <select value={yearId || ''} onChange={(e) => setYearId(Number(e.target.value))}>
               {years.map((y) => <option key={y.id} value={y.id}>{y.year_label}</option>)}
             </select>
-            <button className="btn secondary" onClick={() => window.print()} disabled={(!summary && filteredSummaries.length === 0) || !can('reports_tax_demand_bill', 'print')}>प्रिंट</button>
+            <button className="btn secondary" onClick={() => window.print()} disabled={filteredSummaries.length === 0 || !can('reports_tax_demand_bill', 'print')}>प्रिंट</button>
             <CloseReportButton />
           </div>
         </div>
@@ -272,23 +280,33 @@ export default function TaxDemandBillReport() {
               <div className="combo-wrap">
                 <input
                   value={search}
-                  onChange={(e) => { setSearch(e.target.value); setSelectedId(''); setSummary(null); setDropdownOpen(true); }}
+                  onChange={(e) => { setSearch(e.target.value); setDropdownOpen(true); }}
                   onFocus={() => setDropdownOpen(true)}
-                  placeholder="कोड, मालमत्ता क्रं. किंवा नाव टाइप करा"
-                  style={{ width: '100%', padding: 8, border: '1px solid var(--border)', borderRadius: 6 }}
+                  placeholder="कोड, मालमत्ता क्रं. किंवा नाव टाइप करा - क्लिक केल्यावर संपूर्ण यादी दिसेल"
+                  style={{ width: '100%', padding: '8px 30px 8px 8px', border: '1px solid var(--border)', borderRadius: 6 }}
                 />
+                {search && (
+                  <button
+                    type="button"
+                    className="combo-clear-btn"
+                    title="शोध पुसा"
+                    onMouseDown={(e) => { e.preventDefault(); setSearch(''); setDropdownOpen(true); }}
+                  >
+                    ×
+                  </button>
+                )}
                 {dropdownOpen && (
                   <div className="combo-dropdown">
                     {searchResults.length === 0 && <div className="combo-empty">जुळणारी नोंद सापडली नाही</div>}
-                    {searchResults.map((r) => (
-                      <div key={r.id} className="combo-option" onMouseDown={() => selectProperty(r)}>
-                        {r.property_code ?? '-'} / {r.malmata_no ?? '-'} - {r.owner_name}
+                    {searchResults.map((o) => (
+                      <div key={o.property_code} className="combo-option" onMouseDown={() => selectCode(o)}>
+                        {o.property_code} - {o.owner_name} <span style={{ color: 'var(--text-muted)' }}>(मालमत्ता: {o.malmata_nos.join(', ')})</span>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-              <button className="btn secondary" type="button" onClick={clearSearch} disabled={!search && !selectedId}>शोध क्लिअर करा</button>
+              <button className="btn secondary" type="button" onClick={clearSearch} disabled={!search}>शोध क्लिअर करा</button>
               <input style={{ width: 100, padding: 8, border: '1px solid var(--border)', borderRadius: 6 }}
                 value={billNo} onChange={(e) => setBillNo(e.target.value)} placeholder="सुरुवातीचा नंबर" title="अनेक बिले तयार करताना प्रत्येक बिलाला हा आकडा सुरुवात धरून १, २, ३... असा वाढत जाणारा नंबर दिला जातो" />
               <input style={{ width: 120, padding: 8, border: '1px solid var(--border)', borderRadius: 6 }}
@@ -307,7 +325,7 @@ export default function TaxDemandBillReport() {
             </form>
           </>
         )}
-        {(loading || generating) && <p>{generating ? 'बिले तयार होत आहेत, कृपया थांबा...' : 'लोड होत आहे...'}</p>}
+        {generating && <p>बिले तयार होत आहेत, कृपया थांबा...</p>}
         {rangeMode && !generating && (
           <>
             <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
@@ -331,14 +349,6 @@ export default function TaxDemandBillReport() {
           </>
         )}
       </div>
-
-      {summary && (
-        <div className="a4-page bill-page">
-          <BillCopy summary={summary} settings={settings} periodText={periodText} billNo={billNo} billDate={billDate} />
-          <div className="bill-cut-line" />
-          <BillCopy summary={summary} settings={settings} periodText={periodText} billNo={billNo} billDate={billDate} />
-        </div>
-      )}
 
       {filteredSummaries.map((s) => (
         <div key={s.property.property_id} className="a4-page bill-page">

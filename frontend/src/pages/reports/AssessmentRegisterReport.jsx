@@ -118,7 +118,7 @@ export default function AssessmentRegisterReport() {
   const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState({ gp_name: '', taluka: '', district: '' });
   const [periodText, setPeriodText] = useState('');
-  const [selectedId, setSelectedId] = useState('');
+  const [selectedCode, setSelectedCode] = useState('');
   const [search, setSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   // rangeMode = {from, to} (अ.नं. range) when printing a batch/all pages;
@@ -142,7 +142,7 @@ export default function AssessmentRegisterReport() {
     if (!yearId) return;
     setLoading(true);
     setRangeMode(null);
-    setSelectedId('');
+    setSelectedCode('');
     client.get('/reports/assessment-register', { params: { yearId } })
       .then(({ data }) => setRows(data))
       .finally(() => setLoading(false));
@@ -158,26 +158,40 @@ export default function AssessmentRegisterReport() {
   // म्हणून साधा <select> ऐवजी हा कंबो (टाइप करा + यादीतून निवडा). काहीही
   // टाइप न करताच क्लिक/फोकस केल्यावरही संपूर्ण यादी दिसावी (खरा combobox
   // अनुभव) - dropdown आधीच स्क्रोल होणारा (max-height) असल्याने पूर्ण यादी
-  // दाखवली तरी अडचण नाही; टाइप केल्यावर ती फिल्टर होते.
+  // दाखवली तरी अडचण नाही; टाइप केल्यावर ती फिल्टर होते. कोड नंबरवर ग्रुप
+  // करून दाखवतो - एका कोडखाली अनेक मालमत्ता असल्या तरी नाव एकदाच दिसावे
+  // (डबल-डबल नांवे नकोत) - एक पान = एक कोड असल्याने हे नैसर्गिकपणे जुळते.
+  const codeOptions = useMemo(() => {
+    const map = new Map();
+    for (const r of rows) {
+      if (r.property_code == null) continue;
+      if (!map.has(r.property_code)) {
+        map.set(r.property_code, { property_code: r.property_code, owner_name: r.owner_name, malmata_nos: [] });
+      }
+      map.get(r.property_code).malmata_nos.push(r.malmata_no);
+    }
+    return [...map.values()].sort((a, b) => a.property_code - b.property_code);
+  }, [rows]);
+
   const searchTerm = search.trim().toLowerCase();
   const searchResults = useMemo(() => {
-    if (!searchTerm) return rows;
-    return rows.filter((r) =>
-      (r.owner_name || '').toLowerCase().includes(searchTerm) ||
-      String(r.malmata_no || '').toLowerCase().includes(searchTerm) ||
-      String(r.property_code ?? '').includes(searchTerm)
+    if (!searchTerm) return codeOptions;
+    return codeOptions.filter((o) =>
+      (o.owner_name || '').toLowerCase().includes(searchTerm) ||
+      o.malmata_nos.some((m) => String(m || '').toLowerCase().includes(searchTerm)) ||
+      String(o.property_code).includes(searchTerm)
     );
-  }, [rows, searchTerm]);
+  }, [codeOptions, searchTerm]);
 
-  function selectProperty(r) {
-    setSelectedId(r.property_id);
-    setSearch(`${r.property_code ?? '-'} / ${r.malmata_no ?? '-'} - ${r.owner_name}`);
+  function selectCode(opt) {
+    setSelectedCode(opt.property_code);
+    setSearch(`${opt.property_code} - ${opt.owner_name}`);
     setDropdownOpen(false);
   }
 
   function clearSearch() {
     setSearch('');
-    setSelectedId('');
+    setSelectedCode('');
     setDropdownOpen(false);
   }
 
@@ -193,12 +207,12 @@ export default function AssessmentRegisterReport() {
         const c = Number(p.property_code);
         return Number.isFinite(c) && c >= rangeMode.from && c <= rangeMode.to;
       })
-    : selectedId
-      ? pages.filter((p) => p.portions.some((r) => String(r.property_id) === String(selectedId)))
+    : selectedCode !== ''
+      ? pages.filter((p) => String(p.property_code) === String(selectedCode))
       : [];
 
   function applyRange(from, to) {
-    setSelectedId('');
+    setSelectedCode('');
     setSearch('');
     setGenerating(true);
     // "तयार होत आहेत" संदेश आधी दिसावा म्हणून जड टेबल-रेंडर एक क्षण पुढे ढकलतो.
@@ -247,23 +261,33 @@ export default function AssessmentRegisterReport() {
                   <div className="combo-wrap">
                     <input
                       value={search}
-                      onChange={(e) => { setSearch(e.target.value); setSelectedId(''); setDropdownOpen(true); }}
+                      onChange={(e) => { setSearch(e.target.value); setSelectedCode(''); setDropdownOpen(true); }}
                       onFocus={() => setDropdownOpen(true)}
-                      placeholder="कोड, मालमत्ता क्रं. किंवा नाव टाइप करा - एका मालमत्तेचे पान दिसेल"
-                      style={{ width: '100%', padding: 8, border: '1px solid var(--border)', borderRadius: 6 }}
+                      placeholder="कोड, मालमत्ता क्रं. किंवा नाव टाइप करा - त्या कोडचे पान दिसेल"
+                      style={{ width: '100%', padding: '8px 30px 8px 8px', border: '1px solid var(--border)', borderRadius: 6 }}
                     />
+                    {search && (
+                      <button
+                        type="button"
+                        className="combo-clear-btn"
+                        title="शोध पुसा"
+                        onMouseDown={(e) => { e.preventDefault(); setSearch(''); setDropdownOpen(true); }}
+                      >
+                        ×
+                      </button>
+                    )}
                     {dropdownOpen && (
                       <div className="combo-dropdown">
                         {searchResults.length === 0 && <div className="combo-empty">जुळणारी नोंद सापडली नाही</div>}
-                        {searchResults.map((r) => (
-                          <div key={r.property_id} className="combo-option" onMouseDown={() => selectProperty(r)}>
-                            {r.property_code ?? '-'} / {r.malmata_no ?? '-'} - {r.owner_name}
+                        {searchResults.map((o) => (
+                          <div key={o.property_code} className="combo-option" onMouseDown={() => selectCode(o)}>
+                            {o.property_code} - {o.owner_name} <span style={{ color: 'var(--text-muted)' }}>(मालमत्ता: {o.malmata_nos.join(', ')})</span>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-                  <button className="btn secondary" type="button" onClick={clearSearch} disabled={!search && !selectedId}>शोध क्लिअर करा</button>
+                  <button className="btn secondary" type="button" onClick={clearSearch} disabled={!search && selectedCode === ''}>शोध क्लिअर करा</button>
                 </div>
                 <form onSubmit={handleRangeSubmit} className="search-bar">
                   <span style={{ alignSelf: 'center', fontSize: 13, color: 'var(--text-muted)' }}>किंवा कोड टप्प्यात छापा:</span>

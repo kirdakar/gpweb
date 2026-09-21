@@ -25,10 +25,17 @@ const GROUPS = [
   { prefix: 'previous', label: 'जुनी' },
   { prefix: 'current', label: 'नविन' },
   { prefix: 'total', label: 'एकूण बाकी' },
+  { prefix: 'collected', label: 'जमा' },
+  { prefix: 'remaining', label: 'उर्वरित बाकी' },
 ];
 
 function fieldName(prefix, componentKey) {
-  return componentKey === 'due' ? `${prefix}_due` : `${prefix}_${componentKey}`;
+  if (componentKey === 'due') {
+    if (prefix === 'collected') return 'collected_amount';
+    if (prefix === 'remaining') return 'remaining_due';
+    return `${prefix}_due`;
+  }
+  return `${prefix}_${componentKey}`;
 }
 
 function emptyTotals() {
@@ -59,7 +66,6 @@ export default function OldNewComparisonReport() {
       if (!byCode.has(key)) {
         byCode.set(key, {
           property_code: r.property_code, owner_name: r.owner_name, malmataNos: [], sums: emptyTotals(),
-          collected: 0, remaining: 0,
         });
       }
       const g = byCode.get(key);
@@ -68,25 +74,19 @@ export default function OldNewComparisonReport() {
         const f = fieldName(gr.prefix, c.key);
         g.sums[f] += Number(r[f] || 0);
       }
-      g.collected += Number(r.collected_amount || 0);
-      g.remaining += Number(r.remaining_due || 0);
     }
     return [...byCode.values()];
   }, [rows]);
 
   const grandTotals = useMemo(() => {
     const t = emptyTotals();
-    let collected = 0;
-    let remaining = 0;
     for (const r of rows) {
       for (const gr of GROUPS) for (const c of COMPONENTS) {
         const f = fieldName(gr.prefix, c.key);
         t[f] += Number(r[f] || 0);
       }
-      collected += Number(r.collected_amount || 0);
-      remaining += Number(r.remaining_due || 0);
     }
-    return { ...t, collected, remaining };
+    return t;
   }, [rows]);
 
   return (
@@ -116,8 +116,6 @@ export default function OldNewComparisonReport() {
                 <th rowSpan={2}>कोड</th>
                 <th rowSpan={2} className="col-owner">मालकाचे नाव / मालमत्ता</th>
                 {GROUPS.map((g) => <th key={g.prefix} colSpan={5}>{g.label}</th>)}
-                <th rowSpan={2} className="num">जमा</th>
-                <th rowSpan={2} className="num">उर्वरित बाकी</th>
               </tr>
               <tr>
                 {GROUPS.map((g) => COMPONENTS.map((c) => (
@@ -137,13 +135,15 @@ export default function OldNewComparisonReport() {
                   </td>
                   {GROUPS.map((gr) => COMPONENTS.map((c) => {
                     const f = fieldName(gr.prefix, c.key);
-                    return <td key={f} className="num">{g.sums[f].toFixed(2)}</td>;
+                    return (
+                      <td key={f} className="num" style={gr.prefix === 'collected' ? { color: 'var(--success)' } : undefined}>
+                        {g.sums[f].toFixed(2)}
+                      </td>
+                    );
                   }))}
-                  <td className="num" style={{ color: 'var(--success)' }}>{g.collected.toFixed(2)}</td>
-                  <td className="num" style={{ fontWeight: 600 }}>{g.remaining.toFixed(2)}</td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={19} style={{ textAlign: 'center' }}>नोंदी नाहीत</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={27} style={{ textAlign: 'center' }}>नोंदी नाहीत</td></tr>}
             </tbody>
             {rows.length > 0 && (
               <tfoot>
@@ -152,8 +152,6 @@ export default function OldNewComparisonReport() {
                   {GROUPS.map((g) => COMPONENTS.map((c) => (
                     <td key={`${g.prefix}-${c.key}`} className="num">{grandTotals[fieldName(g.prefix, c.key)].toFixed(2)}</td>
                   )))}
-                  <td className="num">{grandTotals.collected.toFixed(2)}</td>
-                  <td className="num">{grandTotals.remaining.toFixed(2)}</td>
                 </tr>
               </tfoot>
             )}

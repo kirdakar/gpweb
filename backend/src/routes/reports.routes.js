@@ -2,7 +2,7 @@ const express = require('express');
 const pool = require('../config/db');
 const { requireAuth } = require('../middleware/auth');
 const { fallbackOwnerName, withOwnerNameFallback } = require('../utils/ownerName');
-const { allocate, round2, GROUP_ORDER_BY_TYPE, explodeDuesByPortion, collapseByComponent } = require('../utils/dueAllocation');
+const { allocate, round2, GROUP_ORDER_BY_TYPE, GHARPATTI_GROUP_ORDER, PANIPATTI_GROUP_ORDER, explodeDuesByPortion, collapseByComponent } = require('../utils/dueAllocation');
 const { getTotalPaidBulk, getDueBreakdownForCode } = require('../utils/dueBreakdown');
 
 const router = express.Router();
@@ -112,17 +112,64 @@ router.get('/old-new-comparison', async (req, res) => {
     total_due: Number(r.previous_due) + Number(r.current_due),
   }));
 
-  // जमा रक्कम (collected so far) आणि उर्वरित/येणे बाकी - प्रत्येक
-  // मालमत्तेसाठी आजवर भरलेल्या सर्व पावत्यांची बेरीज विरुद्ध एकूण देय.
-  const paidMap = await getTotalPaidBulk(pool, withTotals.map((r) => r.property_id));
-  const withPayments = withTotals.map((r) => {
-    const totalPaid = round2(paidMap[r.property_id] || 0);
-    return {
-      ...r,
-      collected_amount: totalPaid,
-      remaining_due: round2(Math.max(0, r.total_due - totalPaid)),
-    };
-  });
+  // जमा रक्कम (collected so far) आणि उर्वरित/येणे बाकी - कोडखालील सर्व
+  // मालमत्तांची (portions) बाकी व पावत्या एकत्रित करून, कर जमा भरणे
+  // स्क्रीनप्रमाणेच खरे कोड-निहाय FIFO वाटप (explodeDuesByPortion) वापरून
+  // (प्रति-मालमत्ता वेगळे allocate() करणे चूक ठरेल - पावती नेहमी कोडमधल्या
+  // पहिल्या मालमत्तेवर (anchor) नोंदते, त्यामुळे इतर मालमत्तांना दिसणारा
+  // वेगळा payment history नसतो). घटकनिहाय (हेडवाईज) परिणाम कोडमधल्या
+  // पहिल्या (अँकर) मालमत्तेच्या ओळीवर एकवार दाखवतो, बाकीच्या ओळींना ०
+  // (frontend कोडप्रमाणे बेरीज करतो, त्यामुळे दुहेरी मोजणी होत नाही).
+  const propertyIds = withTotals.map((r) => r.property_id);
+  const [paidMapG, paidMapP] = await Promise.all([
+    getTotalPaidBulk(pool, propertyIds, 'gharpatti'),
+    getTotalPaidBulk(pool, propertyIds, 'panipatti'),
+  ]);
+
+  const byCode = new Map();
+  for (const r of withTotals) {
+    const key = r.property_code ?? `__${r.property_id}`;
+    if (!byCode.has(key)) byCode.set(key, []);
+    byCode.get(key).push(r);
+  }
+
+  const byComponent = (map, key) => round2(Number(map[`previous_${key}`] || 0) + Number(map[`current_${key}`] || 0));
+  const zeroPayments = {
+    collected_gharpatti: 0, collected_divabatti: 0, collected_arogya: 0, collected_panipatti: 0, collected_amount: 0,
+    remaining_gharpatti: 0, remaining_divabatti: 0, remaining_arogya: 0, remaining_panipatti: 0, remaining_due: 0,
+  };
+
+  const withPayments = [];
+  for (const portions of byCode.values()) {
+    const totalPaidG = round2(portions.reduce((s, p) => s + (paidMapG[p.property_id] || 0), 0));
+    const totalPaidP = round2(portions.reduce((s, p) => s + (paidMapP[p.property_id] || 0), 0));
+
+    const gExploded = explodeDuesByPortion(portions, GHARPATTI_GROUP_ORDER);
+    const pExploded = explodeDuesByPortion(portions, PANIPATTI_GROUP_ORDER);
+    const { paid: gPaid, balance: gBalance } = collapseByComponent(allocate(gExploded.dues, totalPaidG, gExploded.order), GHARPATTI_GROUP_ORDER);
+    const { paid: pPaid, balance: pBalance } = collapseByComponent(allocate(pExploded.dues, totalPaidP, pExploded.order), PANIPATTI_GROUP_ORDER);
+    const paid = { ...gPaid, ...pPaid };
+    const balance = { ...gBalance, ...pBalance };
+    const collected_amount = round2(totalPaidG + totalPaidP);
+    const codeTotalDue = round2(portions.reduce((s, p) => s + p.total_due, 0));
+
+    portions.forEach((r, i) => {
+      if (i !== 0) { withPayments.push({ ...r, ...zeroPayments }); return; }
+      withPayments.push({
+        ...r,
+        collected_gharpatti: byComponent(paid, 'gharpatti'),
+        collected_divabatti: byComponent(paid, 'divabatti'),
+        collected_arogya: byComponent(paid, 'arogya'),
+        collected_panipatti: byComponent(paid, 'panipatti'),
+        collected_amount,
+        remaining_gharpatti: byComponent(balance, 'gharpatti'),
+        remaining_divabatti: byComponent(balance, 'divabatti'),
+        remaining_arogya: byComponent(balance, 'arogya'),
+        remaining_panipatti: byComponent(balance, 'panipatti'),
+        remaining_due: round2(Math.max(0, codeTotalDue - collected_amount)),
+      });
+    });
+  }
 
   res.json({ year, rows: withPayments });
 });

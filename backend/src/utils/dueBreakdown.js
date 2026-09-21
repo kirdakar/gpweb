@@ -4,7 +4,9 @@
 // थकबाकी/येणे बाकी report. Shared so payment entry, receipts, and reports
 // all compute it identically.
 const { withOwnerNameFallback } = require('./ownerName');
-const { allocate, GHARPATTI_GROUP_ORDER, PANIPATTI_GROUP_ORDER } = require('./dueAllocation');
+const {
+  allocate, GHARPATTI_GROUP_ORDER, PANIPATTI_GROUP_ORDER, explodeDuesByPortion, collapseByComponentForProperty,
+} = require('./dueAllocation');
 
 // One property.
 async function getDueBreakdownForProperty(pool, propertyId, yearId) {
@@ -200,8 +202,41 @@ async function getCombinedAllocation(pool, propertyId, dues, { totalPaidGharpatt
   return combineGroupAllocations(gAlloc, pAlloc);
 }
 
+// नमुना ९ क (कर मागणी बिल) साठी - एका मालमत्तेचे बिल दाखवायचे असले तरी
+// तिची उरलेली बाकी काढताना कोडमधल्या (त्याच मालकाच्या) सर्व मालमत्तांवरील
+// पावत्या गृहीत धरायला हव्यात (पावती नेहमी कोडमधल्या पहिल्या/अँकर
+// मालमत्तेवरच नोंदते) - getCombinedAllocation प्रमाणे फक्त त्याच
+// property_id वर नोंदलेल्या पावत्या मोजल्या तर बाकीच्या (अँकर नसलेल्या)
+// मालमत्तांना जमा झालेली रक्कम दिसतच नाही. म्हणून कोड-निहाय एकत्रित FIFO
+// वाटप (कर जमा भरणे प्रमाणेच) करून त्यातून फक्त याच मालमत्तेचा वाटा काढतो.
+async function getCombinedAllocationForProperty(pool, propertyId, yearId) {
+  const [[pm]] = await pool.query('SELECT property_code FROM property_master WHERE id = ?', [propertyId]);
+  const propertyCode = pm?.property_code;
+  if (propertyCode == null) {
+    const { row } = await getDueBreakdownForProperty(pool, propertyId, yearId);
+    return getCombinedAllocation(pool, propertyId, row || {});
+  }
+
+  const { portions } = await getDueBreakdownForCode(pool, propertyCode, yearId);
+  const [totalPaidG, totalPaidP] = await Promise.all([
+    getTotalPaidForCode(pool, propertyCode, 'gharpatti'),
+    getTotalPaidForCode(pool, propertyCode, 'panipatti'),
+  ]);
+  const gExploded = explodeDuesByPortion(portions, GHARPATTI_GROUP_ORDER);
+  const pExploded = explodeDuesByPortion(portions, PANIPATTI_GROUP_ORDER);
+  const gAlloc = allocate(gExploded.dues, totalPaidG, gExploded.order);
+  const pAlloc = allocate(pExploded.dues, totalPaidP, pExploded.order);
+  const { paid: gPaid, balance: gBalance } = collapseByComponentForProperty(gAlloc, GHARPATTI_GROUP_ORDER, propertyId);
+  const { paid: pPaid, balance: pBalance } = collapseByComponentForProperty(pAlloc, PANIPATTI_GROUP_ORDER, propertyId);
+  return {
+    paid: { ...gPaid, ...pPaid },
+    balance: { ...gBalance, ...pBalance },
+    unallocated: { gharpatti: gAlloc.unallocated, panipatti: pAlloc.unallocated },
+  };
+}
+
 module.exports = {
   getDueBreakdownForProperty, getDueBreakdownForCode, getYearWiseDueRowsForCode, getDueBreakdownBulk,
   getTotalPaid, getTotalPaidForCode, getTotalPaidBulk,
-  combineGroupAllocations, getCombinedAllocation,
+  combineGroupAllocations, getCombinedAllocation, getCombinedAllocationForProperty,
 };
