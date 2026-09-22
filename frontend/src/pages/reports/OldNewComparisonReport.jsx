@@ -13,34 +13,20 @@ import CloseReportButton from '../../components/CloseReportButton';
 //
 // कोड (मास्टर कोड) प्रमाणे एक मालक = एक ओळ: मालकाचे नाव वर आणि त्याखाली
 // त्याच्या सर्व मालमत्ता क्रमांकांची यादी - एकाच स्तंभात, एकदाच. रकमा त्या
-// मालकाच्या सर्व मालमत्तांची एकत्रित बेरीज असतात.
-const COMPONENTS = [
-  { key: 'gharpatti', label: 'घरपट्टी' },
-  { key: 'divabatti', label: 'दिवाबत्ती' },
-  { key: 'arogya', label: 'आरोग्य कर' },
-  { key: 'panipatti', label: 'पाणीपट्टी' },
-  { key: 'due', label: 'एकूण' },
-];
+// मालकाच्या सर्व मालमत्तांची एकत्रित बेरीज असतात. नावानंतर फक्त एकूण
+// रकमा (घरपट्टी/दिवाबत्ती/आरोग्य/पाणीपट्टी हेडवार फोड न दाखवता) - तो तपशील
+// हवा असल्यास कर जमा भरणे स्क्रीनवरील "तपशील" बटणातून मिळतो.
 const GROUPS = [
-  { prefix: 'previous', label: 'जुनी' },
-  { prefix: 'current', label: 'नविन' },
-  { prefix: 'total', label: 'एकूण बाकी' },
-  { prefix: 'collected', label: 'जमा' },
-  { prefix: 'remaining', label: 'उर्वरित बाकी' },
+  { field: 'previous_due', label: 'मागील बाकी' },
+  { field: 'current_due', label: 'चालू वर्ष बाकी' },
+  { field: 'total_due', label: 'एकूण बाकी' },
+  { field: 'collected_amount', label: 'जमा' },
+  { field: 'remaining_due', label: 'उर्वरित बाकी' },
 ];
-
-function fieldName(prefix, componentKey) {
-  if (componentKey === 'due') {
-    if (prefix === 'collected') return 'collected_amount';
-    if (prefix === 'remaining') return 'remaining_due';
-    return `${prefix}_due`;
-  }
-  return `${prefix}_${componentKey}`;
-}
 
 function emptyTotals() {
   const t = {};
-  for (const g of GROUPS) for (const c of COMPONENTS) t[fieldName(g.prefix, c.key)] = 0;
+  for (const g of GROUPS) t[g.field] = 0;
   return t;
 }
 
@@ -70,22 +56,14 @@ export default function OldNewComparisonReport() {
       }
       const g = byCode.get(key);
       if (r.malmata_no) g.malmataNos.push(r.malmata_no);
-      for (const gr of GROUPS) for (const c of COMPONENTS) {
-        const f = fieldName(gr.prefix, c.key);
-        g.sums[f] += Number(r[f] || 0);
-      }
+      for (const gr of GROUPS) g.sums[gr.field] += Number(r[gr.field] || 0);
     }
     return [...byCode.values()];
   }, [rows]);
 
   const grandTotals = useMemo(() => {
     const t = emptyTotals();
-    for (const r of rows) {
-      for (const gr of GROUPS) for (const c of COMPONENTS) {
-        const f = fieldName(gr.prefix, c.key);
-        t[f] += Number(r[f] || 0);
-      }
-    }
+    for (const r of rows) for (const gr of GROUPS) t[gr.field] += Number(r[gr.field] || 0);
     return t;
   }, [rows]);
 
@@ -113,14 +91,9 @@ export default function OldNewComparisonReport() {
           <table>
             <thead>
               <tr>
-                <th rowSpan={2}>कोड</th>
-                <th rowSpan={2} className="col-owner">मालकाचे नाव / मालमत्ता</th>
-                {GROUPS.map((g) => <th key={g.prefix} colSpan={5}>{g.label}</th>)}
-              </tr>
-              <tr>
-                {GROUPS.map((g) => COMPONENTS.map((c) => (
-                  <th key={`${g.prefix}-${c.key}`} className="num">{c.label}</th>
-                )))}
+                <th>कोड</th>
+                <th className="col-owner">मालकाचे नाव / मालमत्ता</th>
+                {GROUPS.map((g) => <th key={g.field} className="num">{g.label}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -133,25 +106,22 @@ export default function OldNewComparisonReport() {
                       <div className="owner-malmata">मालमत्ता क्र.: {g.malmataNos.join(', ')}</div>
                     )}
                   </td>
-                  {GROUPS.map((gr) => COMPONENTS.map((c) => {
-                    const f = fieldName(gr.prefix, c.key);
-                    return (
-                      <td key={f} className="num" style={gr.prefix === 'collected' ? { color: 'var(--success)' } : undefined}>
-                        {g.sums[f].toFixed(2)}
-                      </td>
-                    );
-                  }))}
+                  {GROUPS.map((gr) => (
+                    <td key={gr.field} className="num" style={gr.field === 'collected_amount' ? { color: 'var(--success)' } : undefined}>
+                      {g.sums[gr.field].toFixed(2)}
+                    </td>
+                  ))}
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={27} style={{ textAlign: 'center' }}>नोंदी नाहीत</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={7} style={{ textAlign: 'center' }}>नोंदी नाहीत</td></tr>}
             </tbody>
             {rows.length > 0 && (
               <tfoot>
                 <tr className="total-row">
                   <td colSpan={2}>एकूण</td>
-                  {GROUPS.map((g) => COMPONENTS.map((c) => (
-                    <td key={`${g.prefix}-${c.key}`} className="num">{grandTotals[fieldName(g.prefix, c.key)].toFixed(2)}</td>
-                  )))}
+                  {GROUPS.map((g) => (
+                    <td key={g.field} className="num">{grandTotals[g.field].toFixed(2)}</td>
+                  ))}
                 </tr>
               </tfoot>
             )}
