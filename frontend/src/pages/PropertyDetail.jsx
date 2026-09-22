@@ -452,7 +452,7 @@ export default function PropertyDetail() {
   if (loading) return <div className="page"><p>लोड होत आहे...</p></div>;
 
   return (
-    <div className="page">
+    <div className="page property-detail-page">
       <div className="page-header">
         <h1>{isNew ? 'नवीन मिळकत नोंद' : `मिळकत तपशील — ${master.owner_name || `कोड ${master.property_code || master.srno || propertyId}`}`}</h1>
         <div style={{ display: 'flex', gap: 8 }}>

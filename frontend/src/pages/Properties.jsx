@@ -38,7 +38,7 @@ export default function Properties() {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <div className="page">
+    <div className="page property-list-page">
       <div className="page-header">
         <h1>मिळकत नोंदी {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
