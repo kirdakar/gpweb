@@ -168,7 +168,8 @@ tbody tr:hover { background: #f8fafc; }
   color: #cbd5e1;
   padding: 8px 14px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 16px;
+  font-weight: 700;
   font-family: inherit;
   cursor: pointer;
 }
@@ -190,7 +191,8 @@ tbody tr:hover { background: #f8fafc; }
   padding: 8px 12px;
   border-radius: 4px;
   color: var(--text);
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
 }
