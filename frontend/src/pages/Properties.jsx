@@ -4,6 +4,7 @@ import client from '../api/client';
 import { useYear } from '../context/YearContext';
 import { usePermissions } from '../context/PermissionsContext';
 import useDebouncedValue from '../hooks/useDebouncedValue';
+import CloseReportButton from '../components/CloseReportButton';
 
 export default function Properties() {
   const { yearId, currentYear } = useYear();
@@ -40,7 +41,10 @@ export default function Properties() {
     <div className="page">
       <div className="page-header">
         <h1>मिळकत नोंदी {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
-        {can('properties', 'add') && <Link className="btn" to="/properties/new">+ नवीन मिळकत</Link>}
+        <div style={{ display: 'flex', gap: 8 }}>
+          {can('properties', 'add') && <Link className="btn" to="/properties/new">+ नवीन मिळकत</Link>}
+          <CloseReportButton />
+        </div>
       </div>
 
       <form className="search-bar" onSubmit={(e) => e.preventDefault()}>
