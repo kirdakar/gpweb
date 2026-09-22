@@ -3,6 +3,7 @@ import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
+import useGpSettings from '../../hooks/useGpSettings';
 
 // थकबाकी अहवाल: निवडलेल्या "चालू वर्षा"साठी घरपट्टी/दिवाबत्ती/आरोग्य कर/
 // पाणीपट्टी/एकूण असा तपशील तीन गटांत दाखवला जातो -
@@ -33,6 +34,7 @@ function emptyTotals() {
 export default function OldNewComparisonReport() {
   const { years, yearId, setYearId } = useYear();
   const { can } = usePermissions();
+  const { gpLine } = useGpSettings();
   const [year, setYear] = useState(null);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -82,7 +84,8 @@ export default function OldNewComparisonReport() {
       </div>
 
       <div className="print-header">
-        <h2>ग्रामपंचायत येणे बाकी अहवाल</h2>
+        <h2>{gpLine}</h2>
+        <p style={{ fontWeight: 700 }}>येणे बाकी अहवाल (जमा व उर्वरित)</p>
         <p>चालू वर्ष: {year?.year_label || ''} (जुनी = या वर्षाआधीच्या सर्व वर्षांची बेरीज)</p>
       </div>
 

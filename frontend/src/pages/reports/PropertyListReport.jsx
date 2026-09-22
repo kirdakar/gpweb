@@ -4,6 +4,7 @@ import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
+import useGpSettings from '../../hooks/useGpSettings';
 
 // कोड प्रमाणे गट करून दाखवले जाते: मालकाचे नाव एकाच स्तंभात (rowSpan वापरून)
 // फक्त एकदाच येते; त्याखाली त्याच मालकाच्या प्रत्येक मिळकत क्रमांक +
@@ -24,6 +25,7 @@ function groupByCode(rows) {
 export default function PropertyListReport() {
   const { years, yearId, setYearId } = useYear();
   const { can } = usePermissions();
+  const { gpLine } = useGpSettings();
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -99,7 +101,8 @@ export default function PropertyListReport() {
       </div>
 
       <div className="print-header">
-        <h2>ग्रामपंचायत मिळकत कर यादी</h2>
+        <h2>{gpLine}</h2>
+        <p style={{ fontWeight: 700 }}>मिळकत कर यादी</p>
         <p>आर्थिक वर्ष: {yearLabel}</p>
       </div>
 

@@ -3,6 +3,7 @@ import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
+import useGpSettings from '../../hooks/useGpSettings';
 
 // घरपट्टी व पाणीपट्टी आता दोन स्वतंत्र पावती-मालिका (receipt_type) असल्याने
 // (पहा PaymentEntry.jsx) हा अहवालही दोन स्वतंत्र तक्त्यांत दाखवतो - एका
@@ -118,6 +119,7 @@ function ReceiptTypeTable({ type, rows }) {
 export default function PaymentReceiptsReport() {
   const { years, yearId, setYearId } = useYear();
   const { can } = usePermissions();
+  const { gpLine } = useGpSettings();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -147,7 +149,8 @@ export default function PaymentReceiptsReport() {
       </div>
 
       <div className="print-header">
-        <h2>ग्रामपंचायत जमा पावती अहवाल</h2>
+        <h2>{gpLine}</h2>
+        <p style={{ fontWeight: 700 }}>जमा पावती अहवाल</p>
         <p>आर्थिक वर्ष: {yearLabel}</p>
       </div>
 

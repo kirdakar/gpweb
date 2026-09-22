@@ -3,13 +3,15 @@ import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
+import useGpSettings from '../../hooks/useGpSettings';
 
-function TaxDemandCard({ code, yearLabel, portions }) {
+function TaxDemandCard({ code, yearLabel, portions, gpLine }) {
   const grandTotal = portions.reduce((s, p) => s + Number(p.total_tax || 0), 0);
   return (
     <div className="card print-page-break">
       <div className="print-header">
-        <h2>ग्रामपंचायत — कर आकारणी पावती</h2>
+        <h2>{gpLine}</h2>
+        <p style={{ fontWeight: 700 }}>कर आकारणी पावती</p>
         <p>आर्थिक वर्ष: {yearLabel} | कोड: {code}</p>
       </div>
       <p><strong>मालकाचे नाव:</strong> {portions[0]?.owner_name || '-'}</p>
@@ -54,6 +56,7 @@ function TaxDemandCard({ code, yearLabel, portions }) {
 export default function TaxDemandReport() {
   const { years, yearId, setYearId } = useYear();
   const { can } = usePermissions();
+  const { gpLine } = useGpSettings();
 
   // शोधा कंबोमध्ये कोड नंबरवर ग्रुप करून दाखवतो (एकदाच नाव, डबल-डबल नांवे
   // नकोत) - सुरुवातीस (काहीही टाइप न करताच) संपूर्ण यादी दिसते, इतर
@@ -267,11 +270,11 @@ export default function TaxDemandReport() {
       {loading && <p>लोड होत आहे...</p>}
 
       {portions && !rangeMode && (
-        <TaxDemandCard code={code} yearLabel={yearLabel} portions={portions} />
+        <TaxDemandCard code={code} yearLabel={yearLabel} portions={portions} gpLine={gpLine} />
       )}
 
       {visibleGroups.map((g) => (
-        <TaxDemandCard key={g.code} code={g.code} yearLabel={yearLabel} portions={g.portions} />
+        <TaxDemandCard key={g.code} code={g.code} yearLabel={yearLabel} portions={g.portions} gpLine={gpLine} />
       ))}
     </div>
   );
