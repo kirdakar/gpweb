@@ -71,7 +71,7 @@ function MasterFields({ master, setMaster, particulars, gpmasterList }) {
 
   return (
     <div className="form-grid">
-      <div className="field">
+      <div className="field narrow-field">
         <label>मिळकत कोड</label>
         <div className="combo-wrap">
           <input
@@ -101,17 +101,17 @@ function MasterFields({ master, setMaster, particulars, gpmasterList }) {
           )}
         </div>
       </div>
-      <div className="field">
+      <div className="field wide-field">
+        <label>मालकाचे नाव *</label>
+        <input required value={master.owner_name} onChange={(e) => setMaster({ ...master, owner_name: e.target.value })} />
+      </div>
+      <div className="field narrow-field">
         <label>अ.क्र. (SRNO)</label>
         <input type="number" value={master.srno} onChange={(e) => setMaster({ ...master, srno: e.target.value })} />
       </div>
-      <div className="field">
+      <div className="field narrow-field">
         <label>मालमत्ता क्र.</label>
         <input value={master.malmata_no} onChange={(e) => setMaster({ ...master, malmata_no: e.target.value })} />
-      </div>
-      <div className="field">
-        <label>मालकाचे नाव *</label>
-        <input required value={master.owner_name} onChange={(e) => setMaster({ ...master, owner_name: e.target.value })} />
       </div>
       <div className="field">
         <label>भोगवटादार</label>

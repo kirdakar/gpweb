@@ -154,6 +154,12 @@ tbody tr:hover { background: #f8fafc; }
 .property-detail-page .field.readonly input { background: #eef1f7; color: var(--text-muted); font-weight: 600; }
 .property-detail-page .field input::placeholder { font-weight: 400; color: #94a3b8; }
 
+/* मूळ माहिती: मिळकत कोड/अ.क्र./मालमत्ता क्र. आखूड जागेत, मालकाचे नाव
+   कोडनंतर लगेच व दोन स्तंभांइतकी जास्त रुंद जागा घेऊन. */
+.property-detail-page .narrow-field { justify-self: start; max-width: 160px; }
+.property-detail-page .narrow-field input, .property-detail-page .narrow-field .combo-wrap { width: 160px; }
+.property-detail-page .wide-field { grid-column: span 2; }
+
 /* मिळकत नोंदी यादी - शोधपट्टी थोडी मोठी/ठळक व लक्षवेधी. */
 .property-list-page .search-bar input {
   font-size: 15px;
