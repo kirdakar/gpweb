@@ -242,6 +242,12 @@ tbody tr:hover { background: #f8fafc; }
 
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .total-row td { font-weight: 700; background: #f1f5f9; }
+
+/* अनेक कार्ड्स (उदा. कर आकारणी पावती) एकापाठोपाठ एक छापताना प्रत्येक
+   नवीन पानावर सुरू व्हावे म्हणून - .a4-page प्रमाणे रुंदी/लँडस्केप बदलत
+   नाही, फक्त पान-विभाजन (मूळ पोर्ट्रेट @page कायम राहते). */
+.print-page-break { page-break-after: always; }
+.print-page-break:last-child { page-break-after: auto; }
 .row-clickable { cursor: pointer; }
 .row-clickable:hover td { background: #eef2ff; }
 
