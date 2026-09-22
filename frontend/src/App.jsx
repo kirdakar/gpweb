@@ -24,6 +24,8 @@ import TaxDemandBillReport from './pages/reports/TaxDemandBillReport';
 import Settings from './pages/Settings';
 import Users from './pages/Users';
 import UserRights from './pages/UserRights';
+import BackupPage from './pages/maintenance/BackupPage';
+import RestorePage from './pages/maintenance/RestorePage';
 
 function AppShell() {
   return (
@@ -61,6 +63,8 @@ export default function App() {
             <Route path="/settings" element={<RequireView screen="settings"><Settings /></RequireView>} />
             <Route path="/users" element={<RequireAdmin><Users /></RequireAdmin>} />
             <Route path="/users/:id/rights" element={<RequireAdmin><UserRights /></RequireAdmin>} />
+            <Route path="/maintenance/backup" element={<RequireAdmin><BackupPage /></RequireAdmin>} />
+            <Route path="/maintenance/restore" element={<RequireAdmin><RestorePage /></RequireAdmin>} />
           </Route>
         </Routes>
       </BrowserRouter>
