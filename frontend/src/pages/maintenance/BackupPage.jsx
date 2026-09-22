@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import client from '../../api/client';
+import CloseReportButton from '../../components/CloseReportButton';
 
 // संपूर्ण डेटाबेसचा (mysqldump) .sql बॅकअप डाउनलोड - फक्त प्रशासकासाठी
 // (राऊटवर व सर्व्हरवरही requireAdmin, पहा maintenance.routes.js).
@@ -33,6 +34,7 @@ export default function BackupPage() {
     <div className="page">
       <div className="page-header no-print">
         <h1>बॅकअप</h1>
+        <CloseReportButton />
       </div>
       <div className="card" style={{ maxWidth: 600 }}>
         <p>संपूर्ण डेटाबेसचा (सर्व मिळकती, कर आकारणी, जमा पावत्या, मास्टर याद्या) एक .sql फाईल स्वरूपात बॅकअप डाउनलोड होईल.</p>

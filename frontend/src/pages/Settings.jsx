@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
 import { usePermissions } from '../context/PermissionsContext';
+import CloseReportButton from '../components/CloseReportButton';
 
 export default function Settings() {
   const { can } = usePermissions();
@@ -30,7 +31,7 @@ export default function Settings() {
 
   return (
     <div className="page">
-      <div className="page-header"><h1>ग्रामपंचायत माहिती (Settings)</h1></div>
+      <div className="page-header"><h1>ग्रामपंचायत माहिती (Settings)</h1><CloseReportButton /></div>
       <div className="card" style={{ maxWidth: 480 }}>
         <p style={{ marginTop: 0, color: 'var(--text-muted)', fontSize: 13 }}>
           ही माहिती नमुना नं. ८ (आकारणी यादी) आणि इतर छापील अहवालांच्या शीर्षकावर दिसते.

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
 import { usePermissions } from '../context/PermissionsContext';
+import CloseReportButton from '../components/CloseReportButton';
 
 const emptyForm = {
   par_code: '', par_name: '', gharpatti_rate: '', jamin_rate: '', divabatti_rate: '', arogya_rate: '', panipatti_rate: '',
@@ -71,6 +72,7 @@ export default function Particulars() {
     <div className="page">
       <div className="page-header">
         <h1>बांधकाम प्रकार / दर मास्टर</h1>
+        <CloseReportButton />
       </div>
 
       <div className="card" style={{ marginBottom: 20 }}>

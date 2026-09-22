@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import { ACTION_LABELS } from '../constants/actionLabels';
+import CloseReportButton from '../components/CloseReportButton';
 
 export default function UserRights() {
   const { id } = useParams();
@@ -77,7 +78,7 @@ export default function UserRights() {
   if (!targetUser) {
     return (
       <div className="page">
-        <div className="page-header"><h1>अधिकार</h1></div>
+        <div className="page-header"><h1>अधिकार</h1><CloseReportButton /></div>
         <div className="error-box">वापरकर्ता सापडला नाही.</div>
         <button className="btn secondary" onClick={() => navigate('/users')}>यूजर मास्टरकडे परत जा</button>
       </div>
@@ -87,7 +88,7 @@ export default function UserRights() {
   if (targetUser.role === 'admin') {
     return (
       <div className="page">
-        <div className="page-header"><h1>अधिकार — {targetUser.username}</h1></div>
+        <div className="page-header"><h1>अधिकार — {targetUser.username}</h1><CloseReportButton /></div>
         <p style={{ color: 'var(--text-muted)' }}>प्रशासक (admin) वापरकर्त्याला नेहमी सर्व अधिकार असतात - इथे बदल करण्याची गरज नाही.</p>
         <button className="btn secondary" onClick={() => navigate('/users')}>यूजर मास्टरकडे परत जा</button>
       </div>
@@ -100,7 +101,8 @@ export default function UserRights() {
         <h1>अधिकार — {targetUser.full_name || targetUser.username} ({targetUser.username})</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'जतन होत आहे...' : 'अधिकार जतन करा'}</button>
-          <button className="btn secondary" onClick={() => navigate('/users')}>बंद करा</button>
+          <button className="btn secondary" onClick={() => navigate('/users')}>यूजर मास्टरकडे परत जा</button>
+          <CloseReportButton />
         </div>
       </div>
 

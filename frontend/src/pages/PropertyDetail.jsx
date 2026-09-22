@@ -4,6 +4,7 @@ import client from '../api/client';
 import { useYear } from '../context/YearContext';
 import { usePermissions } from '../context/PermissionsContext';
 import { round2 } from '../utils/taxCalc';
+import CloseReportButton from '../components/CloseReportButton';
 
 const emptyMaster = {
   property_code: '', srno: '', malmata_no: '', particulars: '', construction_type: '',
@@ -454,7 +455,10 @@ export default function PropertyDetail() {
     <div className="page">
       <div className="page-header">
         <h1>{isNew ? 'नवीन मिळकत नोंद' : `मिळकत तपशील — ${master.owner_name || `कोड ${master.property_code || master.srno || propertyId}`}`}</h1>
-        <Link className="btn secondary" to="/properties">यादीकडे परत</Link>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Link className="btn secondary" to="/properties">यादीकडे परत</Link>
+          <CloseReportButton />
+        </div>
       </div>
 
       {isNew ? (

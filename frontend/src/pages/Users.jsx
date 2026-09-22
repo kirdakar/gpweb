@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import CloseReportButton from '../components/CloseReportButton';
 
 const emptyForm = { username: '', password: '', full_name: '', role: 'user' };
 
@@ -81,6 +82,7 @@ export default function Users() {
     <div className="page">
       <div className="page-header">
         <h1>यूजर मास्टर</h1>
+        <CloseReportButton />
       </div>
 
       <div className="card" style={{ marginBottom: 20 }}>

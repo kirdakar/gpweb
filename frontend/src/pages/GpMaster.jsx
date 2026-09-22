@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import client from '../api/client';
 import { usePermissions } from '../context/PermissionsContext';
 import useDebouncedValue from '../hooks/useDebouncedValue';
+import CloseReportButton from '../components/CloseReportButton';
 
 const emptyForm = { code: '', owner_name: '' };
 
@@ -79,6 +80,7 @@ export default function GpMaster() {
     <div className="page">
       <div className="page-header">
         <h1>मिळकतदार मास्टर (GPMASTER)</h1>
+        <CloseReportButton />
       </div>
 
       {can('gpmaster', editing ? 'edit' : 'add') && (

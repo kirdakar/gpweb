@@ -2,6 +2,7 @@ import { useState } from 'react';
 import client from '../api/client';
 import { useYear } from '../context/YearContext';
 import { usePermissions } from '../context/PermissionsContext';
+import CloseReportButton from '../components/CloseReportButton';
 
 export default function Years() {
   const { years, refresh } = useYear();
@@ -46,7 +47,7 @@ export default function Years() {
 
   return (
     <div className="page">
-      <div className="page-header"><h1>आर्थिक वर्ष व्यवस्थापन</h1></div>
+      <div className="page-header"><h1>आर्थिक वर्ष व्यवस्थापन</h1><CloseReportButton /></div>
 
       <div className="card" style={{ marginBottom: 20 }}>
         <p style={{ marginTop: 0, color: 'var(--text-muted)', fontSize: 13 }}>

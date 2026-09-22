@@ -3,6 +3,7 @@ import client from '../api/client';
 import { useYear } from '../context/YearContext';
 import { usePermissions } from '../context/PermissionsContext';
 import { amountToMarathiWords } from '../utils/numberToMarathiWords';
+import CloseReportButton from '../components/CloseReportButton';
 
 // घरपट्टी पावती (नमुना नं. १०) = घरपट्टी + दिवाबत्ती(वीज कर) + आरोग्य कर,
 // पाणीपट्टी पावती (नमुना नं. १०, वेगळे पुस्तक) = फक्त पाणी पट्टी - दोन्ही
@@ -233,6 +234,7 @@ export default function PaymentEntry() {
     <div className="page">
       <div className="page-header no-print">
         <h1>कर जमा भरणे {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
+        <CloseReportButton />
       </div>
 
       <div className="card no-print" style={{ marginBottom: 20 }}>

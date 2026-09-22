@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import client from '../../api/client';
+import CloseReportButton from '../../components/CloseReportButton';
 
 const CONFIRM_WORD = 'रिस्टोअर';
 
@@ -39,6 +40,7 @@ export default function RestorePage() {
     <div className="page">
       <div className="page-header no-print">
         <h1>रि-स्टोअर</h1>
+        <CloseReportButton />
       </div>
       <div className="card" style={{ maxWidth: 600 }}>
         <div className="notice-box" style={{ marginBottom: 14 }}>
