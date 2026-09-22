@@ -68,7 +68,7 @@ export default function OldNewComparisonReport() {
   }, [rows]);
 
   return (
-    <div className="page">
+    <div className="page old-new-report">
       <div className="page-header no-print">
         <h1>येणे बाकी अहवाल (जमा व उर्वरित)</h1>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -92,7 +92,8 @@ export default function OldNewComparisonReport() {
             <thead>
               <tr>
                 <th>कोड</th>
-                <th className="col-owner">मालकाचे नाव / मालमत्ता</th>
+                <th className="col-owner-name">मालकाचे नाव</th>
+                <th className="col-malmata">मिळकत क्रं.</th>
                 {GROUPS.map((g) => <th key={g.field} className="num">{g.label}</th>)}
               </tr>
             </thead>
@@ -100,12 +101,8 @@ export default function OldNewComparisonReport() {
               {groups.map((g) => (
                 <tr key={g.property_code ?? g.owner_name}>
                   <td>{g.property_code ?? '-'}</td>
-                  <td className="col-owner">
-                    <div className="owner-name">{g.owner_name}</div>
-                    {g.malmataNos.length > 0 && (
-                      <div className="owner-malmata">मालमत्ता क्र.: {g.malmataNos.join(', ')}</div>
-                    )}
-                  </td>
+                  <td className="col-owner-name">{g.owner_name}</td>
+                  <td className="col-malmata">{g.malmataNos.join(', ')}</td>
                   {GROUPS.map((gr) => (
                     <td key={gr.field} className="num" style={gr.field === 'collected_amount' ? { color: 'var(--success)' } : undefined}>
                       {g.sums[gr.field].toFixed(2)}
@@ -113,12 +110,12 @@ export default function OldNewComparisonReport() {
                   ))}
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={7} style={{ textAlign: 'center' }}>नोंदी नाहीत</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center' }}>नोंदी नाहीत</td></tr>}
             </tbody>
             {rows.length > 0 && (
               <tfoot>
                 <tr className="total-row">
-                  <td colSpan={2}>एकूण</td>
+                  <td colSpan={3}>एकूण</td>
                   {GROUPS.map((g) => (
                     <td key={g.field} className="num">{grandTotals[g.field].toFixed(2)}</td>
                   ))}
