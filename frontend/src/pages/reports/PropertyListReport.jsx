@@ -71,7 +71,7 @@ export default function PropertyListReport() {
   const yearLabel = years.find((y) => y.id === yearId)?.year_label || '';
 
   return (
-    <div className="page">
+    <div className="page page-wide">
       <div className="page-header no-print">
         <h1>मिळकत यादी अहवाल</h1>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -108,7 +108,19 @@ export default function PropertyListReport() {
 
       {loading ? <p>लोड होत आहे...</p> : (
         <div className="table-wrap">
-          <table>
+          <table className="property-list-table">
+            <colgroup>
+              <col style={{ width: '5%' }} />
+              <col style={{ width: '13%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '13%' }} />
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '10.4%' }} />
+              <col style={{ width: '10.4%' }} />
+              <col style={{ width: '10.4%' }} />
+              <col style={{ width: '10.4%' }} />
+              <col style={{ width: '10.4%' }} />
+            </colgroup>
             <thead>
               <tr>
                 <th>कोड</th><th>मालकाचे नाव</th><th>मिळकत क्रमांक</th><th>बांधकाम प्रकार</th>
@@ -125,9 +137,9 @@ export default function PropertyListReport() {
                   onClick={can('properties', 'view') ? () => navigate(`/properties/${r.property_id}`) : undefined}
                 >
                   {idx === 0 && <td rowSpan={group.length}>{r.property_code ?? '-'}</td>}
-                  {idx === 0 && <td rowSpan={group.length} className="col-owner">{r.owner_name}</td>}
+                  {idx === 0 && <td rowSpan={group.length} className="col-wrap">{r.owner_name}</td>}
                   <td>{r.malmata_no ?? '-'}</td>
-                  <td>{r.construction_type_name || '-'}</td>
+                  <td className="col-wrap">{r.construction_type_name || '-'}</td>
                   <td className="num">{Number(r.area_sqm || 0).toFixed(2)}</td>
                   <td className="num">{Number(r.gharpatti || 0).toFixed(2)}</td>
                   <td className="num">{Number(r.divabatti || 0).toFixed(2)}</td>

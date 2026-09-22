@@ -58,6 +58,9 @@ button, input, select, textarea { font-family: inherit; font-size: 14px; }
   margin: 0 auto;
   padding: 20px;
 }
+/* मिळकत यादी अहवाल सारख्या रुंद (अनेक स्तंभ असलेल्या) रिपोर्टसाठी - मूळ
+   .page ची 1200px मर्यादा काढून संपूर्ण स्क्रीन रुंदी वापरू देतो. */
+.page-wide { max-width: none; }
 
 .page-header {
   display: flex;
@@ -266,6 +269,14 @@ tbody tr:hover { background: #f8fafc; }
 .old-new-table td.num, .old-new-table th.num { white-space: nowrap; }
 .col-owner-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .col-malmata { white-space: normal; word-break: break-word; }
+
+/* मिळकत यादी अहवाल: colgroup ने स्तंभांची रुंदी ठरवलेली (table-layout:
+   fixed) - मालकाचे नाव व बांधकाम प्रकार आखूड जागेत मावतील इतके मोडतात
+   (col-wrap), जेणेकरून सर्व १० स्तंभ स्क्रीनच्या रुंदीत (.page-wide सह)
+   विनाआडवा-स्क्रोल बसतात. */
+.property-list-table { table-layout: fixed; }
+.property-list-table td.num, .property-list-table th.num { white-space: nowrap; }
+.col-wrap { white-space: normal; word-break: break-word; }
 
 /* सर्व स्तंभांसह ए-४ लँडस्केपवर बसावे म्हणून - .a4-page प्रमाणेच आधीच
    असलेले landscape named page पुन्हा वापरतो. */
