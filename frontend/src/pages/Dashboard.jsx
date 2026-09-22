@@ -55,32 +55,32 @@ export default function Dashboard() {
 
       {loading ? <p>लोड होत आहे...</p> : (
         <>
-          <h2 style={{ fontSize: 15, color: 'var(--text-muted)', margin: '0 0 10px' }}>सध्या कराची माहिती</h2>
+          <SectionTitle color={COLORS.assessment}>सध्या कराची माहिती</SectionTitle>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 24 }}>
-            <StatCard label="एकूण मिळकती" value={propertyCount ?? '-'} />
-            <StatCard label="घरपट्टी" value={gharpattiTotal.toFixed(2)} />
-            <StatCard label="दिवाबत्ती" value={divabattiTotal.toFixed(2)} />
-            <StatCard label="आरोग्य कर" value={arogyaTotal.toFixed(2)} />
-            <StatCard label="पाणीपट्टी" value={panipattiTotal.toFixed(2)} />
-            <StatCard label="एकूण कर मागणी" value={grandTotal.toFixed(2)} highlight />
+            <StatCard label="एकूण मिळकती" value={propertyCount ?? '-'} color={COLORS.assessment} />
+            <StatCard label="घरपट्टी" value={gharpattiTotal.toFixed(2)} color={COLORS.assessment} />
+            <StatCard label="दिवाबत्ती" value={divabattiTotal.toFixed(2)} color={COLORS.assessment} />
+            <StatCard label="आरोग्य कर" value={arogyaTotal.toFixed(2)} color={COLORS.assessment} />
+            <StatCard label="पाणीपट्टी" value={panipattiTotal.toFixed(2)} color={COLORS.assessment} />
+            <StatCard label="एकूण कर मागणी" value={grandTotal.toFixed(2)} color={COLORS.assessment} highlight />
           </div>
 
-          <h2 style={{ fontSize: 15, color: 'var(--text-muted)', margin: '0 0 10px' }}>कर भरणा (जमा)</h2>
+          <SectionTitle color={COLORS.collected}>कर भरणा (जमा)</SectionTitle>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 24 }}>
-            <StatCard label="घरपट्टी" value={collectedGharpatti.toFixed(2)} />
-            <StatCard label="दिवाबत्ती" value={collectedDivabatti.toFixed(2)} />
-            <StatCard label="आरोग्य कर" value={collectedArogya.toFixed(2)} />
-            <StatCard label="पाणीपट्टी" value={collectedPanipatti.toFixed(2)} />
-            <StatCard label="एकूण जमा" value={collectedTotal.toFixed(2)} highlight />
+            <StatCard label="घरपट्टी" value={collectedGharpatti.toFixed(2)} color={COLORS.collected} />
+            <StatCard label="दिवाबत्ती" value={collectedDivabatti.toFixed(2)} color={COLORS.collected} />
+            <StatCard label="आरोग्य कर" value={collectedArogya.toFixed(2)} color={COLORS.collected} />
+            <StatCard label="पाणीपट्टी" value={collectedPanipatti.toFixed(2)} color={COLORS.collected} />
+            <StatCard label="एकूण जमा" value={collectedTotal.toFixed(2)} color={COLORS.collected} highlight />
           </div>
 
-          <h2 style={{ fontSize: 15, color: 'var(--text-muted)', margin: '0 0 10px' }}>येणे कर (उर्वरित बाकी)</h2>
+          <SectionTitle color={COLORS.remaining}>येणे कर (उर्वरित बाकी)</SectionTitle>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
-            <StatCard label="घरपट्टी" value={remainingGharpatti.toFixed(2)} />
-            <StatCard label="दिवाबत्ती" value={remainingDivabatti.toFixed(2)} />
-            <StatCard label="आरोग्य कर" value={remainingArogya.toFixed(2)} />
-            <StatCard label="पाणीपट्टी" value={remainingPanipatti.toFixed(2)} />
-            <StatCard label="एकूण येणे बाकी" value={remainingTotal.toFixed(2)} highlight />
+            <StatCard label="घरपट्टी" value={remainingGharpatti.toFixed(2)} color={COLORS.remaining} />
+            <StatCard label="दिवाबत्ती" value={remainingDivabatti.toFixed(2)} color={COLORS.remaining} />
+            <StatCard label="आरोग्य कर" value={remainingArogya.toFixed(2)} color={COLORS.remaining} />
+            <StatCard label="पाणीपट्टी" value={remainingPanipatti.toFixed(2)} color={COLORS.remaining} />
+            <StatCard label="एकूण येणे बाकी" value={remainingTotal.toFixed(2)} color={COLORS.remaining} highlight />
           </div>
         </>
       )}
@@ -88,11 +88,21 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ label, value, highlight }) {
+// तिन्ही गटांना वेगवेगळा रंग - सध्या कराची माहिती (निळा), जमा (हिरवा),
+// येणे बाकी (केशरी) - जेणेकरून एका नजरेत कोणता गट कोणता ते ओळखता यावे.
+const COLORS = { assessment: '#1d4ed8', collected: '#15803d', remaining: '#c2410c' };
+
+function SectionTitle({ color, children }) {
   return (
-    <div className="card" style={highlight ? { borderColor: 'var(--primary)' } : undefined}>
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: highlight ? 'var(--primary)' : 'inherit' }}>{value}</div>
+    <h2 style={{ fontSize: 17, fontWeight: 800, color, margin: '0 0 10px' }}>{children}</h2>
+  );
+}
+
+function StatCard({ label, value, color, highlight }) {
+  return (
+    <div className="card" style={{ borderTop: `3px solid ${color}`, borderColor: highlight ? color : undefined }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color, marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, color: highlight ? color : 'inherit' }}>{value}</div>
     </div>
   );
 }
