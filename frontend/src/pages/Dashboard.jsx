@@ -23,11 +23,11 @@ export default function Dashboard() {
     return () => { cancelled = true; };
   }, [yearId]);
 
-  const grandTotal = summary.reduce((s, r) => s + Number(r.grand_total || 0), 0);
-  const gharpattiTotal = summary.reduce((s, r) => s + Number(r.total_gharpatti || 0), 0);
-  const divabattiTotal = summary.reduce((s, r) => s + Number(r.total_divabatti || 0), 0);
-  const arogyaTotal = summary.reduce((s, r) => s + Number(r.total_arogya || 0), 0);
-  const panipattiTotal = summary.reduce((s, r) => s + Number(r.total_panipatti || 0), 0);
+  const grandTotal = summary.reduce((s, r) => s + Number(r.total_tax || 0), 0);
+  const gharpattiTotal = summary.reduce((s, r) => s + Number(r.gharpatti || 0), 0);
+  const divabattiTotal = summary.reduce((s, r) => s + Number(r.divabatti || 0), 0);
+  const arogyaTotal = summary.reduce((s, r) => s + Number(r.arogya || 0), 0);
+  const panipattiTotal = summary.reduce((s, r) => s + Number(r.panipatti || 0), 0);
 
   return (
     <div className="page">

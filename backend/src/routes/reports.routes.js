@@ -174,16 +174,29 @@ router.get('/old-new-comparison', async (req, res) => {
   res.json({ year, rows: withPayments });
 });
 
-// Owner-level roll-up (was: anandoldnew_total, rebuilt on demand in Form4;
-// here it's always live via property_tax_summary_view)
+// नमुना नं. ८ आकारणी यादी घोषवारा - बांधकाम प्रकारानुसार (दर मास्टर,
+// par_code क्रमाने) गट करून संख्या/क्षेत्रफळ/कर एकत्रित बेरीज दाखवतो -
+// प्रति-मालमत्ता नव्हे, प्रति-बांधकाम-प्रकार सारांश (जुना मालकनिहाय
+// सारांश ऐवजी - ग्रामपंचायतीच्या प्रत्यक्ष कागदी घोषवाऱ्याशी जुळणारा).
 router.get('/summary', async (req, res) => {
   const yearId = req.query.yearId;
   if (!yearId) return res.status(400).json({ error: 'yearId is required' });
   const [rows] = await pool.query(
-    `SELECT * FROM property_tax_summary_view WHERE financial_year_id = ? ORDER BY property_code`,
+    `SELECT pt.par_code, pt.par_name AS description,
+            COUNT(*) AS property_count,
+            SUM(a.area_sqft) AS area_sqft, SUM(a.area_sqm) AS area_sqm,
+            SUM(a.gharpatti) AS gharpatti, SUM(a.divabatti) AS divabatti,
+            SUM(a.arogya) AS arogya, SUM(a.panipatti) AS panipatti,
+            SUM(a.total_tax) AS total_tax
+     FROM property_tax_assessment a
+     JOIN property_master pm ON pm.id = a.property_id
+     LEFT JOIN particular_master pt ON pt.par_code = pm.construction_type
+     WHERE a.financial_year_id = ?
+     GROUP BY pt.par_code, pt.par_name
+     ORDER BY (pt.par_code IS NULL), pt.par_code`,
     [yearId]
   );
-  res.json(withOwnerNameFallback(rows));
+  res.json(rows);
 });
 
 // Individual tax-demand notice (was: ananadnagar_kar_magani_main.rpt),
