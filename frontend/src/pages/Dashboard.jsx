@@ -5,6 +5,7 @@ import { useYear } from '../context/YearContext';
 export default function Dashboard() {
   const { yearId, currentYear } = useYear();
   const [summary, setSummary] = useState([]);
+  const [oldNewRows, setOldNewRows] = useState([]);
   const [propertyCount, setPropertyCount] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -14,10 +15,12 @@ export default function Dashboard() {
     setLoading(true);
     Promise.all([
       client.get('/reports/summary', { params: { yearId } }),
+      client.get('/reports/old-new-comparison', { params: { yearId } }),
       client.get('/properties', { params: { page: 1, pageSize: 1 } }),
-    ]).then(([sumRes, propRes]) => {
+    ]).then(([sumRes, oldNewRes, propRes]) => {
       if (cancelled) return;
       setSummary(sumRes.data);
+      setOldNewRows(oldNewRes.data.rows);
       setPropertyCount(propRes.data.total);
     }).finally(() => !cancelled && setLoading(false));
     return () => { cancelled = true; };
@@ -29,6 +32,21 @@ export default function Dashboard() {
   const arogyaTotal = summary.reduce((s, r) => s + Number(r.arogya || 0), 0);
   const panipattiTotal = summary.reduce((s, r) => s + Number(r.panipatti || 0), 0);
 
+  // कर भरणा (जमा) व येणे कर (उर्वरित बाकी) - येणे बाकी अहवालाचीच आकडेवारी
+  // (कोड-निहाय अँकर ओळीवरच नोंदलेली, बाकीच्या ओळींना ० - दुहेरी मोजणी
+  // टाळण्यासाठी, पहा reports.routes.js /old-new-comparison).
+  const collectedTotal = oldNewRows.reduce((s, r) => s + Number(r.collected_amount || 0), 0);
+  const collectedGharpatti = oldNewRows.reduce((s, r) => s + Number(r.collected_gharpatti || 0), 0);
+  const collectedDivabatti = oldNewRows.reduce((s, r) => s + Number(r.collected_divabatti || 0), 0);
+  const collectedArogya = oldNewRows.reduce((s, r) => s + Number(r.collected_arogya || 0), 0);
+  const collectedPanipatti = oldNewRows.reduce((s, r) => s + Number(r.collected_panipatti || 0), 0);
+
+  const remainingTotal = oldNewRows.reduce((s, r) => s + Number(r.remaining_due || 0), 0);
+  const remainingGharpatti = oldNewRows.reduce((s, r) => s + Number(r.remaining_gharpatti || 0), 0);
+  const remainingDivabatti = oldNewRows.reduce((s, r) => s + Number(r.remaining_divabatti || 0), 0);
+  const remainingArogya = oldNewRows.reduce((s, r) => s + Number(r.remaining_arogya || 0), 0);
+  const remainingPanipatti = oldNewRows.reduce((s, r) => s + Number(r.remaining_panipatti || 0), 0);
+
   return (
     <div className="page">
       <div className="page-header">
@@ -36,14 +54,35 @@ export default function Dashboard() {
       </div>
 
       {loading ? <p>लोड होत आहे...</p> : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
-          <StatCard label="एकूण मिळकती" value={propertyCount ?? '-'} />
-          <StatCard label="घरपट्टी" value={gharpattiTotal.toFixed(2)} />
-          <StatCard label="दिवाबत्ती" value={divabattiTotal.toFixed(2)} />
-          <StatCard label="आरोग्य कर" value={arogyaTotal.toFixed(2)} />
-          <StatCard label="पाणीपट्टी" value={panipattiTotal.toFixed(2)} />
-          <StatCard label="एकूण कर मागणी" value={grandTotal.toFixed(2)} highlight />
-        </div>
+        <>
+          <h2 style={{ fontSize: 15, color: 'var(--text-muted)', margin: '0 0 10px' }}>सध्या कराची माहिती</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 24 }}>
+            <StatCard label="एकूण मिळकती" value={propertyCount ?? '-'} />
+            <StatCard label="घरपट्टी" value={gharpattiTotal.toFixed(2)} />
+            <StatCard label="दिवाबत्ती" value={divabattiTotal.toFixed(2)} />
+            <StatCard label="आरोग्य कर" value={arogyaTotal.toFixed(2)} />
+            <StatCard label="पाणीपट्टी" value={panipattiTotal.toFixed(2)} />
+            <StatCard label="एकूण कर मागणी" value={grandTotal.toFixed(2)} highlight />
+          </div>
+
+          <h2 style={{ fontSize: 15, color: 'var(--text-muted)', margin: '0 0 10px' }}>कर भरणा (जमा)</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 24 }}>
+            <StatCard label="घरपट्टी" value={collectedGharpatti.toFixed(2)} />
+            <StatCard label="दिवाबत्ती" value={collectedDivabatti.toFixed(2)} />
+            <StatCard label="आरोग्य कर" value={collectedArogya.toFixed(2)} />
+            <StatCard label="पाणीपट्टी" value={collectedPanipatti.toFixed(2)} />
+            <StatCard label="एकूण जमा" value={collectedTotal.toFixed(2)} highlight />
+          </div>
+
+          <h2 style={{ fontSize: 15, color: 'var(--text-muted)', margin: '0 0 10px' }}>येणे कर (उर्वरित बाकी)</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+            <StatCard label="घरपट्टी" value={remainingGharpatti.toFixed(2)} />
+            <StatCard label="दिवाबत्ती" value={remainingDivabatti.toFixed(2)} />
+            <StatCard label="आरोग्य कर" value={remainingArogya.toFixed(2)} />
+            <StatCard label="पाणीपट्टी" value={remainingPanipatti.toFixed(2)} />
+            <StatCard label="एकूण येणे बाकी" value={remainingTotal.toFixed(2)} highlight />
+          </div>
+        </>
       )}
     </div>
   );
