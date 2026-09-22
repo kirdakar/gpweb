@@ -257,10 +257,14 @@ tbody tr:hover { background: #f8fafc; }
 .owner-name { font-weight: 600; }
 .owner-malmata { font-size: 11px; color: var(--text-muted); font-weight: 400; margin-top: 2px; }
 
-/* येणे बाकी अहवाल: नाव आखूड जागेत बसवतो (गरज पडल्यास आत मोडतो), मिळकत
-   क्रं. मात्र कितीही संख्या असोत (एका कोडखाली अनेक मालमत्ता) तितकी जागा
-   घेऊन वाढू देतो - दोन्ही रकमांच्या स्तंभांना चिकटून राहू नयेत म्हणून. */
-.col-owner-name { width: 15%; max-width: 160px; white-space: normal; word-break: break-word; }
+/* येणे बाकी अहवाल: colgroup ने प्रत्येक स्तंभाची निश्चित रुंदी ठरवलेली
+   असल्याने (table-layout: fixed) नाव एका ओळीत मावेल इतकी जागा (१८%) मिळते
+   आणि मिळकत क्रं. आखूडच (१०%) राहतो - साधारणपणे एका कोडखाली जास्तीत जास्त
+   ५ मालमत्ता असतात; क्वचित चुकीच्या डेटामुळे जास्त आकडे आले तरी तेवढ्याच
+   आखूड जागेत मोडून बसतात, स्तंभ रुंद होत नाही. */
+.old-new-table { table-layout: fixed; }
+.old-new-table td.num, .old-new-table th.num { white-space: nowrap; }
+.col-owner-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .col-malmata { white-space: normal; word-break: break-word; }
 
 /* सर्व स्तंभांसह ए-४ लँडस्केपवर बसावे म्हणून - .a4-page प्रमाणेच आधीच

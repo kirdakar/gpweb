@@ -88,7 +88,17 @@ export default function OldNewComparisonReport() {
 
       {loading ? <p>लोड होत आहे...</p> : (
         <div className="table-wrap">
-          <table>
+          <table className="old-new-table">
+            <colgroup>
+              <col style={{ width: '5%' }} />
+              <col style={{ width: '18%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '13.4%' }} />
+              <col style={{ width: '13.4%' }} />
+              <col style={{ width: '13.4%' }} />
+              <col style={{ width: '13.4%' }} />
+              <col style={{ width: '13.4%' }} />
+            </colgroup>
             <thead>
               <tr>
                 <th>कोड</th>
