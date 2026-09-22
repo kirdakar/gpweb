@@ -338,6 +338,11 @@ tbody tr:hover { background: #f8fafc; }
 .property-list-table td.num, .property-list-table th.num { white-space: nowrap; }
 .col-wrap { white-space: normal; word-break: break-word; }
 
+/* मिळकत नोंदी (यादी): कोड/अ.क्र./मालमत्ता क्रं. आखूड, मालकाचे नाव कोडनंतर
+   लगेच व जास्त रुंद (colgroup, वरची टिपण्णी पहा). */
+.property-rows-table { table-layout: fixed; }
+.property-rows-table td.num, .property-rows-table th.num { white-space: nowrap; }
+
 /* सर्व स्तंभांसह ए-४ लँडस्केपवर बसावे म्हणून - .a4-page प्रमाणेच आधीच
    असलेले landscape named page पुन्हा वापरतो. */
 @media print {

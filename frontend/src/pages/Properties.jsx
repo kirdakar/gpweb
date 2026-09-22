@@ -54,10 +54,23 @@ export default function Properties() {
       {loading ? <p>लोड होत आहे...</p> : (
         <>
           <div className="table-wrap">
-            <table>
+            <table className="property-rows-table">
+              <colgroup>
+                <col style={{ width: '5%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '6%' }} />
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '8.6%' }} />
+                <col style={{ width: '8.6%' }} />
+                <col style={{ width: '8.6%' }} />
+                <col style={{ width: '8.6%' }} />
+                <col style={{ width: '8.6%' }} />
+                <col style={{ width: '8%' }} />
+              </colgroup>
               <thead>
                 <tr>
-                  <th>कोड</th><th>अ.क्र.</th><th>मालमत्ता क्र.</th><th>मालकाचे नाव</th><th>बांधकाम प्रकार</th>
+                  <th>कोड</th><th>मालकाचे नाव</th><th>अ.क्र.</th><th>मालमत्ता क्र.</th><th>बांधकाम प्रकार</th>
                   <th className="num">घरपट्टी</th><th className="num">दिवाबत्ती</th><th className="num">आरोग्य</th>
                   <th className="num">पाणीपट्टी</th><th className="num">एकूण</th><th></th>
                 </tr>
@@ -66,10 +79,10 @@ export default function Properties() {
                 {rows.map((r) => (
                   <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/properties/${r.id}`)}>
                     <td>{r.property_code ?? '-'}</td>
+                    <td className="col-wrap">{r.owner_name}</td>
                     <td>{r.srno ?? '-'}</td>
                     <td>{r.malmata_no ?? '-'}</td>
-                    <td>{r.owner_name}</td>
-                    <td>{r.construction_type_name || '-'}</td>
+                    <td className="col-wrap">{r.construction_type_name || '-'}</td>
                     <td className="num">{r.gharpatti != null ? Number(r.gharpatti).toFixed(2) : '-'}</td>
                     <td className="num">{r.divabatti != null ? Number(r.divabatti).toFixed(2) : '-'}</td>
                     <td className="num">{r.arogya != null ? Number(r.arogya).toFixed(2) : '-'}</td>
@@ -81,7 +94,7 @@ export default function Properties() {
                   </tr>
                 ))}
                 {rows.length === 0 && (
-                  <tr><td colSpan={10} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>नोंदी सापडल्या नाहीत</td></tr>
+                  <tr><td colSpan={11} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>नोंदी सापडल्या नाहीत</td></tr>
                 )}
               </tbody>
             </table>
