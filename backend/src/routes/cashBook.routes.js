@@ -100,6 +100,22 @@ router.get('/:id/voucher', async (req, res) => {
   res.json(row);
 });
 
+// नमुना ३२ (रकमेच्या परताव्यासाठीचा आदेश) - हाही वेगळी नोंदवही नाही,
+// अस्तित्वात असलेल्या खर्च नोंदीचाच (उदा. नमुना १७ च्या अनामत-परतफेडीतून
+// आलेली नोंद, किंवा इतर कोणतीही परतावा खर्च नोंद) परतावा-आदेश-पत्राच्या
+// स्वरूपातील प्रिंट. नमुना १२ (प्रमाणक) पेक्षा वेगळा मायना (पत्र स्वरूप),
+// पण डेटा तोच - दुसऱ्यांदा टाईप करायची गरज नाही.
+router.get('/:id/refund', async (req, res) => {
+  const [[row]] = await pool.query(
+    `SELECT c.*, lh.code AS head_code, lh.name AS head_name
+     FROM cash_book_entries c JOIN ledger_heads lh ON lh.id = c.ledger_head_id WHERE c.id = ?`,
+    [req.params.id]
+  );
+  if (!row) return res.status(404).json({ error: 'नोंद सापडली नाही' });
+  if (row.entry_type !== 'खर्च') return res.status(400).json({ error: 'परतावा आदेश (नमुना ३२) फक्त खर्च नोंदीसाठी छापता येते' });
+  res.json(row);
+});
+
 router.delete('/:id', requirePermission('cash_book', 'delete'), async (req, res) => {
   const [result] = await pool.query('DELETE FROM cash_book_entries WHERE id = ?', [req.params.id]);
   if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found' });

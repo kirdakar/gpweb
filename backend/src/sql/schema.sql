@@ -495,3 +495,31 @@ CREATE TABLE IF NOT EXISTS loan_repayments (
   CONSTRAINT fk_loan_repay_loan FOREIGN KEY (loan_id) REFERENCES loans(id) ON DELETE CASCADE,
   CONSTRAINT fk_loan_repay_cash_entry FOREIGN KEY (cash_book_entry_id) REFERENCES cash_book_entries(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
+
+-- फेज ३ड: नमुना ३१ (प्रवास भत्ता देयक) - नोंद करताच cash_book_entries मध्ये
+-- खर्च नोंदते (फेज ३क च्या नमुना १७/२५/२९ प्रमाणेच "तयार करा = लगेच पोस्ट
+-- करा" पद्धत). नमुना ३२ (रकमेच्या परताव्यासाठीचा आदेश) साठी वेगळी टेबल
+-- नाही - तो cash_book_entries च्या already-existing खर्च नोंदीचाच एक वेगळा
+-- प्रिंट स्वरूप आहे (नमुना ७/१२ प्रमाणेच), backend/src/routes/cashBook.routes.js
+-- मधील /:id/refund राऊट पहा.
+CREATE TABLE IF NOT EXISTS travel_bills (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  traveller_name VARCHAR(150) NOT NULL,
+  financial_year_id INT NOT NULL,
+  travel_date DATE NOT NULL,
+  from_place VARCHAR(150) NULL,
+  to_place VARCHAR(150) NULL,
+  purpose VARCHAR(255) NULL,
+  fare_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  mileage_km DECIMAL(8,2) NOT NULL DEFAULT 0,
+  mileage_rate DECIMAL(8,2) NOT NULL DEFAULT 0,
+  daily_allowance_days DECIMAL(5,2) NOT NULL DEFAULT 0,
+  daily_allowance_rate DECIMAL(8,2) NOT NULL DEFAULT 0,
+  ledger_head_id INT NOT NULL,
+  cash_book_entry_id INT NULL,
+  remark TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_travel_bill_year FOREIGN KEY (financial_year_id) REFERENCES financial_years(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_travel_bill_head FOREIGN KEY (ledger_head_id) REFERENCES ledger_heads(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_travel_bill_cash_entry FOREIGN KEY (cash_book_entry_id) REFERENCES cash_book_entries(id) ON DELETE SET NULL
+) ENGINE=InnoDB;

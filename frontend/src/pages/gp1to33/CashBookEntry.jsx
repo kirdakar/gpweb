@@ -215,7 +215,12 @@ export default function CashBookEntry() {
                       {can('reports_receipt_voucher', 'print') && (
                         e.entry_type === 'जमा'
                           ? <Link className="btn secondary small" to={`/gp1to33/reports/receipt/${e.id}`}>पावती</Link>
-                          : <Link className="btn secondary small" to={`/gp1to33/reports/voucher/${e.id}`}>प्रमाणक</Link>
+                          : (
+                            <>
+                              <Link className="btn secondary small" to={`/gp1to33/reports/voucher/${e.id}`}>प्रमाणक</Link>
+                              <Link className="btn secondary small" to={`/gp1to33/reports/refund/${e.id}`}>परतावा आदेश</Link>
+                            </>
+                          )
                       )}
                       {can('cash_book', 'delete') && <button className="btn danger small" onClick={() => handleDelete(e.id)}>रद्द करा</button>}
                     </td>

@@ -52,6 +52,9 @@ import InvestmentEntry from './pages/gp1to33/InvestmentEntry';
 import InvestmentReport from './pages/gp1to33/InvestmentReport';
 import LoanEntry from './pages/gp1to33/LoanEntry';
 import LoanReport from './pages/gp1to33/LoanReport';
+import TravelBillEntry from './pages/gp1to33/TravelBillEntry';
+import TravelBillReport from './pages/gp1to33/TravelBillReport';
+import RefundOrderPrint from './pages/gp1to33/RefundOrderPrint';
 
 function AppShell() {
   return (
@@ -117,6 +120,9 @@ export default function App() {
             <Route path="/gp1to33/reports/investments" element={<RequireView screen="reports_investments"><InvestmentReport /></RequireView>} />
             <Route path="/gp1to33/loans" element={<RequireView screen="loans"><LoanEntry /></RequireView>} />
             <Route path="/gp1to33/reports/loans" element={<RequireView screen="reports_loans"><LoanReport /></RequireView>} />
+            <Route path="/gp1to33/travel-bills" element={<RequireView screen="travel_bills"><TravelBillEntry /></RequireView>} />
+            <Route path="/gp1to33/reports/travel-bills" element={<RequireView screen="reports_travel_bills"><TravelBillReport /></RequireView>} />
+            <Route path="/gp1to33/reports/refund/:id" element={<RequireView screen="reports_receipt_voucher"><RefundOrderPrint /></RequireView>} />
           </Route>
         </Routes>
       </BrowserRouter>
