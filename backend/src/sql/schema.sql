@@ -288,6 +288,13 @@ CREATE TABLE IF NOT EXISTS cash_book_entries (
     REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
+-- फेज ३अ: नमुना १८ (किरकोळ रोकडवही) नमुना ५ शी सर्वस्वी सारखी रचना आहे -
+-- वेगळी टेबल/UI बनवण्याऐवजी फक्त कोणत्या रोकडवहीची नोंद आहे ते सांगणारा
+-- स्तंभ जोडला (मुख्य=नमुना ५, किरकोळ=नमुना १८); जुन्या सर्व नोंदी आपोआप
+-- 'मुख्य' राहतात, त्यामुळे नमुना ५/६/३/२६-क चे आधीचे वर्तन बदलत नाही.
+ALTER TABLE cash_book_entries
+  ADD COLUMN IF NOT EXISTS register ENUM('मुख्य','किरकोळ') NOT NULL DEFAULT 'मुख्य' AFTER entry_type;
+
 -- नमुना ४ (पंचायतीचे भत्ते व दायित्वे) - वर्षनिहाय, कागदी नमुन्यावरील
 -- प्रत्येक ओळीसाठी एक रक्कम (मुख्यतः हाताने भरायची, वेगळ्या व्यवहार
 -- नोंदींवरून काढता येण्यासारखी नाही - gp_settings प्रमाणेच साधी रचना).
@@ -331,4 +338,25 @@ CREATE TABLE IF NOT EXISTS budget_revisions (
     REFERENCES financial_years(id) ON DELETE RESTRICT,
   CONSTRAINT fk_budget_revision_head FOREIGN KEY (ledger_head_id)
     REFERENCES ledger_heads(id) ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+-- फेज ३अ: नमुना १६ (जंगम), २२ (स्थावर), २३ (रस्ते), २४ (जमिनी) या चारही
+-- मालमत्ता नोंदवह्या एकाच सामायिक टेबलमध्ये (category नुसार वेगळ्या) -
+-- स्तंभ-रचना जवळपास सारखीच आहे. स्थावर/रस्ते/जमीन च्या बेरजा नमुना ४ च्या
+-- A6/A7/A8 ओळींना पुरवतात (त्या ओळी आता इथून आपोआप काढल्या जातात, वेगळ्या
+-- हाताने टाईप करायच्या नाहीत - डुप्लिकेट नोंद टाळण्यासाठी). जंगम (नमुना १६)
+-- ला नमुना ४ मध्ये जुळणारी ओळ नाही, ती फक्त स्वतंत्र नोंदवही म्हणून राहते.
+CREATE TABLE IF NOT EXISTS fixed_assets (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  category ENUM('जंगम','स्थावर','रस्ते','जमीन') NOT NULL,
+  description VARCHAR(255) NOT NULL,
+  acquired_date DATE NULL,
+  acquired_mode VARCHAR(150) NULL,
+  quantity_or_measure VARCHAR(150) NULL,
+  cost_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+  disposal_date DATE NULL,
+  disposal_details TEXT NULL,
+  remark TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_fixed_assets_category (category)
 ) ENGINE=InnoDB;

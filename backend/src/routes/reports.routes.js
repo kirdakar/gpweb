@@ -359,7 +359,7 @@ router.get('/ledger-classified', async (req, res) => {
   const [dayRows] = await pool.query(
     `SELECT DAY(entry_date) AS d, SUM(amount) AS total
      FROM cash_book_entries
-     WHERE financial_year_id = ? AND ledger_head_id = ?
+     WHERE financial_year_id = ? AND ledger_head_id = ? AND register = 'मुख्य'
        AND YEAR(entry_date) = ? AND MONTH(entry_date) = ?
      GROUP BY DAY(entry_date)`,
     [financialYearId, ledgerHeadId, y, m]
@@ -372,7 +372,7 @@ router.get('/ledger-classified', async (req, res) => {
 
   const [[priorRow]] = await pool.query(
     `SELECT COALESCE(SUM(amount), 0) AS total FROM cash_book_entries
-     WHERE financial_year_id = ? AND ledger_head_id = ? AND entry_date < ?`,
+     WHERE financial_year_id = ? AND ledger_head_id = ? AND register = 'मुख्य' AND entry_date < ?`,
     [financialYearId, ledgerHeadId, firstOfMonth]
   );
   const priorTotal = round2(Number(priorRow.total));
@@ -392,7 +392,7 @@ router.get('/annual-summary', async (req, res) => {
     'SELECT id, code, group_type, parent_id, name, sort_order, is_leaf FROM ledger_heads ORDER BY group_type, sort_order'
   );
   const [sumRows] = await pool.query(
-    'SELECT ledger_head_id, SUM(amount) AS total FROM cash_book_entries WHERE financial_year_id = ? GROUP BY ledger_head_id',
+    "SELECT ledger_head_id, SUM(amount) AS total FROM cash_book_entries WHERE financial_year_id = ? AND register = 'मुख्य' GROUP BY ledger_head_id",
     [financialYearId]
   );
   const amountByHead = new Map(sumRows.map((r) => [r.ledger_head_id, Number(r.total)]));
@@ -425,14 +425,14 @@ router.get('/monthly-statement', async (req, res) => {
 
   const [priorRows] = await pool.query(
     `SELECT ledger_head_id, SUM(amount) AS total FROM cash_book_entries
-     WHERE financial_year_id = ? AND entry_date < ? GROUP BY ledger_head_id`,
+     WHERE financial_year_id = ? AND register = 'मुख्य' AND entry_date < ? GROUP BY ledger_head_id`,
     [financialYearId, firstOfMonth]
   );
   const priorByHead = new Map(priorRows.map((r) => [r.ledger_head_id, Number(r.total)]));
 
   const [monthRows] = await pool.query(
     `SELECT ledger_head_id, SUM(amount) AS total FROM cash_book_entries
-     WHERE financial_year_id = ? AND YEAR(entry_date) = ? AND MONTH(entry_date) = ? GROUP BY ledger_head_id`,
+     WHERE financial_year_id = ? AND register = 'मुख्य' AND YEAR(entry_date) = ? AND MONTH(entry_date) = ? GROUP BY ledger_head_id`,
     [financialYearId, y, m]
   );
   const monthByHead = new Map(monthRows.map((r) => [r.ledger_head_id, Number(r.total)]));
@@ -469,7 +469,7 @@ router.get('/welfare-expenditure', async (req, res) => {
 
   const [[incomeRow]] = await pool.query(
     `SELECT COALESCE(SUM(amount), 0) AS total FROM cash_book_entries
-     WHERE financial_year_id = ? AND entry_type = 'जमा' AND YEAR(entry_date) = ? AND MONTH(entry_date) = ?`,
+     WHERE financial_year_id = ? AND entry_type = 'जमा' AND register = 'मुख्य' AND YEAR(entry_date) = ? AND MONTH(entry_date) = ?`,
     [financialYearId, y, m]
   );
   const monthIncome = round2(Number(incomeRow.total));
@@ -479,13 +479,13 @@ router.get('/welfare-expenditure', async (req, res) => {
     if (!head) return null;
     const [entries] = await pool.query(
       `SELECT id, entry_date, amount, narration, reference_no FROM cash_book_entries
-       WHERE financial_year_id = ? AND ledger_head_id = ? AND YEAR(entry_date) = ? AND MONTH(entry_date) = ?
+       WHERE financial_year_id = ? AND ledger_head_id = ? AND register = 'मुख्य' AND YEAR(entry_date) = ? AND MONTH(entry_date) = ?
        ORDER BY entry_date, id`,
       [financialYearId, head.id, y, m]
     );
     const [[priorRow]] = await pool.query(
       `SELECT COALESCE(SUM(amount), 0) AS total FROM cash_book_entries
-       WHERE financial_year_id = ? AND ledger_head_id = ? AND entry_date < ?`,
+       WHERE financial_year_id = ? AND ledger_head_id = ? AND register = 'मुख्य' AND entry_date < ?`,
       [financialYearId, head.id, firstOfMonth]
     );
     const priorTotal = round2(Number(priorRow.total));

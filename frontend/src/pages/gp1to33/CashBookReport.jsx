@@ -10,12 +10,15 @@ function firstOfMonth() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
-// नमुना ५ - दैनिक रोकड वही अहवाल (कालावधीसाठी जमा व खर्च दोन्ही स्वतंत्र
-// तक्त्यांत, चढती बेरीज (शिल्लक) सह).
+const REGISTERS = ['मुख्य', 'किरकोळ'];
+
+// नमुना ५ (मुख्य) / नमुना १८ (किरकोळ) - रोकड वही अहवाल (कालावधीसाठी जमा व
+// खर्च दोन्ही स्वतंत्र तक्त्यांत, चढती बेरीज (शिल्लक) सह).
 export default function CashBookReport() {
   const { yearId, currentYear } = useYear();
   const { can } = usePermissions();
   const { gpLine } = useGpSettings();
+  const [register, setRegister] = useState('मुख्य');
   const [from, setFrom] = useState(firstOfMonth());
   const [to, setTo] = useState(() => new Date().toISOString().slice(0, 10));
   const [rows, setRows] = useState([]);
@@ -24,11 +27,11 @@ export default function CashBookReport() {
   function load() {
     if (!yearId) return;
     setLoading(true);
-    client.get('/cash-book', { params: { financialYearId: yearId, from, to } })
+    client.get('/cash-book', { params: { financialYearId: yearId, from, to, register } })
       .then(({ data }) => setRows(data))
       .finally(() => setLoading(false));
   }
-  useEffect(() => { load(); }, [yearId]);
+  useEffect(() => { load(); }, [yearId, register]);
 
   const jamaRows = rows.filter((r) => r.entry_type === 'जमा');
   const kharchRows = rows.filter((r) => r.entry_type === 'खर्च');
@@ -71,7 +74,7 @@ export default function CashBookReport() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <h1>रोकड वही अहवाल (नमुना ५)</h1>
+        <h1>{register === 'मुख्य' ? 'रोकड वही अहवाल (नमुना ५)' : 'किरकोळ रोकडवही अहवाल (नमुना १८)'}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={{ padding: 8, border: '1px solid var(--border)', borderRadius: 6 }} />
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={{ padding: 8, border: '1px solid var(--border)', borderRadius: 6 }} />
@@ -81,9 +84,15 @@ export default function CashBookReport() {
         </div>
       </div>
 
+      <div className="no-print" style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        {REGISTERS.map((r) => (
+          <button key={r} type="button" className={`btn ${register === r ? '' : 'secondary'}`} onClick={() => setRegister(r)}>{r}</button>
+        ))}
+      </div>
+
       <div className="print-header">
         <h2>{gpLine}</h2>
-        <p style={{ fontWeight: 700 }}>दैनिक रोकड वही (नमुना ५)</p>
+        <p style={{ fontWeight: 700 }}>{register === 'मुख्य' ? 'दैनिक रोकड वही (नमुना ५)' : 'किरकोळ रोकडवही (नमुना १८)'}</p>
         <p>आर्थिक वर्ष: {currentYear?.year_label || ''} | कालावधी: {from} ते {to}</p>
       </div>
 

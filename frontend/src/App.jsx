@@ -39,6 +39,10 @@ import WelfareExpenditureReport from './pages/gp1to33/WelfareExpenditureReport';
 import BudgetReport from './pages/gp1to33/BudgetReport';
 import BudgetRevisionReport from './pages/gp1to33/BudgetRevisionReport';
 import AssetsLiabilitiesReport from './pages/gp1to33/AssetsLiabilitiesReport';
+import ReceiptPrint from './pages/gp1to33/ReceiptPrint';
+import VoucherPrint from './pages/gp1to33/VoucherPrint';
+import FixedAssetsEntry from './pages/gp1to33/FixedAssetsEntry';
+import FixedAssetsReport from './pages/gp1to33/FixedAssetsReport';
 
 function AppShell() {
   return (
@@ -91,6 +95,10 @@ export default function App() {
             <Route path="/gp1to33/reports/budget" element={<RequireView screen="reports_budget"><BudgetReport /></RequireView>} />
             <Route path="/gp1to33/reports/budget-revision" element={<RequireView screen="reports_budget_revision"><BudgetRevisionReport /></RequireView>} />
             <Route path="/gp1to33/reports/assets-liabilities" element={<RequireView screen="reports_assets_liabilities"><AssetsLiabilitiesReport /></RequireView>} />
+            <Route path="/gp1to33/reports/receipt/:id" element={<RequireView screen="reports_receipt_voucher"><ReceiptPrint /></RequireView>} />
+            <Route path="/gp1to33/reports/voucher/:id" element={<RequireView screen="reports_receipt_voucher"><VoucherPrint /></RequireView>} />
+            <Route path="/gp1to33/fixed-assets" element={<RequireView screen="fixed_assets"><FixedAssetsEntry /></RequireView>} />
+            <Route path="/gp1to33/reports/fixed-assets" element={<RequireView screen="reports_fixed_assets"><FixedAssetsReport /></RequireView>} />
           </Route>
         </Routes>
       </BrowserRouter>

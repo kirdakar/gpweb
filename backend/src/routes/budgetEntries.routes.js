@@ -22,7 +22,7 @@ async function findPriorYear(yearLabel) {
 async function actualsFor(yearRow) {
   if (!yearRow) return new Map();
   const [rows] = await pool.query(
-    'SELECT ledger_head_id, SUM(amount) AS total FROM cash_book_entries WHERE financial_year_id = ? GROUP BY ledger_head_id',
+    "SELECT ledger_head_id, SUM(amount) AS total FROM cash_book_entries WHERE financial_year_id = ? AND register = 'मुख्य' GROUP BY ledger_head_id",
     [yearRow.id]
   );
   return new Map(rows.map((r) => [r.ledger_head_id, Number(r.total)]));

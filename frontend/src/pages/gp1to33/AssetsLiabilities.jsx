@@ -61,9 +61,9 @@ export default function AssetsLiabilities() {
               {list.map((item) => (
                 <tr key={item.code}>
                   <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{item.code}</td>
-                  <td>{item.name}</td>
+                  <td>{item.name}{item.derived && <span style={{ color: 'var(--text-muted)', fontSize: 12 }}> (मालमत्ता नोंदणीवरून आपोआप)</span>}</td>
                   <td className="num">
-                    {canEdit ? (
+                    {canEdit && !item.derived ? (
                       <input
                         type="number" step="0.01" value={item.amount}
                         onChange={(e) => updateAmount(side, item.code, e.target.value)}

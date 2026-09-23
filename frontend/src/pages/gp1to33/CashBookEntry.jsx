@@ -1,19 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 
 const PAYMENT_MODES = ['रोख', 'धनादेश'];
+const REGISTERS = ['मुख्य', 'किरकोळ'];
 
-// नमुना ५ - दैनिक रोकड वही. प्रत्येक जमा/खर्च व्यवहार लेखाशीर्षाशी जोडून
-// नोंदतो; नमुना ६ (वर्गीकृत नोंदवही) या नोंदींवरूनच काढलेला रिपोर्ट आहे.
+// नमुना ५ (मुख्य रोकड वही) आणि नमुना १८ (किरकोळ रोकडवही) - दोन्ही एकाच
+// cash_book_entries टेबलमध्ये, register स्तंभाने वेगळे (डुप्लिकेट टेबल/UI
+// टाळण्यासाठी). प्रत्येक जमा/खर्च व्यवहार लेखाशीर्षाशी जोडून नोंदतो; नमुना ६
+// (वर्गीकृत नोंदवही) या नोंदींवरूनच काढलेला रिपोर्ट आहे (फक्त register='मुख्य').
 export default function CashBookEntry() {
   const { yearId, currentYear } = useYear();
   const { can } = usePermissions();
 
   const [heads, setHeads] = useState([]);
   const [entryType, setEntryType] = useState('जमा');
+  const [register, setRegister] = useState('मुख्य');
   const [headSearch, setHeadSearch] = useState('');
   const [headDropdownOpen, setHeadDropdownOpen] = useState(false);
   const [selectedHeadId, setSelectedHeadId] = useState('');
@@ -37,11 +42,11 @@ export default function CashBookEntry() {
   function loadRecent() {
     if (!yearId) return;
     setLoadingRecent(true);
-    client.get('/cash-book', { params: { financialYearId: yearId } })
+    client.get('/cash-book', { params: { financialYearId: yearId, register } })
       .then(({ data }) => setRecentEntries(data.slice(-30).reverse()))
       .finally(() => setLoadingRecent(false));
   }
-  useEffect(() => { loadRecent(); }, [yearId]);
+  useEffect(() => { loadRecent(); }, [yearId, register]);
 
   // फक्त leaf (प्रत्यक्ष नोंद करता येणारे) शीर्ष, निवडलेल्या जमा/खर्च
   // प्रकाराशी जुळणारे - इतर मास्टर स्क्रीनवरील शोधा-कंबोसारखेच.
@@ -82,6 +87,7 @@ export default function CashBookEntry() {
         entry_date: entryDate,
         ledger_head_id: selectedHeadId,
         entry_type: entryType,
+        register,
         amount: amt,
         payment_mode: paymentMode,
         reference_no: referenceNo,
@@ -106,8 +112,16 @@ export default function CashBookEntry() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <h1>दैनिक रोकड वही (नमुना ५) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
+        <h1>{register === 'मुख्य' ? 'दैनिक रोकड वही (नमुना ५)' : 'किरकोळ रोकडवही (नमुना १८)'} {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <CloseReportButton />
+      </div>
+
+      <div className="card no-print" style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {REGISTERS.map((r) => (
+            <button key={r} type="button" className={`btn ${register === r ? '' : 'secondary'}`} onClick={() => setRegister(r)}>{r}</button>
+          ))}
+        </div>
       </div>
 
       {can('cash_book', 'add') && (
@@ -197,7 +211,12 @@ export default function CashBookEntry() {
                     <td>{e.payment_mode}</td>
                     <td>{e.reference_no || '-'}</td>
                     <td>{e.narration || '-'}</td>
-                    <td>
+                    <td style={{ display: 'flex', gap: 6 }}>
+                      {can('reports_receipt_voucher', 'print') && (
+                        e.entry_type === 'जमा'
+                          ? <Link className="btn secondary small" to={`/gp1to33/reports/receipt/${e.id}`}>पावती</Link>
+                          : <Link className="btn secondary small" to={`/gp1to33/reports/voucher/${e.id}`}>प्रमाणक</Link>
+                      )}
                       {can('cash_book', 'delete') && <button className="btn danger small" onClick={() => handleDelete(e.id)}>रद्द करा</button>}
                     </td>
                   </tr>

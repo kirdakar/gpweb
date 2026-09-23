@@ -11,15 +11,19 @@ router.use(requireAuth);
 
 const PAYMENT_MODES = ['रोख', 'धनादेश'];
 const ENTRY_TYPES = ['जमा', 'खर्च'];
+const REGISTERS = ['मुख्य', 'किरकोळ'];
 
 router.get('/', async (req, res) => {
-  const { financialYearId, from, to, entryType } = req.query;
+  const { financialYearId, from, to, entryType, register } = req.query;
   const where = [];
   const params = [];
   if (financialYearId) { where.push('c.financial_year_id = ?'); params.push(financialYearId); }
   if (from) { where.push('c.entry_date >= ?'); params.push(from); }
   if (to) { where.push('c.entry_date <= ?'); params.push(to); }
   if (entryType) { where.push('c.entry_type = ?'); params.push(entryType); }
+  // register न दिल्यास डीफॉल्ट 'मुख्य' (नमुना ५) - किरकोळ रोकडवही (नमुना १८)
+  // पाहण्यासाठी register=किरकोळ स्पष्ट पाठवावा लागतो, आपोआप मिसळत नाही.
+  where.push('c.register = ?'); params.push(REGISTERS.includes(register) ? register : 'मुख्य');
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
   const [rows] = await pool.query(
@@ -35,7 +39,7 @@ router.get('/', async (req, res) => {
 
 router.post('/', requirePermission('cash_book', 'add'), async (req, res) => {
   const {
-    financial_year_id, entry_date, ledger_head_id, entry_type, amount,
+    financial_year_id, entry_date, ledger_head_id, entry_type, amount, register,
     payment_mode, reference_no, reference_date, bank_deposit_date, narration,
   } = req.body || {};
 
@@ -46,6 +50,7 @@ router.post('/', requirePermission('cash_book', 'add'), async (req, res) => {
   const amt = Number(amount);
   if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ error: 'रक्कम शून्यापेक्षा जास्त हवी' });
   const mode = PAYMENT_MODES.includes(payment_mode) ? payment_mode : 'रोख';
+  const reg = REGISTERS.includes(register) ? register : 'मुख्य';
 
   const [[head]] = await pool.query('SELECT id, group_type, is_leaf FROM ledger_heads WHERE id = ?', [ledger_head_id]);
   if (!head) return res.status(404).json({ error: 'लेखाशीर्ष सापडले नाही' });
@@ -54,10 +59,10 @@ router.post('/', requirePermission('cash_book', 'add'), async (req, res) => {
 
   const [result] = await pool.query(
     `INSERT INTO cash_book_entries
-       (financial_year_id, entry_date, ledger_head_id, entry_type, amount, payment_mode,
+       (financial_year_id, entry_date, ledger_head_id, entry_type, register, amount, payment_mode,
         reference_no, reference_date, bank_deposit_date, narration, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [financial_year_id, entry_date, ledger_head_id, entry_type, amt, mode,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [financial_year_id, entry_date, ledger_head_id, entry_type, reg, amt, mode,
       reference_no || null, reference_date || null, bank_deposit_date || null, narration || null, req.user.id]
   );
   const [[row]] = await pool.query(
@@ -66,6 +71,33 @@ router.post('/', requirePermission('cash_book', 'add'), async (req, res) => {
     [result.insertId]
   );
   res.status(201).json(row);
+});
+
+// नमुना ७ (सामान्य पावती) व नमुना १२ (आकस्मिक खर्चाचे प्रमाणक) वेगळ्या
+// नोंदवह्या नाहीत - त्याच cash_book_entries नोंदीचे कागदी-नमुन्यातील प्रिंट
+// स्वरूप आहेत (जमा नोंदीसाठी पावती, खर्च नोंदीसाठी प्रमाणक), म्हणून इथेच
+// त्याच ओळीचे तपशील परत करतो - रक्कम/तारीख/लेखाशीर्ष दुसऱ्यांदा टाईप करायची
+// गरज नाही.
+router.get('/:id/receipt', async (req, res) => {
+  const [[row]] = await pool.query(
+    `SELECT c.*, lh.code AS head_code, lh.name AS head_name
+     FROM cash_book_entries c JOIN ledger_heads lh ON lh.id = c.ledger_head_id WHERE c.id = ?`,
+    [req.params.id]
+  );
+  if (!row) return res.status(404).json({ error: 'नोंद सापडली नाही' });
+  if (row.entry_type !== 'जमा') return res.status(400).json({ error: 'पावती (नमुना ७) फक्त जमा नोंदीसाठी छापता येते' });
+  res.json(row);
+});
+
+router.get('/:id/voucher', async (req, res) => {
+  const [[row]] = await pool.query(
+    `SELECT c.*, lh.code AS head_code, lh.name AS head_name
+     FROM cash_book_entries c JOIN ledger_heads lh ON lh.id = c.ledger_head_id WHERE c.id = ?`,
+    [req.params.id]
+  );
+  if (!row) return res.status(404).json({ error: 'नोंद सापडली नाही' });
+  if (row.entry_type !== 'खर्च') return res.status(400).json({ error: 'प्रमाणक (नमुना १२) फक्त खर्च नोंदीसाठी छापता येते' });
+  res.json(row);
 });
 
 router.delete('/:id', requirePermission('cash_book', 'delete'), async (req, res) => {

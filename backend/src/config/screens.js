@@ -37,6 +37,10 @@ const SCREENS = [
   { code: 'reports_annual_summary', label: 'वार्षिक जमा-खर्च (नमुना ३)', actions: ['view', 'print'] },
   { code: 'reports_monthly_statement', label: 'मासिक जमा-खर्च विवरण (नमुना २६-क)', actions: ['view', 'print'] },
   { code: 'reports_welfare_expenditure', label: 'मागासवर्गीय/महिला-बाल मासिक विवरण (नमुना २८)', actions: ['view', 'print'] },
+  // फेज ३अ: किरकोळ रोकडवही (नमुना १८), पावती/प्रमाणक (नमुना ७/१२), मालमत्ता नोंदवह्या (नमुना १६/२२/२३/२४)
+  { code: 'reports_receipt_voucher', label: 'पावती/प्रमाणक प्रिंट (नमुना ७/१२)', actions: ['view', 'print'] },
+  { code: 'fixed_assets', label: 'मालमत्ता नोंदणी (नमुना १६/२२/२३/२४)', actions: ['view', 'add', 'edit', 'delete'] },
+  { code: 'reports_fixed_assets', label: 'मालमत्ता अहवाल (नमुना १६/२२/२३/२४)', actions: ['view', 'print'] },
 ];
 
 const ACTION_LABELS = { view: 'पहा', add: 'नवीन', edit: 'संपादन', delete: 'मिटवा', print: 'प्रिंट' };

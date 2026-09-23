@@ -10,6 +10,10 @@ const { requirePermission } = require('../middleware/permissions');
 const router = express.Router();
 router.use(requireAuth);
 
+// A6/A7/A8 आता fixed_assets (नमुना २२/२३/२४) वरून आपोआप काढले जातात - हाताने
+// टाईप करायचे नाहीत (डुप्लिकेट नोंद टाळण्यासाठी, फेज ३अ).
+const DERIVED_ASSET_CODES = { A6: 'स्थावर', A7: 'रस्ते', A8: 'जमीन' };
+
 const ITEMS = {
   'दायित्वे': [
     { code: 'L1a', name: 'थकीत देयके (क) वेतन' },
@@ -49,9 +53,21 @@ router.get('/', async (req, res) => {
   const amountByCode = {};
   for (const r of rows) amountByCode[r.item_code] = Number(r.amount);
 
+  const [assetRows] = await pool.query(
+    'SELECT category, COALESCE(SUM(cost_amount), 0) AS total FROM fixed_assets GROUP BY category'
+  );
+  const assetTotalByCategory = Object.fromEntries(assetRows.map((r) => [r.category, Number(r.total)]));
+  for (const [code, category] of Object.entries(DERIVED_ASSET_CODES)) {
+    amountByCode[code] = assetTotalByCategory[category] ?? 0;
+  }
+
   const result = {};
   for (const side of Object.keys(ITEMS)) {
-    result[side] = ITEMS[side].map((item) => ({ ...item, amount: amountByCode[item.code] ?? 0 }));
+    result[side] = ITEMS[side].map((item) => ({
+      ...item,
+      amount: amountByCode[item.code] ?? 0,
+      derived: Boolean(DERIVED_ASSET_CODES[item.code]),
+    }));
   }
   res.json(result);
 });
@@ -68,6 +84,7 @@ router.put('/', requirePermission('assets_liabilities', 'edit'), async (req, res
     await conn.beginTransaction();
     for (const e of entries) {
       if (!validCodes.has(e.item_code)) continue;
+      if (DERIVED_ASSET_CODES[e.item_code]) continue; // A6/A7/A8 आता fixed_assets वरून आपोआप - हाताने बदलता येत नाहीत
       const side = ITEMS['दायित्वे'].some((i) => i.code === e.item_code) ? 'दायित्वे' : 'भत्ता';
       const itemName = [...ITEMS['दायित्वे'], ...ITEMS['भत्ता']].find((i) => i.code === e.item_code).name;
       await conn.query(
