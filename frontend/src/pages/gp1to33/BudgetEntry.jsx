@@ -3,11 +3,10 @@ import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
-import useGpSettings from '../../hooks/useGpSettings';
 
-// नमुना १ - वार्षिक अंदाजपत्रक. प्रत्येक leaf शीर्षासाठी प्रस्तावित/मंजूर
-// अंदाज संपादित करता येतो; मागील वर्ष/गतपूर्व वर्षाची प्रत्यक्ष रक्कम
-// (कॉलम ४/५) फक्त वाचनीय, backend ने cash_book_entries वरून काढलेली.
+// नमुना १ - वार्षिक अंदाजपत्रक नोंदणी. प्रत्येक leaf शीर्षासाठी प्रस्तावित/
+// मंजूर अंदाज इथे संपादित करतात; प्रिंट स्वरूपातील पूर्ण अहवाल (मागील/गतपूर्व
+// वर्षाच्या प्रत्यक्ष रकमेसह) रिपोर्ट मेन्यूतील BudgetReport.jsx वर आहे.
 function buildTree(rows) {
   const byParent = new Map();
   for (const r of rows) {
@@ -19,7 +18,7 @@ function buildTree(rows) {
   return byParent;
 }
 
-function TreeRows({ node, byParent, depth, edits, onEdit, canEdit, printMode }) {
+function TreeRows({ node, byParent, depth, edits, onEdit, canEdit }) {
   const children = byParent.get(node.id) || [];
   const edited = edits[node.id] || {};
   return (
@@ -32,31 +31,29 @@ function TreeRows({ node, byParent, depth, edits, onEdit, canEdit, printMode }) 
         {node.is_leaf ? (
           <>
             <td className="num">
-              {canEdit && !printMode ? (
+              {canEdit ? (
                 <input type="number" step="0.01" value={edited.proposed_amount ?? node.proposed_amount}
                   onChange={(e) => onEdit(node.id, 'proposed_amount', e.target.value)}
                   style={{ width: 110, padding: 4, textAlign: 'right', border: '1px solid var(--border)', borderRadius: 4 }} />
               ) : Number(edited.proposed_amount ?? node.proposed_amount).toFixed(2)}
             </td>
             <td className="num">
-              {canEdit && !printMode ? (
+              {canEdit ? (
                 <input type="number" step="0.01" value={edited.approved_amount ?? node.approved_amount}
                   onChange={(e) => onEdit(node.id, 'approved_amount', e.target.value)}
                   style={{ width: 110, padding: 4, textAlign: 'right', border: '1px solid var(--border)', borderRadius: 4 }} />
               ) : Number(edited.approved_amount ?? node.approved_amount).toFixed(2)}
             </td>
-            <td className="num">{Number(node.previous_year_actual).toFixed(2)}</td>
-            <td className="num">{Number(node.year_before_previous_actual).toFixed(2)}</td>
           </>
         ) : (
           <>
-            <td /><td /><td /><td />
+            <td /><td />
           </>
         )}
       </tr>
       {children.map((child) => (
         <TreeRows key={child.id} node={child} byParent={byParent} depth={depth + 1}
-          edits={edits} onEdit={onEdit} canEdit={canEdit} printMode={printMode} />
+          edits={edits} onEdit={onEdit} canEdit={canEdit} />
       ))}
     </>
   );
@@ -65,7 +62,6 @@ function TreeRows({ node, byParent, depth, edits, onEdit, canEdit, printMode }) 
 export default function BudgetEntry() {
   const { yearId, currentYear } = useYear();
   const { can } = usePermissions();
-  const { gpLine } = useGpSettings();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [edits, setEdits] = useState({});
@@ -114,21 +110,14 @@ export default function BudgetEntry() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <h1>वार्षिक अंदाजपत्रक (नमुना १) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
+        <h1>वार्षिक अंदाजपत्रक नोंदणी (नमुना १) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           {canEdit && <button className="btn" type="button" onClick={handleSave} disabled={saving}>{saving ? 'जतन होत आहे...' : 'जतन करा'}</button>}
-          <button className="btn secondary" onClick={() => window.print()} disabled={!can('budget_entries', 'print')}>प्रिंट</button>
           <CloseReportButton />
         </div>
       </div>
 
-      {error && <div className="error-box no-print">{error}</div>}
-
-      <div className="print-header">
-        <h2>{gpLine}</h2>
-        <p style={{ fontWeight: 700 }}>वार्षिक अंदाजपत्रक (नमुना १)</p>
-        <p>आर्थिक वर्ष: {currentYear?.year_label || ''}{data?.previous_year ? ` | मागील वर्ष: ${data.previous_year.year_label}` : ''}{data?.year_before_previous ? ` | गतपूर्व वर्ष: ${data.year_before_previous.year_label}` : ''}</p>
-      </div>
+      {error && <div className="error-box">{error}</div>}
 
       {loading ? <p>लोड होत आहे...</p> : (
         <>
@@ -139,13 +128,12 @@ export default function BudgetEntry() {
                 <tr>
                   <th>कोड</th><th>जमा शीर्ष</th>
                   <th className="num">प्रस्तावित अंदाज</th><th className="num">मंजूर अंदाज</th>
-                  <th className="num">मागील वर्षी प्रत्यक्ष</th><th className="num">गतपूर्व वर्षी प्रत्यक्ष</th>
                 </tr>
               </thead>
               <tbody>
                 {(jamaTree.get('root') || []).map((node) => (
                   <TreeRows key={node.id} node={node} byParent={jamaTree} depth={0}
-                    edits={edits} onEdit={onEdit} canEdit={canEdit} printMode={false} />
+                    edits={edits} onEdit={onEdit} canEdit={canEdit} />
                 ))}
               </tbody>
             </table>
@@ -158,13 +146,12 @@ export default function BudgetEntry() {
                 <tr>
                   <th>कोड</th><th>खर्च शीर्ष</th>
                   <th className="num">प्रस्तावित अंदाज</th><th className="num">मंजूर अंदाज</th>
-                  <th className="num">मागील वर्षी प्रत्यक्ष</th><th className="num">गतपूर्व वर्षी प्रत्यक्ष</th>
                 </tr>
               </thead>
               <tbody>
                 {(kharchTree.get('root') || []).map((node) => (
                   <TreeRows key={node.id} node={node} byParent={kharchTree} depth={0}
-                    edits={edits} onEdit={onEdit} canEdit={canEdit} printMode={false} />
+                    edits={edits} onEdit={onEdit} canEdit={canEdit} />
                 ))}
               </tbody>
             </table>

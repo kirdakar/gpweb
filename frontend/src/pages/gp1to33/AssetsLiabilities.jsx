@@ -3,14 +3,13 @@ import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
-import useGpSettings from '../../hooks/useGpSettings';
 
-// नमुना ४ - पंचायतीचे भत्ते व दायित्वे. दोन्ही बाजूंचे विषय कायद्याने
-// ठरलेले (स्थिर यादी) - फक्त रक्कम भरायची/बदलायची.
+// नमुना ४ - पंचायतीचे भत्ते व दायित्वे नोंदणी. दोन्ही बाजूंचे विषय कायद्याने
+// ठरलेले (स्थिर यादी) - फक्त रक्कम भरायची/बदलायची. प्रिंट स्वरूप रिपोर्ट
+// मेन्यूतील AssetsLiabilitiesReport.jsx वर आहे.
 export default function AssetsLiabilities() {
   const { yearId, currentYear } = useYear();
   const { can } = usePermissions();
-  const { gpLine } = useGpSettings();
 
   const [liabilities, setLiabilities] = useState([]);
   const [assets, setAssets] = useState([]);
@@ -49,8 +48,6 @@ export default function AssetsLiabilities() {
     }
   }
 
-  const liabilitiesTotal = liabilities.reduce((s, i) => s + Number(i.amount || 0), 0);
-  const assetsTotal = assets.reduce((s, i) => s + Number(i.amount || 0), 0);
   const canEdit = can('assets_liabilities', 'edit');
 
   function ItemTable({ title, list, side }) {
@@ -89,33 +86,19 @@ export default function AssetsLiabilities() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <h1>पंचायतीचे भत्ते व दायित्वे (नमुना ४) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
+        <h1>पंचायतीचे भत्ते व दायित्वे नोंदणी (नमुना ४) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           {canEdit && <button className="btn" type="button" onClick={handleSave} disabled={saving}>{saving ? 'जतन होत आहे...' : 'जतन करा'}</button>}
-          <button className="btn secondary" onClick={() => window.print()} disabled={!can('assets_liabilities', 'print')}>प्रिंट</button>
           <CloseReportButton />
         </div>
       </div>
 
-      {error && <div className="error-box no-print">{error}</div>}
-
-      <div className="print-header">
-        <h2>{gpLine}</h2>
-        <p style={{ fontWeight: 700 }}>पंचायतीचे भत्ते व दायित्वे (नमुना ४)</p>
-        <p>आर्थिक वर्ष: {currentYear?.year_label || ''}</p>
-      </div>
+      {error && <div className="error-box">{error}</div>}
 
       {loading ? <p>लोड होत आहे...</p> : (
         <>
           <ItemTable title="दायित्वे (Liabilities)" list={liabilities} side="दायित्वे" />
           <ItemTable title="भत्ता (Assets / येणे रकमा)" list={assets} side="भत्ता" />
-          <div className="card" style={{ maxWidth: 320 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>एकूण दायित्वे</span><strong>{liabilitiesTotal.toFixed(2)}</strong></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>एकूण भत्ता</span><strong>{assetsTotal.toFixed(2)}</strong></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border)', marginTop: 6, paddingTop: 6 }}>
-              <span>निव्वळ (भत्ता - दायित्वे)</span><strong>{(assetsTotal - liabilitiesTotal).toFixed(2)}</strong>
-            </div>
-          </div>
         </>
       )}
     </div>

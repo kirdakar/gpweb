@@ -267,6 +267,36 @@ tbody tr:hover { background: #f8fafc; }
 }
 .menubar-dropdown a.active, .menubar-dropdown a:hover { background: #eef2ff; color: var(--primary); text-decoration: none; }
 
+/* नेस्टेड सब-मेन्यू (उदा. "ग्रामपंचायत १ ते ३३ नमूना") - मुख्य ड्रॉपडाऊनमधील
+   एका आयटमवर hover केल्यास उजवीकडे उघडणारा दुसरा स्तर. */
+.menubar-subitem { position: relative; }
+.menubar-sub-trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menubar-sub-trigger:hover, .menubar-sub-trigger.open { background: #eef2ff; color: var(--primary); }
+.menubar-submenu {
+  position: absolute;
+  top: -4px;
+  left: 100%;
+  min-width: 260px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.28);
+  z-index: 60;
+  padding: 4px;
+}
+
 .main-content { flex: 1; }
 
 .pagination { display: flex; gap: 8px; align-items: center; margin-top: 12px; justify-content: flex-end; }

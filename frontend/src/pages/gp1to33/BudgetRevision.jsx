@@ -3,15 +3,13 @@ import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
-import useGpSettings from '../../hooks/useGpSettings';
 
-// नमुना २ - पुनर्विनियोजन विवरणपत्र. कागदी नमुना फक्त मुख्य गट स्तरावर
-// (उदा. "एक(अ) कर") मंजूर अर्थसंकल्प वि. सुधारित अंदाज दाखवतो, प्रत्येक
-// उप-शीर्षासाठी नाही - नमुना १ पेक्षा वेगळी, खूप कमी वापरली जाणारी नोंद.
+// नमुना २ - पुनर्विनियोजन नोंदणी. कागदी नमुना फक्त मुख्य गट स्तरावर सुधारित
+// अंदाज दाखवतो (उदा. "एक(अ) कर" म्हणून एक ओळ, प्रत्येक उप-शीर्षासाठी नाही).
+// ज्ञापन प्रिंट स्वरूप रिपोर्ट मेन्यूतील BudgetRevisionReport.jsx वर आहे.
 export default function BudgetRevision() {
   const { yearId, currentYear } = useYear();
   const { can } = usePermissions();
-  const { gpLine, settings } = useGpSettings();
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -95,35 +93,19 @@ export default function BudgetRevision() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <h1>पुनर्विनियोजन विवरणपत्र (नमुना २) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
+        <h1>पुनर्विनियोजन नोंदणी (नमुना २) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           {canEdit && <button className="btn" type="button" onClick={handleSave} disabled={saving}>{saving ? 'जतन होत आहे...' : 'जतन करा'}</button>}
-          <button className="btn secondary" onClick={() => window.print()} disabled={!can('budget_revisions', 'print')}>प्रिंट</button>
           <CloseReportButton />
         </div>
       </div>
 
-      {error && <div className="error-box no-print">{error}</div>}
-
-      <div className="print-header">
-        <h2>{gpLine}</h2>
-        <p style={{ fontWeight: 700 }}>पुनर्विनियोजन विवरणपत्र (नमुना २)</p>
-        <p>आर्थिक वर्ष: {currentYear?.year_label || ''} या वर्षासाठी मान्य केलेले पुनर्विनियोजन व नियतवाटप यांचे विवरणपत्र आहे.</p>
-      </div>
+      {error && <div className="error-box">{error}</div>}
 
       {loading ? <p>लोड होत आहे...</p> : (
         <>
           <GroupTable title="जमा शीर्ष" list={jamaRows} />
           <GroupTable title="खर्च शीर्ष" list={kharchRows} />
-          <div style={{ marginTop: 24 }}>
-            <p>ज्ञापन :</p>
-            <p>दिनांक ....................... रोजी झालेल्या ग्रामपंचायत ठराव क्रमांक ....................... अन्वये मान्य केलेले पुनर्विनियोजन व नियतवाटप यांचे विवरणपत्र खाली सही करणारी व्यक्ती माहे ....................... सन ....................... करिता पाठवीत आहे.</p>
-            <div style={{ marginTop: 40, display: 'flex', justifyContent: 'space-between' }}>
-              <span>सचिवांची सही</span>
-              <span>सरपंच{settings?.gp_name ? `, ${settings.gp_name}` : ''}</span>
-            </div>
-            <p style={{ marginTop: 24 }}>प्रति, मे. गटविकास अधिकारी पंचायत समिती ....................... जिल्हा {settings?.district || '.......................'} यांस सादर</p>
-          </div>
         </>
       )}
     </div>

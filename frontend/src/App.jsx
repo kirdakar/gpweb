@@ -36,6 +36,9 @@ import BudgetRevision from './pages/gp1to33/BudgetRevision';
 import AnnualSummaryReport from './pages/gp1to33/AnnualSummaryReport';
 import MonthlyStatementReport from './pages/gp1to33/MonthlyStatementReport';
 import WelfareExpenditureReport from './pages/gp1to33/WelfareExpenditureReport';
+import BudgetReport from './pages/gp1to33/BudgetReport';
+import BudgetRevisionReport from './pages/gp1to33/BudgetRevisionReport';
+import AssetsLiabilitiesReport from './pages/gp1to33/AssetsLiabilitiesReport';
 
 function AppShell() {
   return (
@@ -85,6 +88,9 @@ export default function App() {
             <Route path="/gp1to33/reports/annual-summary" element={<RequireView screen="reports_annual_summary"><AnnualSummaryReport /></RequireView>} />
             <Route path="/gp1to33/reports/monthly-statement" element={<RequireView screen="reports_monthly_statement"><MonthlyStatementReport /></RequireView>} />
             <Route path="/gp1to33/reports/welfare-expenditure" element={<RequireView screen="reports_welfare_expenditure"><WelfareExpenditureReport /></RequireView>} />
+            <Route path="/gp1to33/reports/budget" element={<RequireView screen="reports_budget"><BudgetReport /></RequireView>} />
+            <Route path="/gp1to33/reports/budget-revision" element={<RequireView screen="reports_budget_revision"><BudgetRevisionReport /></RequireView>} />
+            <Route path="/gp1to33/reports/assets-liabilities" element={<RequireView screen="reports_assets_liabilities"><AssetsLiabilitiesReport /></RequireView>} />
           </Route>
         </Routes>
       </BrowserRouter>
