@@ -302,3 +302,33 @@ CREATE TABLE IF NOT EXISTS assets_liabilities (
   CONSTRAINT fk_assets_liabilities_year FOREIGN KEY (financial_year_id)
     REFERENCES financial_years(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- फेज २: नमुना १ (वार्षिक अंदाजपत्रक) व नमुना २ (पुनर्विनियोजन). budget_entries
+-- प्रत्येक leaf लेखाशीर्षासाठी (नमुना १ कॉलम २/३ - प्रस्तावित/मंजूर); मागील
+-- वर्ष/गतपूर्व वर्षाची प्रत्यक्ष रक्कम cash_book_entries वरून काढलेली, साठवलेली
+-- नाही. budget_revisions फक्त मुख्य गट (parent_id IS NULL) स्तरावर - कागदी
+-- नमुना २ फक्त गट-स्तरावरच सुधारित अंदाज दाखवतो, प्रत्येक उप-शीर्षासाठी नाही.
+CREATE TABLE IF NOT EXISTS budget_entries (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  financial_year_id INT NOT NULL,
+  ledger_head_id INT NOT NULL,
+  proposed_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+  approved_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+  UNIQUE KEY uq_budget_year_head (financial_year_id, ledger_head_id),
+  CONSTRAINT fk_budget_entry_year FOREIGN KEY (financial_year_id)
+    REFERENCES financial_years(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_budget_entry_head FOREIGN KEY (ledger_head_id)
+    REFERENCES ledger_heads(id) ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS budget_revisions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  financial_year_id INT NOT NULL,
+  ledger_head_id INT NOT NULL,
+  revised_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+  UNIQUE KEY uq_revision_year_head (financial_year_id, ledger_head_id),
+  CONSTRAINT fk_budget_revision_year FOREIGN KEY (financial_year_id)
+    REFERENCES financial_years(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_budget_revision_head FOREIGN KEY (ledger_head_id)
+    REFERENCES ledger_heads(id) ON DELETE RESTRICT
+) ENGINE=InnoDB;

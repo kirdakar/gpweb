@@ -41,6 +41,11 @@ const MENUS = [
       { to: '/gp1to33/reports/cash-book', label: 'रोकड वही अहवाल नमुना ५ (ग्रामपंचायत १ ते ३३ नमूना)', screen: 'reports_cash_book' },
       { to: '/gp1to33/reports/ledger-classified', label: 'वर्गीकृत नोंदवही नमुना ६ (ग्रामपंचायत १ ते ३३ नमूना)', screen: 'reports_ledger_classified' },
       { to: '/gp1to33/assets-liabilities', label: 'भत्ते व दायित्वे नमुना ४ (ग्रामपंचायत १ ते ३३ नमूना)', screen: 'assets_liabilities' },
+      { to: '/gp1to33/budget-entry', label: 'वार्षिक अंदाजपत्रक नमुना १ (ग्रामपंचायत १ ते ३३ नमूना)', screen: 'budget_entries' },
+      { to: '/gp1to33/budget-revision', label: 'पुनर्विनियोजन नमुना २ (ग्रामपंचायत १ ते ३३ नमूना)', screen: 'budget_revisions' },
+      { to: '/gp1to33/reports/annual-summary', label: 'वार्षिक जमा-खर्च नमुना ३ (ग्रामपंचायत १ ते ३३ नमूना)', screen: 'reports_annual_summary' },
+      { to: '/gp1to33/reports/monthly-statement', label: 'मासिक जमा-खर्च विवरण नमुना २६-क (ग्रामपंचायत १ ते ३३ नमूना)', screen: 'reports_monthly_statement' },
+      { to: '/gp1to33/reports/welfare-expenditure', label: 'मागासवर्गीय/महिला-बाल विवरण नमुना २८ (ग्रामपंचायत १ ते ३३ नमूना)', screen: 'reports_welfare_expenditure' },
     ],
   },
   {

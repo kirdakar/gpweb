@@ -31,6 +31,11 @@ import CashBookEntry from './pages/gp1to33/CashBookEntry';
 import CashBookReport from './pages/gp1to33/CashBookReport';
 import ClassifiedLedgerReport from './pages/gp1to33/ClassifiedLedgerReport';
 import AssetsLiabilities from './pages/gp1to33/AssetsLiabilities';
+import BudgetEntry from './pages/gp1to33/BudgetEntry';
+import BudgetRevision from './pages/gp1to33/BudgetRevision';
+import AnnualSummaryReport from './pages/gp1to33/AnnualSummaryReport';
+import MonthlyStatementReport from './pages/gp1to33/MonthlyStatementReport';
+import WelfareExpenditureReport from './pages/gp1to33/WelfareExpenditureReport';
 
 function AppShell() {
   return (
@@ -75,6 +80,11 @@ export default function App() {
             <Route path="/gp1to33/reports/cash-book" element={<RequireView screen="reports_cash_book"><CashBookReport /></RequireView>} />
             <Route path="/gp1to33/reports/ledger-classified" element={<RequireView screen="reports_ledger_classified"><ClassifiedLedgerReport /></RequireView>} />
             <Route path="/gp1to33/assets-liabilities" element={<RequireView screen="assets_liabilities"><AssetsLiabilities /></RequireView>} />
+            <Route path="/gp1to33/budget-entry" element={<RequireView screen="budget_entries"><BudgetEntry /></RequireView>} />
+            <Route path="/gp1to33/budget-revision" element={<RequireView screen="budget_revisions"><BudgetRevision /></RequireView>} />
+            <Route path="/gp1to33/reports/annual-summary" element={<RequireView screen="reports_annual_summary"><AnnualSummaryReport /></RequireView>} />
+            <Route path="/gp1to33/reports/monthly-statement" element={<RequireView screen="reports_monthly_statement"><MonthlyStatementReport /></RequireView>} />
+            <Route path="/gp1to33/reports/welfare-expenditure" element={<RequireView screen="reports_welfare_expenditure"><WelfareExpenditureReport /></RequireView>} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -380,4 +380,133 @@ router.get('/ledger-classified', async (req, res) => {
   res.json({ head, year: y, month: m, days, monthTotal, priorTotal, runningTotal: round2(priorTotal + monthTotal) });
 });
 
+// नमुना ३ - सन ___ चा जमा व खर्च (वार्षिक actuals). संपूर्ण ledger_heads
+// वृक्ष + प्रत्येक leaf साठी त्या आर्थिक वर्षातील cash_book_entries ची
+// बेरीज - वेगळा साठा नाही (नमुना ६ प्रमाणेच, फक्त संपूर्ण वर्ष + संपूर्ण
+// वृक्ष). गट-बेरीज (subtotal rows) frontend वृक्ष चढून काढतो.
+router.get('/annual-summary', async (req, res) => {
+  const { financialYearId } = req.query;
+  if (!financialYearId) return res.status(400).json({ error: 'financialYearId is required' });
+
+  const [heads] = await pool.query(
+    'SELECT id, code, group_type, parent_id, name, sort_order, is_leaf FROM ledger_heads ORDER BY group_type, sort_order'
+  );
+  const [sumRows] = await pool.query(
+    'SELECT ledger_head_id, SUM(amount) AS total FROM cash_book_entries WHERE financial_year_id = ? GROUP BY ledger_head_id',
+    [financialYearId]
+  );
+  const amountByHead = new Map(sumRows.map((r) => [r.ledger_head_id, Number(r.total)]));
+
+  res.json(heads.map((h) => ({ ...h, amount: round2(amountByHead.get(h.id) ?? 0) })));
+});
+
+// नमुना २६-क - माह ___ वर्ष ___ चे मासिक जमा व खर्चाचे विवरण. प्रत्येक leaf
+// शीर्षासाठी: अर्थसंकल्पीय तरतूद (budget_entries.approved_amount), मागील
+// महिन्यापर्यंतचा प्रत्यक्ष (त्याच आर्थिक वर्षातील, निवडलेल्या महिन्याआधीचा),
+// चालू महिन्यातील, एकूण - नमुना ६ च्या prior/current गणिताचाच विस्तार,
+// एका वेळी संपूर्ण वृक्षासाठी.
+router.get('/monthly-statement', async (req, res) => {
+  const { financialYearId, year, month } = req.query;
+  if (!financialYearId || !year || !month) {
+    return res.status(400).json({ error: 'financialYearId, year आणि month आवश्यक आहेत' });
+  }
+  const y = Number(year);
+  const m = Number(month);
+  const firstOfMonth = `${y}-${String(m).padStart(2, '0')}-01`;
+
+  const [heads] = await pool.query(
+    'SELECT id, code, group_type, parent_id, name, sort_order, is_leaf FROM ledger_heads ORDER BY group_type, sort_order'
+  );
+  const [budgetRows] = await pool.query(
+    'SELECT ledger_head_id, approved_amount FROM budget_entries WHERE financial_year_id = ?',
+    [financialYearId]
+  );
+  const approvedByHead = new Map(budgetRows.map((r) => [r.ledger_head_id, Number(r.approved_amount)]));
+
+  const [priorRows] = await pool.query(
+    `SELECT ledger_head_id, SUM(amount) AS total FROM cash_book_entries
+     WHERE financial_year_id = ? AND entry_date < ? GROUP BY ledger_head_id`,
+    [financialYearId, firstOfMonth]
+  );
+  const priorByHead = new Map(priorRows.map((r) => [r.ledger_head_id, Number(r.total)]));
+
+  const [monthRows] = await pool.query(
+    `SELECT ledger_head_id, SUM(amount) AS total FROM cash_book_entries
+     WHERE financial_year_id = ? AND YEAR(entry_date) = ? AND MONTH(entry_date) = ? GROUP BY ledger_head_id`,
+    [financialYearId, y, m]
+  );
+  const monthByHead = new Map(monthRows.map((r) => [r.ledger_head_id, Number(r.total)]));
+
+  const result = heads.map((h) => {
+    const prior = round2(priorByHead.get(h.id) ?? 0);
+    const current = round2(monthByHead.get(h.id) ?? 0);
+    return {
+      ...h,
+      approved_amount: approvedByHead.get(h.id) ?? 0,
+      prior_total: prior,
+      current_total: current,
+      total: round2(prior + current),
+    };
+  });
+
+  res.json({ year: y, month: m, heads: result });
+});
+
+// नमुना २८ - मागासवर्गीयांसाठी १५% व महिला-बालकल्याण १०% करावयाचे खर्चाचे
+// मासिक विवरण. उत्पन्नाचा आधार = त्या महिन्यातील एकूण जमा (सर्व
+// cash_book_entries entry_type='जमा'); K1.20 (समाजकल्याण आदिवासी व
+// मागासवर्ग) व K1.22 (महिला व बालकल्याण) या seeded leaf शीर्षांखालील त्या
+// महिन्यातील प्रत्यक्ष नोंदी (योजनानिहाय तपशीलासाठी) अधिक मागील
+// महिन्यापर्यंतची बेरीज.
+router.get('/welfare-expenditure', async (req, res) => {
+  const { financialYearId, year, month } = req.query;
+  if (!financialYearId || !year || !month) {
+    return res.status(400).json({ error: 'financialYearId, year आणि month आवश्यक आहेत' });
+  }
+  const y = Number(year);
+  const m = Number(month);
+  const firstOfMonth = `${y}-${String(m).padStart(2, '0')}-01`;
+
+  const [[incomeRow]] = await pool.query(
+    `SELECT COALESCE(SUM(amount), 0) AS total FROM cash_book_entries
+     WHERE financial_year_id = ? AND entry_type = 'जमा' AND YEAR(entry_date) = ? AND MONTH(entry_date) = ?`,
+    [financialYearId, y, m]
+  );
+  const monthIncome = round2(Number(incomeRow.total));
+
+  async function welfareSection(code, percent) {
+    const [[head]] = await pool.query('SELECT id, code, name FROM ledger_heads WHERE code = ?', [code]);
+    if (!head) return null;
+    const [entries] = await pool.query(
+      `SELECT id, entry_date, amount, narration, reference_no FROM cash_book_entries
+       WHERE financial_year_id = ? AND ledger_head_id = ? AND YEAR(entry_date) = ? AND MONTH(entry_date) = ?
+       ORDER BY entry_date, id`,
+      [financialYearId, head.id, y, m]
+    );
+    const [[priorRow]] = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0) AS total FROM cash_book_entries
+       WHERE financial_year_id = ? AND ledger_head_id = ? AND entry_date < ?`,
+      [financialYearId, head.id, firstOfMonth]
+    );
+    const priorTotal = round2(Number(priorRow.total));
+    const monthTotal = round2(entries.reduce((s, e) => s + Number(e.amount), 0));
+    return {
+      head,
+      entries,
+      priorTotal,
+      monthTotal,
+      total: round2(priorTotal + monthTotal),
+      targetAmount: round2(monthIncome * percent),
+      targetPercent: percent * 100,
+    };
+  }
+
+  const [magasvargiy, mahilaBal] = await Promise.all([
+    welfareSection('K1.20', 0.15),
+    welfareSection('K1.22', 0.10),
+  ]);
+
+  res.json({ year: y, month: m, monthIncome, magasvargiy, mahilaBal });
+});
+
 module.exports = router;

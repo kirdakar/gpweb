@@ -28,6 +28,12 @@ const SCREENS = [
   { code: 'reports_cash_book', label: 'रोकड वही अहवाल (नमुना ५)', actions: ['view', 'print'] },
   { code: 'reports_ledger_classified', label: 'वर्गीकृत नोंदवही (नमुना ६)', actions: ['view', 'print'] },
   { code: 'assets_liabilities', label: 'भत्ते व दायित्वे (नमुना ४)', actions: ['view', 'add', 'edit', 'print'] },
+  // फेज २: अंदाजपत्रक व मासिक अहवाल (नमुना १, २, ३, २६-क, २८)
+  { code: 'budget_entries', label: 'वार्षिक अंदाजपत्रक (नमुना १)', actions: ['view', 'edit', 'print'] },
+  { code: 'budget_revisions', label: 'पुनर्विनियोजन विवरणपत्र (नमुना २)', actions: ['view', 'edit', 'print'] },
+  { code: 'reports_annual_summary', label: 'वार्षिक जमा-खर्च (नमुना ३)', actions: ['view', 'print'] },
+  { code: 'reports_monthly_statement', label: 'मासिक जमा-खर्च विवरण (नमुना २६-क)', actions: ['view', 'print'] },
+  { code: 'reports_welfare_expenditure', label: 'मागासवर्गीय/महिला-बाल मासिक विवरण (नमुना २८)', actions: ['view', 'print'] },
 ];
 
 const ACTION_LABELS = { view: 'पहा', add: 'नवीन', edit: 'संपादन', delete: 'मिटवा', print: 'प्रिंट' };
