@@ -28,6 +28,7 @@ const MENUS = [
         label: 'ग्रामपंचायत १ ते ३३ नमूना',
         submenu: [
           { to: '/gp1to33/ledger-heads', label: 'लेखाशीर्ष मास्टर', screen: 'ledger_heads' },
+          { to: '/gp1to33/staff', label: 'कर्मचारी सूची व वेतनश्रेणी (नमुना १३)', screen: 'staff_master' },
         ],
       },
     ],
@@ -45,6 +46,7 @@ const MENUS = [
           { to: '/gp1to33/assets-liabilities', label: 'भत्ते व दायित्वे नोंदणी (नमुना ४)', screen: 'assets_liabilities' },
           { to: '/gp1to33/cash-book', label: 'दैनिक रोकड वही/किरकोळ रोकडवही (नमुना ५/१८)', screen: 'cash_book' },
           { to: '/gp1to33/fixed-assets', label: 'मालमत्ता नोंदणी (नमुना १६/२२/२३/२४)', screen: 'fixed_assets' },
+          { to: '/gp1to33/staff-salary', label: 'मासिक वेतन देयक नोंदणी (नमुना २१)', screen: 'staff_salary_bills' },
         ],
       },
     ],
@@ -71,6 +73,7 @@ const MENUS = [
           { to: '/gp1to33/reports/fixed-assets', label: 'मालमत्ता अहवाल (नमुना १६/२२/२३/२४)', screen: 'reports_fixed_assets' },
           { to: '/gp1to33/reports/monthly-statement', label: 'मासिक जमा-खर्च विवरण (नमुना २६-क)', screen: 'reports_monthly_statement' },
           { to: '/gp1to33/reports/welfare-expenditure', label: 'मागासवर्गीय/महिला-बाल विवरण (नमुना २८)', screen: 'reports_welfare_expenditure' },
+          { to: '/gp1to33/reports/staff-salary', label: 'मासिक वेतन देयक अहवाल (नमुना २१)', screen: 'reports_staff_salary_bills' },
         ],
       },
     ],

@@ -41,6 +41,10 @@ const SCREENS = [
   { code: 'reports_receipt_voucher', label: 'पावती/प्रमाणक प्रिंट (नमुना ७/१२)', actions: ['view', 'print'] },
   { code: 'fixed_assets', label: 'मालमत्ता नोंदणी (नमुना १६/२२/२३/२४)', actions: ['view', 'add', 'edit', 'delete'] },
   { code: 'reports_fixed_assets', label: 'मालमत्ता अहवाल (नमुना १६/२२/२३/२४)', actions: ['view', 'print'] },
+  // फेज ३ब: कर्मचारी सूची (नमुना १३) व मासिक वेतन देयक (नमुना २१)
+  { code: 'staff_master', label: 'कर्मचारी सूची व वेतनश्रेणी (नमुना १३)', actions: ['view', 'add', 'edit', 'delete', 'print'] },
+  { code: 'staff_salary_bills', label: 'मासिक वेतन देयक नोंदणी (नमुना २१)', actions: ['view', 'edit'] },
+  { code: 'reports_staff_salary_bills', label: 'मासिक वेतन देयक अहवाल (नमुना २१)', actions: ['view', 'print'] },
 ];
 
 const ACTION_LABELS = { view: 'पहा', add: 'नवीन', edit: 'संपादन', delete: 'मिटवा', print: 'प्रिंट' };

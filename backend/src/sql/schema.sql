@@ -360,3 +360,49 @@ CREATE TABLE IF NOT EXISTS fixed_assets (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_fixed_assets_category (category)
 ) ENGINE=InnoDB;
+
+-- फेज ३ब: नमुना १३ (कर्मचारी सूची व वेतनश्रेणी - स्थिर रोस्टर मास्टर) व
+-- नमुना २१ (मासिक वेतन देयक नोंदवही - प्रति कर्मचारी/महिना). एकूण/निव्वळ
+-- रक्कम साठवलेली नाही, नेहमी backend कडून गणित करून पाठवली जाते (staffSalaryBills
+-- routes पहा). निव्वळ रक्कम रोकड वहीत (नमुना ५, लेखाशीर्ष K1.4) "पोस्ट करा"
+-- कृतीने नोंदवता येते - रक्कम पुन्हा हाताने टाईप करायची गरज नाही
+-- (cash_book_entry_id त्या नोंदीकडे निर्देश करतो, दुहेरी पोस्टिंग रोखते).
+CREATE TABLE IF NOT EXISTS staff_master (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  post_name VARCHAR(150) NOT NULL,
+  post_count INT NOT NULL DEFAULT 1,
+  sanction_order_no VARCHAR(100) NULL,
+  sanction_date DATE NULL,
+  employment_type ENUM('पूर्णकालिक','अंशकालिक') NOT NULL DEFAULT 'पूर्णकालिक',
+  pay_scale VARCHAR(150) NULL,
+  employee_name VARCHAR(150) NULL,
+  appointment_date DATE NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  remark TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS staff_salary_bills (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  staff_id INT NOT NULL,
+  financial_year_id INT NOT NULL,
+  year INT NOT NULL,
+  month INT NOT NULL,
+  basic_pay DECIMAL(12,2) NOT NULL DEFAULT 0,
+  leave_pay DECIMAL(12,2) NOT NULL DEFAULT 0,
+  suspension_pay DECIMAL(12,2) NOT NULL DEFAULT 0,
+  allowances DECIMAL(12,2) NOT NULL DEFAULT 0,
+  recovery_fine DECIMAL(12,2) NOT NULL DEFAULT 0,
+  pf_deduction DECIMAL(12,2) NOT NULL DEFAULT 0,
+  other_deductions DECIMAL(12,2) NOT NULL DEFAULT 0,
+  cash_book_entry_id INT NULL,
+  remark TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_staff_salary_month (staff_id, financial_year_id, year, month),
+  CONSTRAINT fk_salary_staff FOREIGN KEY (staff_id)
+    REFERENCES staff_master(id) ON DELETE CASCADE,
+  CONSTRAINT fk_salary_year FOREIGN KEY (financial_year_id)
+    REFERENCES financial_years(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_salary_cash_entry FOREIGN KEY (cash_book_entry_id)
+    REFERENCES cash_book_entries(id) ON DELETE SET NULL
+) ENGINE=InnoDB;

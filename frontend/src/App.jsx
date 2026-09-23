@@ -43,6 +43,9 @@ import ReceiptPrint from './pages/gp1to33/ReceiptPrint';
 import VoucherPrint from './pages/gp1to33/VoucherPrint';
 import FixedAssetsEntry from './pages/gp1to33/FixedAssetsEntry';
 import FixedAssetsReport from './pages/gp1to33/FixedAssetsReport';
+import StaffMaster from './pages/gp1to33/StaffMaster';
+import StaffSalaryEntry from './pages/gp1to33/StaffSalaryEntry';
+import StaffSalaryReport from './pages/gp1to33/StaffSalaryReport';
 
 function AppShell() {
   return (
@@ -99,6 +102,9 @@ export default function App() {
             <Route path="/gp1to33/reports/voucher/:id" element={<RequireView screen="reports_receipt_voucher"><VoucherPrint /></RequireView>} />
             <Route path="/gp1to33/fixed-assets" element={<RequireView screen="fixed_assets"><FixedAssetsEntry /></RequireView>} />
             <Route path="/gp1to33/reports/fixed-assets" element={<RequireView screen="reports_fixed_assets"><FixedAssetsReport /></RequireView>} />
+            <Route path="/gp1to33/staff" element={<RequireView screen="staff_master"><StaffMaster /></RequireView>} />
+            <Route path="/gp1to33/staff-salary" element={<RequireView screen="staff_salary_bills"><StaffSalaryEntry /></RequireView>} />
+            <Route path="/gp1to33/reports/staff-salary" element={<RequireView screen="reports_staff_salary_bills"><StaffSalaryReport /></RequireView>} />
           </Route>
         </Routes>
       </BrowserRouter>
