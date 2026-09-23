@@ -406,3 +406,92 @@ CREATE TABLE IF NOT EXISTS staff_salary_bills (
   CONSTRAINT fk_salary_cash_entry FOREIGN KEY (cash_book_entry_id)
     REFERENCES cash_book_entries(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
+
+-- फेज ३क: नमुना १७ (अग्रिम/अनामत), २५ (गुंतवणूक), २९ (कर्ज) - तिन्ही आर्थिक
+-- उप-नोंदवह्या. staff_salary_bills सारखाच नमुना: मूळ रक्कम भरून "पोस्ट करा"
+-- केल्यावर cash_book_entries मध्ये एकच नोंद तयार होते (रक्कम दुसऱ्यांदा
+-- टाईप करायची नाही); परतफेड/समायोजन/परिपक्वता झाल्यावर पुन्हा तीच कृती
+-- उलट दिशेच्या cash_book_entries नोंदीसाठी वापरतात.
+
+-- नमुना १७ - अग्रिम दिलेल्या/अनामत ठेवलेल्या रकमांची नोंदवही.
+CREATE TABLE IF NOT EXISTS advance_deposit_entries (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  kind ENUM('अग्रिम','अनामत') NOT NULL,   -- अग्रिम=दिलेली रक्कम (खर्च); अनामत=ठेवलेली/मिळालेली रक्कम (जमा)
+  party_name VARCHAR(150) NOT NULL,
+  description VARCHAR(255) NULL,
+  financial_year_id INT NOT NULL,
+  entry_date DATE NOT NULL,
+  ledger_head_id INT NOT NULL,
+  amount DECIMAL(14,2) NOT NULL,
+  cash_book_entry_id INT NULL,
+  remark TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_adv_dep_year FOREIGN KEY (financial_year_id) REFERENCES financial_years(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_adv_dep_head FOREIGN KEY (ledger_head_id) REFERENCES ledger_heads(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_adv_dep_cash_entry FOREIGN KEY (cash_book_entry_id) REFERENCES cash_book_entries(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS advance_deposit_settlements (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  entry_id INT NOT NULL,
+  settlement_date DATE NOT NULL,
+  amount DECIMAL(14,2) NOT NULL,
+  cash_book_entry_id INT NULL,   -- रोख हालचाल झाली तरच; निव्वळ समायोजन असेल तर रिकामे
+  note TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_adv_dep_settle_entry FOREIGN KEY (entry_id) REFERENCES advance_deposit_entries(id) ON DELETE CASCADE,
+  CONSTRAINT fk_adv_dep_settle_cash_entry FOREIGN KEY (cash_book_entry_id) REFERENCES cash_book_entries(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- नमुना २५ - गुंतवणूक नोंदवही (मुदत ठेव/राष्ट्रीय बचत/सरकारी रोखे).
+CREATE TABLE IF NOT EXISTS investments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  financial_year_id INT NOT NULL,
+  investment_date DATE NOT NULL,
+  description VARCHAR(255) NOT NULL,        -- गुंतवणुकीचा तपशील (बँक/संस्था, प्रमाणपत्र क्र. इ.)
+  purchase_price DECIMAL(14,2) NOT NULL,     -- दर्शनी मूल्य/खरेदी किंमत
+  maturity_date DATE NULL,
+  matured_amount DECIMAL(14,2) NULL,         -- परिणत होण्याची अपेक्षित/प्रत्यक्ष रक्कम
+  ledger_head_id INT NOT NULL,
+  cash_book_entry_id INT NULL,               -- गुंतवणूक केली (खर्च)
+  is_matured TINYINT(1) NOT NULL DEFAULT 0,
+  matured_cash_book_entry_id INT NULL,       -- परिपक्व/भरणा झाल्यावर मिळालेली रक्कम (जमा)
+  remark TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_investment_year FOREIGN KEY (financial_year_id) REFERENCES financial_years(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_investment_head FOREIGN KEY (ledger_head_id) REFERENCES ledger_heads(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_investment_cash_entry FOREIGN KEY (cash_book_entry_id) REFERENCES cash_book_entries(id) ON DELETE SET NULL,
+  CONSTRAINT fk_investment_matured_cash_entry FOREIGN KEY (matured_cash_book_entry_id) REFERENCES cash_book_entries(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- नमुना २९ - कर्जाची नोंदवही (पंचायतीने घेतलेले कर्ज, हप्त्यांसह).
+CREATE TABLE IF NOT EXISTS loans (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  financial_year_id INT NOT NULL,
+  source VARCHAR(150) NOT NULL,          -- कर्जाची उभारणीचे साधन
+  sanction_order_no VARCHAR(100) NULL,
+  sanction_date DATE NULL,
+  purpose VARCHAR(255) NULL,             -- कर्जाचे प्रयोजन
+  loan_amount DECIMAL(14,2) NOT NULL,
+  interest_rate DECIMAL(5,2) NULL,
+  received_date DATE NULL,
+  ledger_head_id INT NOT NULL,
+  cash_book_entry_id INT NULL,           -- कर्ज मिळाले (जमा)
+  remark TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_loan_year FOREIGN KEY (financial_year_id) REFERENCES financial_years(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_loan_head FOREIGN KEY (ledger_head_id) REFERENCES ledger_heads(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_loan_cash_entry FOREIGN KEY (cash_book_entry_id) REFERENCES cash_book_entries(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS loan_repayments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  loan_id INT NOT NULL,
+  repayment_date DATE NOT NULL,
+  principal_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+  interest_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+  cash_book_entry_id INT NULL,           -- हप्ता भरला (खर्च)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_loan_repay_loan FOREIGN KEY (loan_id) REFERENCES loans(id) ON DELETE CASCADE,
+  CONSTRAINT fk_loan_repay_cash_entry FOREIGN KEY (cash_book_entry_id) REFERENCES cash_book_entries(id) ON DELETE SET NULL
+) ENGINE=InnoDB;

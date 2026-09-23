@@ -46,6 +46,12 @@ import FixedAssetsReport from './pages/gp1to33/FixedAssetsReport';
 import StaffMaster from './pages/gp1to33/StaffMaster';
 import StaffSalaryEntry from './pages/gp1to33/StaffSalaryEntry';
 import StaffSalaryReport from './pages/gp1to33/StaffSalaryReport';
+import AdvanceDepositEntry from './pages/gp1to33/AdvanceDepositEntry';
+import AdvanceDepositReport from './pages/gp1to33/AdvanceDepositReport';
+import InvestmentEntry from './pages/gp1to33/InvestmentEntry';
+import InvestmentReport from './pages/gp1to33/InvestmentReport';
+import LoanEntry from './pages/gp1to33/LoanEntry';
+import LoanReport from './pages/gp1to33/LoanReport';
 
 function AppShell() {
   return (
@@ -105,6 +111,12 @@ export default function App() {
             <Route path="/gp1to33/staff" element={<RequireView screen="staff_master"><StaffMaster /></RequireView>} />
             <Route path="/gp1to33/staff-salary" element={<RequireView screen="staff_salary_bills"><StaffSalaryEntry /></RequireView>} />
             <Route path="/gp1to33/reports/staff-salary" element={<RequireView screen="reports_staff_salary_bills"><StaffSalaryReport /></RequireView>} />
+            <Route path="/gp1to33/advance-deposits" element={<RequireView screen="advance_deposits"><AdvanceDepositEntry /></RequireView>} />
+            <Route path="/gp1to33/reports/advance-deposits" element={<RequireView screen="reports_advance_deposits"><AdvanceDepositReport /></RequireView>} />
+            <Route path="/gp1to33/investments" element={<RequireView screen="investments"><InvestmentEntry /></RequireView>} />
+            <Route path="/gp1to33/reports/investments" element={<RequireView screen="reports_investments"><InvestmentReport /></RequireView>} />
+            <Route path="/gp1to33/loans" element={<RequireView screen="loans"><LoanEntry /></RequireView>} />
+            <Route path="/gp1to33/reports/loans" element={<RequireView screen="reports_loans"><LoanReport /></RequireView>} />
           </Route>
         </Routes>
       </BrowserRouter>

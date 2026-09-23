@@ -22,6 +22,9 @@ const budgetRevisionsRoutes = require('./src/routes/budgetRevisions.routes');
 const fixedAssetsRoutes = require('./src/routes/fixedAssets.routes');
 const staffRoutes = require('./src/routes/staff.routes');
 const staffSalaryBillsRoutes = require('./src/routes/staffSalaryBills.routes');
+const advanceDepositsRoutes = require('./src/routes/advanceDeposits.routes');
+const investmentsRoutes = require('./src/routes/investments.routes');
+const loansRoutes = require('./src/routes/loans.routes');
 
 const app = express();
 app.use(cors());
@@ -51,6 +54,9 @@ app.use('/api/budget-revisions', budgetRevisionsRoutes);
 app.use('/api/fixed-assets', fixedAssetsRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/staff-salary-bills', staffSalaryBillsRoutes);
+app.use('/api/advance-deposits', advanceDepositsRoutes);
+app.use('/api/investments', investmentsRoutes);
+app.use('/api/loans', loansRoutes);
 
 // Central error handler - keeps route handlers free of try/catch boilerplate
 // for unexpected DB errors (express-async-errors-style wrapping below).

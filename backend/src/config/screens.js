@@ -45,6 +45,13 @@ const SCREENS = [
   { code: 'staff_master', label: 'कर्मचारी सूची व वेतनश्रेणी (नमुना १३)', actions: ['view', 'add', 'edit', 'delete', 'print'] },
   { code: 'staff_salary_bills', label: 'मासिक वेतन देयक नोंदणी (नमुना २१)', actions: ['view', 'edit'] },
   { code: 'reports_staff_salary_bills', label: 'मासिक वेतन देयक अहवाल (नमुना २१)', actions: ['view', 'print'] },
+  // फेज ३क: अग्रिम/अनामत (नमुना १७), गुंतवणूक (नमुना २५), कर्ज (नमुना २९)
+  { code: 'advance_deposits', label: 'अग्रिम/अनामत नोंदणी (नमुना १७)', actions: ['view', 'add', 'edit'] },
+  { code: 'reports_advance_deposits', label: 'अग्रिम/अनामत अहवाल (नमुना १७)', actions: ['view', 'print'] },
+  { code: 'investments', label: 'गुंतवणूक नोंदणी (नमुना २५)', actions: ['view', 'add', 'edit'] },
+  { code: 'reports_investments', label: 'गुंतवणूक अहवाल (नमुना २५)', actions: ['view', 'print'] },
+  { code: 'loans', label: 'कर्ज नोंदणी (नमुना २९)', actions: ['view', 'add', 'edit'] },
+  { code: 'reports_loans', label: 'कर्ज अहवाल (नमुना २९)', actions: ['view', 'print'] },
 ];
 
 const ACTION_LABELS = { view: 'पहा', add: 'नवीन', edit: 'संपादन', delete: 'मिटवा', print: 'प्रिंट' };
