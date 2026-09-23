@@ -243,3 +243,62 @@ FROM property_tax_assessment a
 JOIN property_master pm ON pm.id = a.property_id
 JOIN financial_years fy ON fy.id = a.financial_year_id
 GROUP BY a.financial_year_id, fy.year_label, pm.property_code;
+
+-- ---------------------------------------------------------------------
+-- ग्रामपंचायत लेखा संहिता, २०११ - नमुना १ ते ३३ (फेज १: लेजर पाया).
+-- लेखाशीर्ष (ledger_heads) हा कायद्याने ठरलेला स्थिर वृक्ष (नमुना १ चे
+-- एक(अ)/एक(ब)/एक(क)/दोन/तीन/चार असे गट) - एकदाच seedLedgerHeads.js ने
+-- भरतो, स्वतंत्र UI ने बांधकाम/काढकाम करण्यासाठी नाही (फक्त नाव-बदल).
+-- cash_book_entries (नमुना ५, दैनिक रोकड वही) ही खरी व्यवहार नोंद; नमुना ६
+-- (वर्गीकृत नोंदवही) ही त्यावरूनच काढलेला रिपोर्ट आहे, वेगळा साठा नाही.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS ledger_heads (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(20) NOT NULL UNIQUE,
+  group_type ENUM('जमा','खर्च') NOT NULL,
+  parent_id INT NULL,
+  name VARCHAR(255) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_leaf TINYINT(1) NOT NULL DEFAULT 1,
+  CONSTRAINT fk_ledger_head_parent FOREIGN KEY (parent_id)
+    REFERENCES ledger_heads(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS cash_book_entries (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  financial_year_id INT NOT NULL,
+  entry_date DATE NOT NULL,
+  ledger_head_id INT NOT NULL,
+  entry_type ENUM('जमा','खर्च') NOT NULL,
+  amount DECIMAL(14,2) NOT NULL,
+  payment_mode ENUM('रोख','धनादेश') NOT NULL DEFAULT 'रोख',
+  reference_no VARCHAR(50) NULL,
+  reference_date DATE NULL,
+  bank_deposit_date DATE NULL,
+  narration TEXT NULL,
+  created_by INT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_cash_entry_date (entry_date),
+  INDEX idx_cash_entry_head (ledger_head_id),
+  CONSTRAINT fk_cash_entry_year FOREIGN KEY (financial_year_id)
+    REFERENCES financial_years(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_cash_entry_head FOREIGN KEY (ledger_head_id)
+    REFERENCES ledger_heads(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_cash_entry_user FOREIGN KEY (created_by)
+    REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- नमुना ४ (पंचायतीचे भत्ते व दायित्वे) - वर्षनिहाय, कागदी नमुन्यावरील
+-- प्रत्येक ओळीसाठी एक रक्कम (मुख्यतः हाताने भरायची, वेगळ्या व्यवहार
+-- नोंदींवरून काढता येण्यासारखी नाही - gp_settings प्रमाणेच साधी रचना).
+CREATE TABLE IF NOT EXISTS assets_liabilities (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  financial_year_id INT NOT NULL,
+  side ENUM('दायित्वे','भत्ता') NOT NULL,
+  item_code VARCHAR(10) NOT NULL,
+  item_name VARCHAR(255) NOT NULL,
+  amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+  UNIQUE KEY uq_assets_liabilities_item (financial_year_id, side, item_code),
+  CONSTRAINT fk_assets_liabilities_year FOREIGN KEY (financial_year_id)
+    REFERENCES financial_years(id) ON DELETE CASCADE
+) ENGINE=InnoDB;

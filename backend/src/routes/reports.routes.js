@@ -340,4 +340,44 @@ router.get('/payment-receipts', async (req, res) => {
   res.json(receipts);
 });
 
+// नमुना ६ - लेखाशीर्षनिहाय मासिक वर्गीकृत नोंदवही. निवडलेल्या लेखाशीर्षाच्या
+// निवडलेल्या महिन्यातील प्रत्येक दिवसाची बेरीज (नमुना ५ च्या दैनिक रोकड
+// वही नोंदींवरून काढलेली - वेगळा साठा नाही), अधिक त्याच आर्थिक वर्षातील
+// आधीच्या महिन्यांची चढती बेरीज (मागील महिन्यापर्यंतची एकूण रक्कम).
+router.get('/ledger-classified', async (req, res) => {
+  const { financialYearId, ledgerHeadId, year, month } = req.query;
+  if (!financialYearId || !ledgerHeadId || !year || !month) {
+    return res.status(400).json({ error: 'financialYearId, ledgerHeadId, year आणि month आवश्यक आहेत' });
+  }
+  const [[head]] = await pool.query('SELECT id, code, name, group_type FROM ledger_heads WHERE id = ?', [ledgerHeadId]);
+  if (!head) return res.status(404).json({ error: 'लेखाशीर्ष सापडले नाही' });
+
+  const y = Number(year);
+  const m = Number(month);
+  const firstOfMonth = `${y}-${String(m).padStart(2, '0')}-01`;
+
+  const [dayRows] = await pool.query(
+    `SELECT DAY(entry_date) AS d, SUM(amount) AS total
+     FROM cash_book_entries
+     WHERE financial_year_id = ? AND ledger_head_id = ?
+       AND YEAR(entry_date) = ? AND MONTH(entry_date) = ?
+     GROUP BY DAY(entry_date)`,
+    [financialYearId, ledgerHeadId, y, m]
+  );
+  const days = {};
+  for (let d = 1; d <= 31; d++) days[d] = 0;
+  let monthTotal = 0;
+  for (const r of dayRows) { days[r.d] = Number(r.total); monthTotal += Number(r.total); }
+  monthTotal = round2(monthTotal);
+
+  const [[priorRow]] = await pool.query(
+    `SELECT COALESCE(SUM(amount), 0) AS total FROM cash_book_entries
+     WHERE financial_year_id = ? AND ledger_head_id = ? AND entry_date < ?`,
+    [financialYearId, ledgerHeadId, firstOfMonth]
+  );
+  const priorTotal = round2(Number(priorRow.total));
+
+  res.json({ head, year: y, month: m, days, monthTotal, priorTotal, runningTotal: round2(priorTotal + monthTotal) });
+});
+
 module.exports = router;

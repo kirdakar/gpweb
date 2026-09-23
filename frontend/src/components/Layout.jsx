@@ -17,6 +17,7 @@ const MENUS = [
       { to: '/particulars', label: 'दर मास्टर', screen: 'particulars' },
       { to: '/years', label: 'आर्थिक वर्ष', screen: 'years' },
       { to: '/users', label: 'युजर मास्टर', adminOnly: true },
+      { to: '/gp1to33/ledger-heads', label: 'लेखाशीर्ष मास्टर (ग्रामपंचायत १ ते ३३ नमूना)', screen: 'ledger_heads' },
     ],
   },
   {
@@ -24,6 +25,7 @@ const MENUS = [
     items: [
       { to: '/properties', label: 'मिळकत नोंदी', screen: 'properties' },
       { to: '/payments', label: 'कर जमा भरणे', screen: 'payments' },
+      { to: '/gp1to33/cash-book', label: 'दैनिक रोकड वही (ग्रामपंचायत १ ते ३३ नमूना)', screen: 'cash_book' },
     ],
   },
   {
@@ -36,6 +38,9 @@ const MENUS = [
       { to: '/reports/property-list', label: 'मिळकत यादी', screen: 'reports_property_list' },
       { to: '/reports/old-new', label: 'येणे बाकी अहवाल', screen: 'reports_old_new' },
       { to: '/reports/summary', label: 'सारांश', screen: 'reports_summary' },
+      { to: '/gp1to33/reports/cash-book', label: 'रोकड वही अहवाल नमुना ५ (ग्रामपंचायत १ ते ३३ नमूना)', screen: 'reports_cash_book' },
+      { to: '/gp1to33/reports/ledger-classified', label: 'वर्गीकृत नोंदवही नमुना ६ (ग्रामपंचायत १ ते ३३ नमूना)', screen: 'reports_ledger_classified' },
+      { to: '/gp1to33/assets-liabilities', label: 'भत्ते व दायित्वे नमुना ४ (ग्रामपंचायत १ ते ३३ नमूना)', screen: 'assets_liabilities' },
     ],
   },
   {

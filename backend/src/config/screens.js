@@ -22,6 +22,12 @@ const SCREENS = [
   { code: 'reports_assessment_register', label: 'आकारणी यादी (नमुना ८)', actions: ['view', 'print'] },
   { code: 'reports_tax_demand_bill', label: 'कर मागणी बिल (नमुना ९ क)', actions: ['view', 'print'] },
   { code: 'settings', label: 'सेटिंग्ज', actions: ['view', 'edit'] },
+  // ग्रामपंचायत लेखा संहिता, २०११ - नमुना १ ते ३३ (फेज १: लेजर पाया)
+  { code: 'ledger_heads', label: 'लेखाशीर्ष मास्टर', actions: ['view', 'edit'] },
+  { code: 'cash_book', label: 'दैनिक रोकड वही (नमुना ५)', actions: ['view', 'add', 'delete', 'print'] },
+  { code: 'reports_cash_book', label: 'रोकड वही अहवाल (नमुना ५)', actions: ['view', 'print'] },
+  { code: 'reports_ledger_classified', label: 'वर्गीकृत नोंदवही (नमुना ६)', actions: ['view', 'print'] },
+  { code: 'assets_liabilities', label: 'भत्ते व दायित्वे (नमुना ४)', actions: ['view', 'add', 'edit', 'print'] },
 ];
 
 const ACTION_LABELS = { view: 'पहा', add: 'नवीन', edit: 'संपादन', delete: 'मिटवा', print: 'प्रिंट' };

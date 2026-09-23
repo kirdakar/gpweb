@@ -26,6 +26,11 @@ import Users from './pages/Users';
 import UserRights from './pages/UserRights';
 import BackupPage from './pages/maintenance/BackupPage';
 import RestorePage from './pages/maintenance/RestorePage';
+import LedgerHeadMaster from './pages/gp1to33/LedgerHeadMaster';
+import CashBookEntry from './pages/gp1to33/CashBookEntry';
+import CashBookReport from './pages/gp1to33/CashBookReport';
+import ClassifiedLedgerReport from './pages/gp1to33/ClassifiedLedgerReport';
+import AssetsLiabilities from './pages/gp1to33/AssetsLiabilities';
 
 function AppShell() {
   return (
@@ -65,6 +70,11 @@ export default function App() {
             <Route path="/users/:id/rights" element={<RequireAdmin><UserRights /></RequireAdmin>} />
             <Route path="/maintenance/backup" element={<RequireAdmin><BackupPage /></RequireAdmin>} />
             <Route path="/maintenance/restore" element={<RequireAdmin><RestorePage /></RequireAdmin>} />
+            <Route path="/gp1to33/ledger-heads" element={<RequireView screen="ledger_heads"><LedgerHeadMaster /></RequireView>} />
+            <Route path="/gp1to33/cash-book" element={<RequireView screen="cash_book"><CashBookEntry /></RequireView>} />
+            <Route path="/gp1to33/reports/cash-book" element={<RequireView screen="reports_cash_book"><CashBookReport /></RequireView>} />
+            <Route path="/gp1to33/reports/ledger-classified" element={<RequireView screen="reports_ledger_classified"><ClassifiedLedgerReport /></RequireView>} />
+            <Route path="/gp1to33/assets-liabilities" element={<RequireView screen="assets_liabilities"><AssetsLiabilities /></RequireView>} />
           </Route>
         </Routes>
       </BrowserRouter>
