@@ -60,6 +60,12 @@ import AuditRegisterReport from './pages/gp1to33/AuditRegisterReport';
 import AuditMonthlyReport from './pages/gp1to33/AuditMonthlyReport';
 import BalanceStatementEntry from './pages/gp1to33/BalanceStatementEntry';
 import BalanceStatementReport from './pages/gp1to33/BalanceStatementReport';
+import ContractorMaster from './pages/gp1to33/ContractorMaster';
+import RateScheduleMaster from './pages/gp1to33/RateScheduleMaster';
+import WorkEntry from './pages/gp1to33/WorkEntry';
+import WorkReport from './pages/gp1to33/WorkReport';
+import MusterEntry from './pages/gp1to33/MusterEntry';
+import MusterReport from './pages/gp1to33/MusterReport';
 
 function AppShell() {
   return (
@@ -133,6 +139,14 @@ export default function App() {
             <Route path="/gp1to33/reports/audit-monthly" element={<RequireView screen="reports_audit_monthly"><AuditMonthlyReport /></RequireView>} />
             <Route path="/gp1to33/balance-statements" element={<RequireView screen="balance_statements"><BalanceStatementEntry /></RequireView>} />
             <Route path="/gp1to33/reports/balance-statements" element={<RequireView screen="reports_balance_statements"><BalanceStatementReport /></RequireView>} />
+            <Route path="/gp1to33/contractors" element={<RequireView screen="contractors"><ContractorMaster /></RequireView>} />
+            <Route path="/gp1to33/rate-schedule" element={<RequireView screen="rate_schedule"><RateScheduleMaster /></RequireView>} />
+            <Route path="/gp1to33/works" element={<RequireView screen="works"><WorkEntry /></RequireView>} />
+            <Route path="/gp1to33/muster-rolls" element={<RequireView screen="muster_rolls"><MusterEntry /></RequireView>} />
+            <Route path="/gp1to33/reports/muster-roll" element={<RequireView screen="reports_muster_roll"><MusterReport /></RequireView>} />
+            <Route path="/gp1to33/reports/work-estimate" element={<RequireView screen="reports_work_estimate"><WorkReport view="estimate" /></RequireView>} />
+            <Route path="/gp1to33/reports/work-measurement" element={<RequireView screen="reports_work_measurement"><WorkReport view="measurement" /></RequireView>} />
+            <Route path="/gp1to33/reports/work-bills" element={<RequireView screen="reports_work_bills"><WorkReport view="bills" /></RequireView>} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -577,3 +577,117 @@ CREATE TABLE IF NOT EXISTS monthly_balance_statements (
   UNIQUE KEY uq_balance_statement (financial_year_id, year, month),
   CONSTRAINT fk_balance_stmt_year FOREIGN KEY (financial_year_id) REFERENCES financial_years(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- फेज ३फ: सार्वजनिक बांधकाम (नमुना २०, २०क, २०ख) व हजेरीपट (नमुना १९).
+-- एक साखळी: works -> work_estimate_items (दरसूचीतून दर) -> work_measurements
+-- (दर अंदाजपत्रकातील ओळीवरून येतो) -> work_bills (मोजमापाची एकूण रक्कम - आधीची
+-- देयके = या देयकाची रक्कम, नोंद करताच cash_book_entries मध्ये खर्च पोस्ट).
+-- मोजमापाची संख्या/रक्कम व हजेरीचे दिवस/मजुरी कधीही साठवली जात नाही - सर्व्हरवर
+-- मोजली जाते.
+CREATE TABLE IF NOT EXISTS contractors (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(150) NOT NULL,
+  address VARCHAR(255) NULL,
+  phone VARCHAR(30) NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS rate_schedule_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  description VARCHAR(255) NOT NULL,
+  unit VARCHAR(30) NOT NULL,
+  rate DECIMAL(12,2) NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS works (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  financial_year_id INT NOT NULL,
+  ledger_head_id INT NOT NULL,
+  sanction_order_no VARCHAR(100) NULL,
+  sanction_date DATE NULL,
+  sanctioning_authority VARCHAR(150) NULL,
+  contractor_id INT NULL,
+  status ENUM('चालू','पूर्ण') NOT NULL DEFAULT 'चालू',
+  remark TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_work_year FOREIGN KEY (financial_year_id) REFERENCES financial_years(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_work_head FOREIGN KEY (ledger_head_id) REFERENCES ledger_heads(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_work_contractor FOREIGN KEY (contractor_id) REFERENCES contractors(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS work_estimate_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  work_id INT NOT NULL,
+  rate_item_id INT NULL,
+  description VARCHAR(255) NOT NULL,
+  unit VARCHAR(30) NOT NULL,
+  quantity DECIMAL(12,3) NOT NULL DEFAULT 0,
+  rate DECIMAL(12,2) NOT NULL DEFAULT 0,
+  CONSTRAINT fk_est_work FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE,
+  CONSTRAINT fk_est_rate FOREIGN KEY (rate_item_id) REFERENCES rate_schedule_items(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS work_measurements (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  work_id INT NOT NULL,
+  estimate_item_id INT NOT NULL,
+  measured_on DATE NOT NULL,
+  location_note VARCHAR(255) NULL,
+  nos DECIMAL(10,3) NOT NULL DEFAULT 1,
+  length DECIMAL(10,3) NOT NULL DEFAULT 1,
+  breadth DECIMAL(10,3) NOT NULL DEFAULT 1,
+  depth DECIMAL(10,3) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_meas_work FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE,
+  CONSTRAINT fk_meas_item FOREIGN KEY (estimate_item_id) REFERENCES work_estimate_items(id) ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS work_bills (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  work_id INT NOT NULL,
+  bill_no VARCHAR(50) NULL,
+  bill_date DATE NOT NULL,
+  contractor_id INT NULL,
+  gross_to_date DECIMAL(14,2) NOT NULL,
+  previous_bills_total DECIMAL(14,2) NOT NULL DEFAULT 0,
+  deduction_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+  deduction_note VARCHAR(255) NULL,
+  cash_book_entry_id INT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_wbill_work FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE,
+  CONSTRAINT fk_wbill_contractor FOREIGN KEY (contractor_id) REFERENCES contractors(id) ON DELETE SET NULL,
+  CONSTRAINT fk_wbill_cash FOREIGN KEY (cash_book_entry_id) REFERENCES cash_book_entries(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS muster_rolls (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  work_id INT NULL,
+  financial_year_id INT NOT NULL,
+  year INT NOT NULL,
+  month INT NOT NULL,
+  title VARCHAR(255) NULL,
+  ledger_head_id INT NOT NULL,
+  cash_book_entry_id INT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_muster_work FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE SET NULL,
+  CONSTRAINT fk_muster_year FOREIGN KEY (financial_year_id) REFERENCES financial_years(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_muster_head FOREIGN KEY (ledger_head_id) REFERENCES ledger_heads(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_muster_cash FOREIGN KEY (cash_book_entry_id) REFERENCES cash_book_entries(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS muster_workers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  muster_roll_id INT NOT NULL,
+  name VARCHAR(150) NOT NULL,
+  address VARCHAR(255) NULL,
+  gender VARCHAR(10) NULL,
+  post VARCHAR(100) NULL,
+  rate_per_day DECIMAL(10,2) NOT NULL DEFAULT 0,
+  attendance CHAR(31) NOT NULL DEFAULT '',
+  fine DECIMAL(10,2) NOT NULL DEFAULT 0,
+  CONSTRAINT fk_mworker_roll FOREIGN KEY (muster_roll_id) REFERENCES muster_rolls(id) ON DELETE CASCADE
+) ENGINE=InnoDB;

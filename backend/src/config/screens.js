@@ -61,6 +61,15 @@ const SCREENS = [
   { code: 'reports_audit_monthly', label: 'आक्षेप पूर्ततेचे मासिक विवरण (नमुना २७)', actions: ['view', 'print'] },
   { code: 'balance_statements', label: 'मासिक शिल्लक विवरण नोंदणी (नमुना २६-ख)', actions: ['view', 'edit'] },
   { code: 'reports_balance_statements', label: 'मासिक शिल्लक विवरण अहवाल (नमुना २६-ख)', actions: ['view', 'print'] },
+  // फेज ३फ: सार्वजनिक बांधकाम (नमुना २०, २०क, २०ख) व हजेरीपट (नमुना १९)
+  { code: 'contractors', label: 'कंत्राटदार मास्टर', actions: ['view', 'add', 'edit', 'delete'] },
+  { code: 'rate_schedule', label: 'दरसूची मास्टर', actions: ['view', 'add', 'edit', 'delete'] },
+  { code: 'works', label: 'बांधकाम नोंदणी (नमुना २०/२०क/२०ख)', actions: ['view', 'add', 'edit', 'delete'] },
+  { code: 'muster_rolls', label: 'हजेरीपट नोंदणी (नमुना १९)', actions: ['view', 'add', 'edit', 'delete'] },
+  { code: 'reports_muster_roll', label: 'हजेरीपट अहवाल (नमुना १९)', actions: ['view', 'print'] },
+  { code: 'reports_work_estimate', label: 'कामाच्या अंदाजाची नोंदवही (नमुना २०)', actions: ['view', 'print'] },
+  { code: 'reports_work_measurement', label: 'मोजमाप वही (नमुना २०क)', actions: ['view', 'print'] },
+  { code: 'reports_work_bills', label: 'कामाचे देयक (नमुना २०ख)', actions: ['view', 'print'] },
 ];
 
 const ACTION_LABELS = { view: 'पहा', add: 'नवीन', edit: 'संपादन', delete: 'मिटवा', print: 'प्रिंट' };
