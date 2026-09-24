@@ -90,4 +90,38 @@ router.patch('/:id/activate', requirePermission('years', 'add'), async (req, res
   res.json({ ok: true });
 });
 
+// वर्ष मिटवा. चालू वर्ष मिटवता येत नाही; वर्षाशी जोडलेले कोणतेही व्यवहार (पावत्या,
+// रोकड वही, अंदाजपत्रक इ.) असल्यास नकार. फक्त carry-forward झालेले कर तपशील
+// (property_tax_assessment) असल्यास ते वर्षासोबत मिटतात.
+router.delete('/:id', requirePermission('years', 'delete'), async (req, res) => {
+  const { id } = req.params;
+  const [[year]] = await pool.query('SELECT id, year_label, is_active FROM financial_years WHERE id = ?', [id]);
+  if (!year) return res.status(404).json({ error: 'वर्ष सापडले नाही' });
+  if (year.is_active) return res.status(400).json({ error: 'चालू वर्ष मिटवता येत नाही - आधी दुसरे वर्ष चालू करा' });
+
+  const [refs] = await pool.query(
+    `SELECT TABLE_NAME AS t, COLUMN_NAME AS c FROM information_schema.KEY_COLUMN_USAGE
+     WHERE REFERENCED_TABLE_NAME = 'financial_years' AND TABLE_SCHEMA = DATABASE()`
+  );
+  for (const r of refs) {
+    if (r.t === 'property_tax_assessment') continue;
+    const [[x]] = await pool.query(`SELECT COUNT(*) AS n FROM \`${r.t}\` WHERE \`${r.c}\` = ?`, [id]);
+    if (x.n > 0) return res.status(400).json({ error: `या वर्षाचे व्यवहार नोंदलेले आहेत (${r.t}: ${x.n}) - मिटवता येणार नाही` });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [a] = await conn.query('DELETE FROM property_tax_assessment WHERE financial_year_id = ?', [id]);
+    await conn.query('DELETE FROM financial_years WHERE id = ?', [id]);
+    await conn.commit();
+    res.json({ ok: true, deleted_assessments: a.affectedRows });
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+});
+
 module.exports = router;

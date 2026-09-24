@@ -117,6 +117,8 @@ router.get('/:id/refund', async (req, res) => {
 });
 
 router.delete('/:id', requirePermission('cash_book', 'delete'), async (req, res) => {
+  const [[row]] = await pool.query('SELECT tax_payment_id FROM cash_book_entries WHERE id = ?', [req.params.id]);
+  if (row && row.tax_payment_id) return res.status(400).json({ error: 'ही नोंद कर जमा पावतीवरून आपोआप आली आहे - कर जमा भरणे स्क्रीनवरून पावती मिटवा' });
   const [result] = await pool.query('DELETE FROM cash_book_entries WHERE id = ?', [req.params.id]);
   if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found' });
   res.json({ ok: true });

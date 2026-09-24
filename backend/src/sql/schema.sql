@@ -789,3 +789,9 @@ CREATE TABLE IF NOT EXISTS tree_income (
   CONSTRAINT fk_tree_income_head FOREIGN KEY (ledger_head_id) REFERENCES ledger_heads(id) ON DELETE RESTRICT,
   CONSTRAINT fk_tree_income_cash FOREIGN KEY (cash_book_entry_id) REFERENCES cash_book_entries(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
+
+-- कर जमा भरणे (tax_payments) आता रोकड वहीत (नमुना ५) आपोआप जमा नोंदते: प्रत्येक
+-- पावतीच्या घटकनिहाय ओळी tax_payment_id ने जोडलेल्या; पावती मिटवल्यास त्याही मिटतात.
+ALTER TABLE cash_book_entries ADD COLUMN IF NOT EXISTS tax_payment_id INT NULL;
+ALTER TABLE cash_book_entries ADD FOREIGN KEY IF NOT EXISTS fk_cash_tax_payment
+  (tax_payment_id) REFERENCES tax_payments(id) ON DELETE CASCADE;

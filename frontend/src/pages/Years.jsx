@@ -45,6 +45,19 @@ export default function Years() {
     refresh();
   }
 
+  async function remove(y) {
+    if (!window.confirm(`वर्ष "${y.year_label}" आणि त्यातील कर तपशील कायमचा मिटवायचा आहे का?`)) return;
+    setError('');
+    setNotice('');
+    try {
+      const { data } = await client.delete(`/years/${y.id}`);
+      setNotice(`वर्ष "${y.year_label}" मिटवले (${data.deleted_assessments} कर तपशील नोंदी सह).`);
+      refresh();
+    } catch (err) {
+      setError(err.response?.data?.error || 'मिटवताना त्रुटी आली');
+    }
+  }
+
   return (
     <div className="page">
       <div className="page-header"><h1>आर्थिक वर्ष व्यवस्थापन</h1><CloseReportButton /></div>
@@ -77,7 +90,10 @@ export default function Years() {
               <tr key={y.id}>
                 <td>{y.year_label}</td>
                 <td>{y.is_active ? <span className="badge success">चालू वर्ष</span> : <span className="badge">निष्क्रिय</span>}</td>
-                <td>{!y.is_active && can('years', 'add') && <button className="btn secondary small" onClick={() => activate(y.id)}>चालू वर्ष करा</button>}</td>
+                <td style={{ display: 'flex', gap: 6 }}>
+                  {!y.is_active && can('years', 'add') && <button className="btn secondary small" onClick={() => activate(y.id)}>चालू वर्ष करा</button>}
+                  {!y.is_active && can('years', 'delete') && <button className="btn danger small" onClick={() => remove(y)}>मिटवा</button>}
+                </td>
               </tr>
             ))}
           </tbody>

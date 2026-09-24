@@ -305,7 +305,7 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
   display: inline-block; background: rgba(255, 255, 255, 0.88); padding: 6px 18px;
   border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
 }
-.dashboard-page .table-wrap { background: rgba(255, 255, 255, 0.94); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18); border-radius: 10px; }
+.dashboard-page .table-wrap { margin-top: max(0px, calc(max(100vw / 1600, 100vh / 800) * 350 - 100px)); background: rgba(255, 255, 255, 0.94); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18); border-radius: 10px; }
 .dashboard-page > .card { background: rgba(255, 255, 255, 0.94); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18); }
 
 .pagination { display: flex; gap: 8px; align-items: center; margin-top: 12px; justify-content: flex-end; }
@@ -513,3 +513,9 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
   .bill-page { border: none; padding: 0; width: auto; margin: 0; }
   .bill-copy { page-break-inside: avoid; }
 }
+
+/* डॅशबोर्डवरील पूर्ण-स्क्रीन दृश्य (ग्रामपंचायत नावाच्या फलकासह) - मजकुराच्या मागे */
+.dashboard-scene { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; }
+
+/* डॅशबोर्ड टेबल कॉम्पॅक्ट - ओळींची उंची कमी जेणेकरून एका स्क्रीनवर पूर्ण मावेल */
+.dashboard-page th, .dashboard-page td { padding-top: 5px; padding-bottom: 5px; }

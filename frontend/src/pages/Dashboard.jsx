@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 import client from '../api/client';
 import { useYear } from '../context/YearContext';
+import useGpSettings from '../hooks/useGpSettings';
 
 // मागील बाकी, चालू बाकी, एकूण बाकी, जमा, उर्वरित बाकी - हे ५ गट एकाच
 // कॉम्पॅक्ट टेबलमध्ये (येणे बाकी अहवालाच्याच आकडेवारीवरून, पहा
@@ -22,9 +23,15 @@ const ROWS = [
 
 export default function Dashboard() {
   const { yearId, currentYear } = useYear();
+  const { settings } = useGpSettings();
+  const gpShort = (settings.gp_name || '').replace(/^ग्रामपंचायत\s*/, '') || 'ग्रामपंचायत';
+  // गावाच्या नावाचा आकार लांबीनुसार, जेणेकरून टाकीत मावेल
+  const nameSize = Math.max(14, Math.min(32, 175 / (Math.max(gpShort.length, 5) * 0.62)));
   const [oldNewRows, setOldNewRows] = useState([]);
   const [propertyCount, setPropertyCount] = useState(null);
   const [loading, setLoading] = useState(true);
+  // सविस्तर टेबल सुरुवातीस लपवलेले - "डॅशबोर्ड" शीर्षकावर क्लिक केल्यावर दिसते/लपते
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     if (!yearId) return;
@@ -56,18 +63,35 @@ export default function Dashboard() {
 
   return (
     <div className="page dashboard-page">
-      <div className="page-header">
-        <h1 style={{ fontSize: 30, fontWeight: 800 }}>डॅशबोर्ड {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
+      {/* पार्श्वभूमी चित्र + पाण्याच्या टाकीवर ग्रामपंचायतीचे नाव: चित्र व नाव एकाच SVG मध्ये
+          (समान preserveAspectRatio) म्हणून कोणत्याही स्क्रीन आकारात नाव टाकीवरच राहते. */}
+      <svg className="dashboard-scene no-print" viewBox="0 100 1600 800" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+        <image href="/gp-bg.svg" x="0" y="0" width="1600" height="900" preserveAspectRatio="xMidYMin slice" />
+        {/* टाकीवर गावाचे नाव */}
+        <text x="800" y="343" textAnchor="middle" fontSize={nameSize} fontWeight="800" fill="#ffffff">{gpShort}</text>
+        {/* पूर्वीच्या "+" चिन्हाच्या जागी (त्रिकोणी भागात) "ग्रामपंचायत" */}
+        <text x="800" y="438" textAnchor="middle" fontSize="25" fontWeight="800" fill="#123a6b">ग्रामपंचायत</text>
+      </svg>
+      <div className="page-header" style={{ justifyContent: 'flex-start', gap: 20, flexWrap: 'wrap', marginBottom: 10 }}>
+        <h1
+          role="button" tabIndex={0} title={showDetails ? 'सविस्तर माहिती लपवा' : 'सविस्तर माहिती पहा'}
+          onClick={() => setShowDetails((v) => !v)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowDetails((v) => !v); }}
+          style={{ fontSize: 28, fontWeight: 800, cursor: 'pointer', userSelect: 'none' }}
+        >
+          डॅशबोर्ड {currentYear ? `— ${currentYear.year_label}` : ''} <span style={{ fontSize: 20 }}>{showDetails ? '▲' : '▼'}</span>
+        </h1>
+        {!loading && (
+          <div className="card" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'baseline', gap: 12, padding: '6px 18px', borderTop: '3px solid #1d4ed8' }}>
+            <span style={{ fontSize: 20, fontWeight: 800, color: '#1d4ed8' }}>एकूण मिळकती</span>
+            <span style={{ fontSize: 30, fontWeight: 800 }}>{propertyCount ?? '-'}</span>
+          </div>
+        )}
       </div>
 
       {loading ? <p>लोड होत आहे...</p> : (
         <>
-          <div className="card" style={{ display: 'inline-block', marginBottom: 16, borderTop: '3px solid #1d4ed8' }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#1d4ed8', marginBottom: 6 }}>एकूण मिळकती</div>
-            <div style={{ fontSize: 34, fontWeight: 800 }}>{propertyCount ?? '-'}</div>
-          </div>
-
-          <div className="table-wrap">
+          {showDetails && <div className="table-wrap" onClick={() => setShowDetails(false)} title="लपवण्यासाठी टेबलवर क्लिक करा" style={{ cursor: 'pointer' }}>
             <table>
               <thead>
                 <tr>
@@ -108,7 +132,7 @@ export default function Dashboard() {
                 </tr>
               </tfoot>
             </table>
-          </div>
+          </div>}
         </>
       )}
     </div>
