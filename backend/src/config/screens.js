@@ -55,6 +55,12 @@ const SCREENS = [
   // फेज ३ड: प्रवास भत्ता देयक (नमुना ३१); परतावा आदेश (नमुना ३२) वेगळी स्क्रीन नाही - reports_receipt_voucher वापरते
   { code: 'travel_bills', label: 'प्रवास भत्ता देयक नोंदणी (नमुना ३१)', actions: ['view', 'add', 'edit'] },
   { code: 'reports_travel_bills', label: 'प्रवास भत्ता देयक अहवाल (नमुना ३१)', actions: ['view', 'print'] },
+  // फेज ३इ: लेखापरीक्षण आक्षेप (नमुना ३०, २७) व मासिक शिल्लक विवरण (नमुना २६-ख)
+  { code: 'audit_reports', label: 'लेखापरीक्षण आक्षेप नोंदणी (नमुना ३०)', actions: ['view', 'add', 'edit', 'delete'] },
+  { code: 'reports_audit_register', label: 'लेखापरीक्षण आक्षेप पूर्तता नोंदवही (नमुना ३०)', actions: ['view', 'print'] },
+  { code: 'reports_audit_monthly', label: 'आक्षेप पूर्ततेचे मासिक विवरण (नमुना २७)', actions: ['view', 'print'] },
+  { code: 'balance_statements', label: 'मासिक शिल्लक विवरण नोंदणी (नमुना २६-ख)', actions: ['view', 'edit'] },
+  { code: 'reports_balance_statements', label: 'मासिक शिल्लक विवरण अहवाल (नमुना २६-ख)', actions: ['view', 'print'] },
 ];
 
 const ACTION_LABELS = { view: 'पहा', add: 'नवीन', edit: 'संपादन', delete: 'मिटवा', print: 'प्रिंट' };

@@ -523,3 +523,57 @@ CREATE TABLE IF NOT EXISTS travel_bills (
   CONSTRAINT fk_travel_bill_head FOREIGN KEY (ledger_head_id) REFERENCES ledger_heads(id) ON DELETE RESTRICT,
   CONSTRAINT fk_travel_bill_cash_entry FOREIGN KEY (cash_book_entry_id) REFERENCES cash_book_entries(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
+
+-- फेज ३इ: लेखापरीक्षण. नमुना ३० (आक्षेप पूर्तता नोंदवही) व नमुना २७ (मासिक
+-- विवरण) एकाच डेटावरून: audit_reports (प्रत्येक लेखापरीक्षण अहवालाची एक ओळ) व
+-- audit_compliance_logs (पूर्ततेच्या प्रत्येक प्रगतीची तारीखवार नोंद). नमुना ३० चे
+-- "एकूण पूर्तता/मंजूर" कॉलम व नमुना २७ चे मासिक आकडे दोन्ही logs वरून
+-- काढले जातात - दोन्ही फॉर्मसाठी वेगळी नोंद करायची नाही.
+CREATE TABLE IF NOT EXISTS audit_reports (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  report_year VARCHAR(20) NOT NULL,          -- लेखापरीक्षण अहवालाचे वर्ष
+  received_date DATE NULL,
+  total_objections INT NOT NULL DEFAULT 0,   -- अहवालातील एकूण आक्षेप/परिच्छेद
+  info_only_count INT NOT NULL DEFAULT 0,    -- केवळ माहितीसाठी (पूर्तता आवश्यक नाही)
+  objection_numbers VARCHAR(255) NULL,
+  outward_no VARCHAR(100) NULL,              -- पंचायत समितीकडे पाठविल्याचा जावक क्र. व दिनांक
+  ps_resolution_info VARCHAR(255) NULL,      -- पंचायत समितीचा ठराव/जावक तपशील
+  rem_book_adjustment INT NOT NULL DEFAULT 0,  -- शिल्लक आक्षेप: पुस्तकी समायोजन
+  rem_recovery INT NOT NULL DEFAULT 0,         -- वसुली
+  rem_valuation INT NOT NULL DEFAULT 0,        -- मूल्यांकन
+  rem_irregular INT NOT NULL DEFAULT 0,        -- नियमबाह्य
+  remark TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS audit_compliance_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  audit_report_id INT NOT NULL,
+  log_date DATE NOT NULL,
+  complied_count INT NOT NULL DEFAULT 0,          -- ग्रामपंचायतीने पूर्तता केलेले
+  ps_accepted_count INT NOT NULL DEFAULT 0,       -- पंचायत समितीने मान्य केलेले
+  auditor_accepted_count INT NOT NULL DEFAULT 0,  -- जि.प./लेखा परीक्षकाने मंजूर केलेले
+  pending_reason TEXT NULL,
+  remark TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_audit_log_report FOREIGN KEY (audit_report_id) REFERENCES audit_reports(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- नमुना २६-ख: मासिक शिल्लक विवरण. महिन्याची प्रारंभिक/अखेरची शिल्लक रोकड वहीवरून
+-- (नमुना ५) काढली जाते, साठवत नाही; फक्त ती शिल्लक कोठे ठेवली आहे याची विभागणी
+-- (हातात/बँक/पोस्ट/अल्पबचत/मुदत ठेव) हाताने भरतात आणि एकूण रोकड वहीशी जुळते का
+-- ते तपासले जाते.
+CREATE TABLE IF NOT EXISTS monthly_balance_statements (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  financial_year_id INT NOT NULL,
+  year INT NOT NULL,
+  month INT NOT NULL,
+  in_hand DECIMAL(14,2) NOT NULL DEFAULT 0,
+  in_bank DECIMAL(14,2) NOT NULL DEFAULT 0,
+  in_post DECIMAL(14,2) NOT NULL DEFAULT 0,
+  savings_certificates DECIMAL(14,2) NOT NULL DEFAULT 0,
+  fixed_deposits DECIMAL(14,2) NOT NULL DEFAULT 0,
+  remark TEXT NULL,
+  UNIQUE KEY uq_balance_statement (financial_year_id, year, month),
+  CONSTRAINT fk_balance_stmt_year FOREIGN KEY (financial_year_id) REFERENCES financial_years(id) ON DELETE CASCADE
+) ENGINE=InnoDB;

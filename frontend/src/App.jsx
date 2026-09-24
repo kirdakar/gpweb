@@ -55,6 +55,11 @@ import LoanReport from './pages/gp1to33/LoanReport';
 import TravelBillEntry from './pages/gp1to33/TravelBillEntry';
 import TravelBillReport from './pages/gp1to33/TravelBillReport';
 import RefundOrderPrint from './pages/gp1to33/RefundOrderPrint';
+import AuditReportEntry from './pages/gp1to33/AuditReportEntry';
+import AuditRegisterReport from './pages/gp1to33/AuditRegisterReport';
+import AuditMonthlyReport from './pages/gp1to33/AuditMonthlyReport';
+import BalanceStatementEntry from './pages/gp1to33/BalanceStatementEntry';
+import BalanceStatementReport from './pages/gp1to33/BalanceStatementReport';
 
 function AppShell() {
   return (
@@ -123,6 +128,11 @@ export default function App() {
             <Route path="/gp1to33/travel-bills" element={<RequireView screen="travel_bills"><TravelBillEntry /></RequireView>} />
             <Route path="/gp1to33/reports/travel-bills" element={<RequireView screen="reports_travel_bills"><TravelBillReport /></RequireView>} />
             <Route path="/gp1to33/reports/refund/:id" element={<RequireView screen="reports_receipt_voucher"><RefundOrderPrint /></RequireView>} />
+            <Route path="/gp1to33/audit-reports" element={<RequireView screen="audit_reports"><AuditReportEntry /></RequireView>} />
+            <Route path="/gp1to33/reports/audit-register" element={<RequireView screen="reports_audit_register"><AuditRegisterReport /></RequireView>} />
+            <Route path="/gp1to33/reports/audit-monthly" element={<RequireView screen="reports_audit_monthly"><AuditMonthlyReport /></RequireView>} />
+            <Route path="/gp1to33/balance-statements" element={<RequireView screen="balance_statements"><BalanceStatementEntry /></RequireView>} />
+            <Route path="/gp1to33/reports/balance-statements" element={<RequireView screen="reports_balance_statements"><BalanceStatementReport /></RequireView>} />
           </Route>
         </Routes>
       </BrowserRouter>
