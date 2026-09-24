@@ -6,6 +6,8 @@ const express = require('express');
 const pool = require('../config/db');
 const { requireAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/permissions');
+const { round2 } = require('../utils/dueAllocation');
+const reportsRouter = require('./reports.routes');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -13,6 +15,9 @@ router.use(requireAuth);
 // A6/A7/A8 आता fixed_assets (नमुना २२/२३/२४) वरून आपोआप काढले जातात - हाताने
 // टाईप करायचे नाहीत (डुप्लिकेट नोंद टाळण्यासाठी, फेज ३अ).
 const DERIVED_ASSET_CODES = { A6: 'स्थावर', A7: 'रस्ते', A8: 'जमीन' };
+// A1 (कर येणे बाकी) = आकारणी (मागील + चालू) वजा कर जमा भरणे मधील जमा = डॅशबोर्डवरील
+// "उर्वरित बाकी" एकूण - हाताने टाईप करायचे नाही (दुहेरी नोंद टाळण्यासाठी).
+const DERIVED_TAX_CODE = 'A1';
 
 const ITEMS = {
   'दायित्वे': [
@@ -61,12 +66,18 @@ router.get('/', async (req, res) => {
     amountByCode[code] = assetTotalByCategory[category] ?? 0;
   }
 
+  const comparison = await reportsRouter.computeOldNewComparison(financialYearId);
+  amountByCode[DERIVED_TAX_CODE] = comparison
+    ? round2(comparison.rows.reduce((s, r) => s + Number(r.remaining_due || 0), 0))
+    : 0;
+
   const result = {};
   for (const side of Object.keys(ITEMS)) {
     result[side] = ITEMS[side].map((item) => ({
       ...item,
       amount: amountByCode[item.code] ?? 0,
-      derived: Boolean(DERIVED_ASSET_CODES[item.code]),
+      derived: Boolean(DERIVED_ASSET_CODES[item.code]) || item.code === DERIVED_TAX_CODE,
+      derived_from: item.code === DERIVED_TAX_CODE ? 'tax' : (DERIVED_ASSET_CODES[item.code] ? 'assets' : null),
     }));
   }
   res.json(result);
@@ -84,7 +95,7 @@ router.put('/', requirePermission('assets_liabilities', 'edit'), async (req, res
     await conn.beginTransaction();
     for (const e of entries) {
       if (!validCodes.has(e.item_code)) continue;
-      if (DERIVED_ASSET_CODES[e.item_code]) continue; // A6/A7/A8 आता fixed_assets वरून आपोआप - हाताने बदलता येत नाहीत
+      if (DERIVED_ASSET_CODES[e.item_code] || e.item_code === DERIVED_TAX_CODE) continue; // A6/A7/A8 आता fixed_assets वरून आपोआप - हाताने बदलता येत नाहीत
       const side = ITEMS['दायित्वे'].some((i) => i.code === e.item_code) ? 'दायित्वे' : 'भत्ता';
       const itemName = [...ITEMS['दायित्वे'], ...ITEMS['भत्ता']].find((i) => i.code === e.item_code).name;
       await conn.query(

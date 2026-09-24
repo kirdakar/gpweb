@@ -65,12 +65,9 @@ router.get('/assessment-register', async (req, res) => {
 // format used throughout - plain string comparison sorts these correctly).
 // There is no payment/receipt ledger in this system, so "बाकी" here means
 // total assessed tax, not tax minus amount actually paid.
-router.get('/old-new-comparison', async (req, res) => {
-  const yearId = req.query.yearId;
-  if (!yearId) return res.status(400).json({ error: 'yearId is required' });
-
+async function computeOldNewComparison(yearId) {
   const [[year]] = await pool.query('SELECT * FROM financial_years WHERE id = ?', [yearId]);
-  if (!year) return res.status(404).json({ error: 'Financial year not found' });
+  if (!year) return null;
 
   const [rows] = await pool.query(
     `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name,
@@ -171,8 +168,18 @@ router.get('/old-new-comparison', async (req, res) => {
     });
   }
 
-  res.json({ year, rows: withPayments });
+  return { year, rows: withPayments };
+}
+
+router.get('/old-new-comparison', async (req, res) => {
+  const yearId = req.query.yearId;
+  if (!yearId) return res.status(400).json({ error: 'yearId is required' });
+  const result = await computeOldNewComparison(yearId);
+  if (!result) return res.status(404).json({ error: 'Financial year not found' });
+  res.json(result);
 });
+// नमुना ४ (A1 कर येणे बाकी) सारख्या इतर राऊटना तीच गणना वापरण्यासाठी
+router.computeOldNewComparison = computeOldNewComparison;
 
 // नमुना नं. ८ आकारणी यादी घोषवारा - बांधकाम प्रकारानुसार (दर मास्टर,
 // par_code क्रमाने) गट करून संख्या/क्षेत्रफळ/कर एकत्रित बेरीज दाखवतो -

@@ -61,7 +61,7 @@ export default function AssetsLiabilities() {
               {list.map((item) => (
                 <tr key={item.code}>
                   <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{item.code}</td>
-                  <td>{item.name}{item.derived && <span style={{ color: 'var(--text-muted)', fontSize: 12 }}> (मालमत्ता नोंदणीवरून आपोआप)</span>}</td>
+                  <td>{item.name}{item.derived && <span style={{ color: 'var(--text-muted)', fontSize: 12 }}> ({item.derived_from === 'tax' ? 'आकारणी व कर जमा भरणे वरून आपोआप' : 'मालमत्ता नोंदणीवरून आपोआप'})</span>}</td>
                   <td className="num">
                     {canEdit && !item.derived ? (
                       <input
