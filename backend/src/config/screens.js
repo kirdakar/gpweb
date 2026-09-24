@@ -70,6 +70,16 @@ const SCREENS = [
   { code: 'reports_work_estimate', label: 'कामाच्या अंदाजाची नोंदवही (नमुना २०)', actions: ['view', 'print'] },
   { code: 'reports_work_measurement', label: 'मोजमाप वही (नमुना २०क)', actions: ['view', 'print'] },
   { code: 'reports_work_bills', label: 'कामाचे देयक (नमुना २०ख)', actions: ['view', 'print'] },
+  // फेज ३ग: किरकोळ मागणी (नमुना ११), मुद्रांक हिशोब (१४), उपभोग्य वस्तू साठा (१५), वृक्ष नोंदवही (३३)
+  { code: 'misc_demands', label: 'किरकोळ मागणी नोंदणी (नमुना ११)', actions: ['view', 'add', 'edit'] },
+  { code: 'reports_misc_demands', label: 'किरकोळ मागणी अहवाल (नमुना ११)', actions: ['view', 'print'] },
+  { code: 'stamps', label: 'मुद्रांक हिशोब नोंदणी (नमुना १४)', actions: ['view', 'add', 'delete'] },
+  { code: 'reports_stamps', label: 'मुद्रांक हिशोब अहवाल (नमुना १४)', actions: ['view', 'print'] },
+  { code: 'stock_items', label: 'उपभोग्य वस्तू मास्टर (नमुना १५)', actions: ['view', 'add', 'edit', 'delete'] },
+  { code: 'stock_register', label: 'उपभोग्य वस्तू साठा नोंदणी (नमुना १५)', actions: ['view', 'add', 'delete'] },
+  { code: 'reports_stock', label: 'उपभोग्य वस्तू साठा अहवाल (नमुना १५)', actions: ['view', 'print'] },
+  { code: 'trees', label: 'वृक्ष नोंदणी (नमुना ३३)', actions: ['view', 'add', 'edit', 'delete'] },
+  { code: 'reports_trees', label: 'वृक्ष नोंदवही अहवाल (नमुना ३३)', actions: ['view', 'print'] },
 ];
 
 const ACTION_LABELS = { view: 'पहा', add: 'नवीन', edit: 'संपादन', delete: 'मिटवा', print: 'प्रिंट' };

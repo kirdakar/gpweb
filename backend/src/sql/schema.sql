@@ -691,3 +691,101 @@ CREATE TABLE IF NOT EXISTS muster_workers (
   fine DECIMAL(10,2) NOT NULL DEFAULT 0,
   CONSTRAINT fk_mworker_roll FOREIGN KEY (muster_roll_id) REFERENCES muster_rolls(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- फेज ३ग: नमुना ११ (किरकोळ मागणी), १४ (मुद्रांक हिशोब), १५ (उपभोग्य वस्तू साठा), ३३ (वृक्ष नोंदवही).
+-- शिल्लक/एकूण रक्कम कधीही साठवली जात नाही, नोंदींवरून मोजली जाते. नमुना ११ ची
+-- वसुली व नमुना ३३ चे उत्पन्न cash_book_entries मध्ये जमा म्हणून एकदाच पोस्ट होते.
+CREATE TABLE IF NOT EXISTS misc_demands (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  financial_year_id INT NOT NULL,
+  party_name VARCHAR(150) NOT NULL,
+  address VARCHAR(255) NULL,
+  nature VARCHAR(150) NULL,
+  authority VARCHAR(150) NULL,
+  installment_count INT NOT NULL DEFAULT 1,
+  amount DECIMAL(14,2) NOT NULL,
+  demand_no VARCHAR(50) NULL,
+  demand_date DATE NULL,
+  ledger_head_id INT NOT NULL,
+  remark TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_misc_demand_year FOREIGN KEY (financial_year_id) REFERENCES financial_years(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_misc_demand_head FOREIGN KEY (ledger_head_id) REFERENCES ledger_heads(id) ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS misc_demand_events (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  demand_id INT NOT NULL,
+  kind ENUM('वसुली','सूट') NOT NULL,
+  event_date DATE NOT NULL,
+  amount DECIMAL(14,2) NOT NULL,
+  receipt_no VARCHAR(50) NULL,
+  order_no VARCHAR(100) NULL,
+  cash_book_entry_id INT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_misc_event_demand FOREIGN KEY (demand_id) REFERENCES misc_demands(id) ON DELETE CASCADE,
+  CONSTRAINT fk_misc_event_cash FOREIGN KEY (cash_book_entry_id) REFERENCES cash_book_entries(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS stamp_entries (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  financial_year_id INT NOT NULL,
+  entry_date DATE NOT NULL,
+  kind ENUM('मिळाले','वापरले') NOT NULL,
+  ref_no VARCHAR(80) NULL,
+  ref_date DATE NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  remark VARCHAR(255) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_stamp_year FOREIGN KEY (financial_year_id) REFERENCES financial_years(id) ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS stock_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(150) NOT NULL,
+  unit VARCHAR(30) NOT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS stock_movements (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  item_id INT NOT NULL,
+  move_date DATE NOT NULL,
+  kind ENUM('प्रारंभिक','मिळाले','दिले') NOT NULL,
+  quantity DECIMAL(12,3) NOT NULL,
+  purpose_to VARCHAR(255) NULL,
+  officer_name VARCHAR(150) NULL,
+  receiver_name VARCHAR(150) NULL,
+  remark VARCHAR(255) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_stock_move_item FOREIGN KEY (item_id) REFERENCES stock_items(id) ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS trees (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  location_detail VARCHAR(255) NOT NULL,
+  tree_type VARCHAR(150) NOT NULL,
+  info VARCHAR(255) NULL,
+  tree_count INT NOT NULL DEFAULT 1,
+  expected_annual_income DECIMAL(12,2) NOT NULL DEFAULT 0,
+  disposal_date DATE NULL,
+  disposal_details VARCHAR(255) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS tree_income (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tree_id INT NOT NULL,
+  financial_year_id INT NOT NULL,
+  income_date DATE NOT NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  ledger_head_id INT NOT NULL,
+  cash_book_entry_id INT NULL,
+  remark VARCHAR(255) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_tree_income_tree FOREIGN KEY (tree_id) REFERENCES trees(id) ON DELETE CASCADE,
+  CONSTRAINT fk_tree_income_year FOREIGN KEY (financial_year_id) REFERENCES financial_years(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_tree_income_head FOREIGN KEY (ledger_head_id) REFERENCES ledger_heads(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_tree_income_cash FOREIGN KEY (cash_book_entry_id) REFERENCES cash_book_entries(id) ON DELETE SET NULL
+) ENGINE=InnoDB;

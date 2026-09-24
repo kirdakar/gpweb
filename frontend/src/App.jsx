@@ -66,6 +66,15 @@ import WorkEntry from './pages/gp1to33/WorkEntry';
 import WorkReport from './pages/gp1to33/WorkReport';
 import MusterEntry from './pages/gp1to33/MusterEntry';
 import MusterReport from './pages/gp1to33/MusterReport';
+import MiscDemandEntry from './pages/gp1to33/MiscDemandEntry';
+import MiscDemandReport from './pages/gp1to33/MiscDemandReport';
+import StampEntry from './pages/gp1to33/StampEntry';
+import StampReport from './pages/gp1to33/StampReport';
+import StockItemMaster from './pages/gp1to33/StockItemMaster';
+import StockEntry from './pages/gp1to33/StockEntry';
+import StockReport from './pages/gp1to33/StockReport';
+import TreeEntry from './pages/gp1to33/TreeEntry';
+import TreeReport from './pages/gp1to33/TreeReport';
 
 function AppShell() {
   return (
@@ -147,6 +156,15 @@ export default function App() {
             <Route path="/gp1to33/reports/work-estimate" element={<RequireView screen="reports_work_estimate"><WorkReport view="estimate" /></RequireView>} />
             <Route path="/gp1to33/reports/work-measurement" element={<RequireView screen="reports_work_measurement"><WorkReport view="measurement" /></RequireView>} />
             <Route path="/gp1to33/reports/work-bills" element={<RequireView screen="reports_work_bills"><WorkReport view="bills" /></RequireView>} />
+            <Route path="/gp1to33/misc-demands" element={<RequireView screen="misc_demands"><MiscDemandEntry /></RequireView>} />
+            <Route path="/gp1to33/reports/misc-demands" element={<RequireView screen="reports_misc_demands"><MiscDemandReport /></RequireView>} />
+            <Route path="/gp1to33/stamps" element={<RequireView screen="stamps"><StampEntry /></RequireView>} />
+            <Route path="/gp1to33/reports/stamps" element={<RequireView screen="reports_stamps"><StampReport /></RequireView>} />
+            <Route path="/gp1to33/stock-items" element={<RequireView screen="stock_items"><StockItemMaster /></RequireView>} />
+            <Route path="/gp1to33/stock" element={<RequireView screen="stock_register"><StockEntry /></RequireView>} />
+            <Route path="/gp1to33/reports/stock" element={<RequireView screen="reports_stock"><StockReport /></RequireView>} />
+            <Route path="/gp1to33/trees" element={<RequireView screen="trees"><TreeEntry /></RequireView>} />
+            <Route path="/gp1to33/reports/trees" element={<RequireView screen="reports_trees"><TreeReport /></RequireView>} />
           </Route>
         </Routes>
       </BrowserRouter>
