@@ -4,6 +4,7 @@ import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
+import { fmtDate } from '../../utils/formatDate';
 
 const PAYMENT_MODES = ['रोख', 'धनादेश'];
 const REGISTERS = ['मुख्य', 'किरकोळ'];
@@ -204,7 +205,7 @@ export default function CashBookEntry() {
               <tbody>
                 {recentEntries.map((e) => (
                   <tr key={e.id}>
-                    <td>{e.entry_date?.slice(0, 10)}</td>
+                    <td>{fmtDate(e.entry_date)}</td>
                     <td style={{ color: e.entry_type === 'जमा' ? 'var(--success)' : 'var(--danger)' }}>{e.entry_type}</td>
                     <td>{e.head_code} - {e.head_name}</td>
                     <td className="num">{Number(e.amount).toFixed(2)}</td>

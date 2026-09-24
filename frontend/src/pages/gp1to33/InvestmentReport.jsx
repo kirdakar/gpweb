@@ -4,6 +4,7 @@ import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
+import { fmtDate } from '../../utils/formatDate';
 
 // नमुना २५ - गुंतवणूक अहवाल (प्रिंट). डाटाएंट्री InvestmentEntry.jsx
 // (दैनिक व्यवहार) वर; हे फक्त वाचनीय स्वरूप.
@@ -51,10 +52,10 @@ export default function InvestmentReport() {
               {rows.map((r) => (
                 <tr key={r.id}>
                   <td>{r.description}</td>
-                  <td>{r.investment_date?.slice(0, 10)}</td>
+                  <td>{fmtDate(r.investment_date)}</td>
                   <td>{r.head_code} - {r.head_name}</td>
                   <td className="num">{Number(r.purchase_price).toFixed(2)}</td>
-                  <td>{r.maturity_date?.slice(0, 10) || '-'}</td>
+                  <td>{fmtDate(r.maturity_date) || '-'}</td>
                   <td className="num">{r.matured_amount ? Number(r.matured_amount).toFixed(2) : '-'}</td>
                   <td>{r.is_matured ? 'परिपक्व' : 'सुरू'}</td>
                 </tr>

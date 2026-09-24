@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import client from '../../api/client';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
+import { fmtDate } from '../../utils/formatDate';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const emptyForm = { move_date: today(), kind: 'मिळाले', quantity: '', purpose_to: '', officer_name: '', receiver_name: '', remark: '' };
@@ -84,7 +85,7 @@ export default function StockEntry() {
               <tbody>
                 {data.movements.map((m, i) => (
                   <tr key={m.id}>
-                    <td>{m.move_date}</td><td className="num">{m.opening_before}</td><td className="num">{m.received || ''}</td><td className="num">{m.total_available}</td>
+                    <td>{fmtDate(m.move_date)}</td><td className="num">{m.opening_before}</td><td className="num">{m.received || ''}</td><td className="num">{m.total_available}</td>
                     <td>{m.purpose_to || '-'}</td><td className="num">{m.issued || ''}</td><td className="num"><strong>{m.balance_after}</strong></td>
                     <td>{can('stock_register', 'delete') && i === data.movements.length - 1 && <button className="btn danger small" type="button" onClick={() => remove(m.id)}>मिटवा</button>}</td>
                   </tr>

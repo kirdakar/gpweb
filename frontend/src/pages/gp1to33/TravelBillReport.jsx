@@ -4,6 +4,7 @@ import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
+import { fmtDate } from '../../utils/formatDate';
 
 // नमुना ३१ - प्रवास भत्ता देयक अहवाल (प्रिंट). डाटाएंट्री TravelBillEntry.jsx
 // (दैनिक व्यवहार) वर; हे फक्त वाचनीय स्वरूप.
@@ -54,7 +55,7 @@ export default function TravelBillReport() {
               {rows.map((r) => (
                 <tr key={r.id}>
                   <td>{r.traveller_name}</td>
-                  <td>{r.travel_date?.slice(0, 10)}</td>
+                  <td>{fmtDate(r.travel_date)}</td>
                   <td>{r.from_place || '-'} - {r.to_place || '-'}</td>
                   <td>{r.purpose || '-'}</td>
                   <td className="num">{Number(r.fare_amount).toFixed(2)}</td>

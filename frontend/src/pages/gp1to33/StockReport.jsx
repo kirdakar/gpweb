@@ -3,6 +3,7 @@ import client from '../../api/client';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
+import { fmtDate } from '../../utils/formatDate';
 
 // नमुना १५ - उपभोग्य वस्तू साठा लेखा नोंदवही (प्रिंट). डाटाएंट्री StockEntry.jsx वर.
 export default function StockReport() {
@@ -49,7 +50,7 @@ export default function StockReport() {
               <tbody>
                 {data.movements.map((m) => (
                   <tr key={m.id}>
-                    <td>{m.move_date}</td><td className="num">{m.opening_before}</td><td className="num">{m.received || ''}</td><td className="num">{m.total_available}</td>
+                    <td>{fmtDate(m.move_date)}</td><td className="num">{m.opening_before}</td><td className="num">{m.received || ''}</td><td className="num">{m.total_available}</td>
                     <td>{m.purpose_to || ''}</td><td className="num">{m.issued || ''}</td><td className="num">{m.balance_after}</td>
                     <td>{m.officer_name || ''}</td><td>{m.receiver_name || ''}</td><td>{m.remark || (m.kind === 'प्रारंभिक' ? 'प्रारंभिक शिल्लक' : '')}</td>
                   </tr>

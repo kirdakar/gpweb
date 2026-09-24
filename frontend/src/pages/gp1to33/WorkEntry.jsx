@@ -3,6 +3,7 @@ import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
+import { fmtDate } from '../../utils/formatDate';
 
 const emptyWork = { name: '', sanction_order_no: '', sanction_date: '', sanctioning_authority: '', contractor_id: '', remark: '' };
 const today = () => new Date().toISOString().slice(0, 10);
@@ -339,7 +340,7 @@ export default function WorkEntry() {
                   <tbody>
                     {work.bills.map((b) => (
                       <tr key={b.id}>
-                        <td>{b.bill_no || b.id}</td><td>{b.bill_date}</td><td>{b.contractor_name || '-'}</td>
+                        <td>{b.bill_no || b.id}</td><td>{fmtDate(b.bill_date)}</td><td>{b.contractor_name || '-'}</td>
                         <td className="num">{fmt(b.gross_to_date)}</td><td className="num">{fmt(b.previous_bills_total)}</td>
                         <td className="num">{fmt(b.this_bill_amount)}</td><td className="num">{fmt(b.deduction_amount)}</td><td className="num">{fmt(b.net_payable)}</td>
                       </tr>

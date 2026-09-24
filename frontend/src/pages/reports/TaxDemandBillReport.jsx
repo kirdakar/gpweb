@@ -110,7 +110,7 @@ export default function TaxDemandBillReport() {
   const [billNo, setBillNo] = useState('1');
   const [billDate, setBillDate] = useState(() => {
     const d = new Date();
-    return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   });
   // एका वेळी एक मालमत्ता निवडण्याऐवजी थकबाकी/चालू देय असलेल्या मालमत्तांची
   // बिले टप्प्याटप्प्याने (कोड range) किंवा सर्व एकदम तयार करण्याची सोय -

@@ -5,6 +5,7 @@ import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
 import { amountToMarathiWords } from '../../utils/numberToMarathiWords';
+import { fmtDate } from '../../utils/formatDate';
 
 const fmt = (n) => Number(n || 0).toFixed(2);
 
@@ -64,7 +65,7 @@ export default function WorkReport({ view }) {
             <p>कामाचे नाव: {work.name}</p>
             <p>
               लेखाशीर्ष: {work.head_code} - {work.head_name}
-              {work.sanction_order_no ? ` | प्रशासकीय मान्यता क्र. ${work.sanction_order_no}${work.sanction_date ? ` दि. ${work.sanction_date}` : ''}` : ''}
+              {work.sanction_order_no ? ` | प्रशासकीय मान्यता क्र. ${work.sanction_order_no}${work.sanction_date ? ` दि. ${fmtDate(work.sanction_date)}` : ''}` : ''}
               {work.sanctioning_authority ? ` (${work.sanctioning_authority})` : ''}
             </p>
             {work.contractor_name && <p>कंत्राटदार: {work.contractor_name}</p>}
@@ -111,7 +112,7 @@ export default function WorkReport({ view }) {
                   <tbody>
                     {work.bills.map((b) => (
                       <tr key={b.id}>
-                        <td>{b.bill_no || b.id}</td><td>{b.bill_date}</td><td>{b.contractor_name || '-'}</td>
+                        <td>{b.bill_no || b.id}</td><td>{fmtDate(b.bill_date)}</td><td>{b.contractor_name || '-'}</td>
                         <td className="num">{fmt(b.gross_to_date)}</td><td className="num">{fmt(b.previous_bills_total)}</td>
                         <td className="num">{fmt(b.this_bill_amount)}</td><td className="num">{fmt(b.deduction_amount)}</td><td className="num">{fmt(b.net_payable)}</td>
                       </tr>

@@ -3,6 +3,7 @@ import client from '../../api/client';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
+import { fmtDate } from '../../utils/formatDate';
 
 // नमुना ३० - लेखापरीक्षण आक्षेप पूर्तता नोंदवही (प्रिंट). डाटाएंट्री
 // AuditReportEntry.jsx (दैनिक व्यवहार) वर; एकूण पूर्तता/मंजूर आकडे पूर्तता
@@ -46,7 +47,7 @@ export default function AuditRegisterReport() {
               {rows.map((r) => (
                 <tr key={r.id}>
                   <td>{r.report_year}</td>
-                  <td>{r.received_date?.slice(0, 10) || '-'}</td>
+                  <td>{fmtDate(r.received_date) || '-'}</td>
                   <td className="num">{r.total_objections}</td>
                   <td className="num">{r.info_only_count}</td>
                   <td className="num">{r.to_comply_count}</td>

@@ -4,6 +4,7 @@ import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
+import { fmtDate } from '../../utils/formatDate';
 
 const MONTHS = [
   '१ जानेवारी', '२ फेब्रुवारी', '३ मार्च', '४ एप्रिल', '५ मे', '६ जून',
@@ -29,7 +30,7 @@ function Section({ title, section, targetLabel }) {
           <tbody>
             {section.entries.map((e) => (
               <tr key={e.id}>
-                <td>{e.entry_date?.slice(0, 10)}</td>
+                <td>{fmtDate(e.entry_date)}</td>
                 <td>{e.reference_no || '-'}</td>
                 <td>{e.narration || '-'}</td>
                 <td className="num">{Number(e.amount).toFixed(2)}</td>

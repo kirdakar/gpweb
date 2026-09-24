@@ -4,6 +4,7 @@ import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
+import { fmtDate } from '../../utils/formatDate';
 
 // नमुना २९ - कर्ज अहवाल (प्रिंट). डाटाएंट्री LoanEntry.jsx (दैनिक व्यवहार)
 // वर; हे फक्त वाचनीय स्वरूप.
@@ -54,7 +55,7 @@ export default function LoanReport() {
                 <tr key={r.id}>
                   <td>{r.source}</td>
                   <td>{r.purpose || '-'}</td>
-                  <td>{r.received_date?.slice(0, 10) || '-'}</td>
+                  <td>{fmtDate(r.received_date) || '-'}</td>
                   <td className="num">{Number(r.loan_amount).toFixed(2)}</td>
                   <td className="num">{Number(r.principal_paid).toFixed(2)}</td>
                   <td className="num">{Number(r.interest_paid).toFixed(2)}</td>

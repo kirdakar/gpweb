@@ -4,6 +4,7 @@ import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
+import { fmtDate } from '../../utils/formatDate';
 
 // घरपट्टी व पाणीपट्टी आता दोन स्वतंत्र पावती-मालिका (receipt_type) असल्याने
 // (पहा PaymentEntry.jsx) हा अहवालही दोन स्वतंत्र तक्त्यांत दाखवतो - एका
@@ -81,7 +82,7 @@ function ReceiptTypeTable({ type, rows }) {
             {rows.map((r) => (
               <tr key={r.id}>
                 <td>{r.receipt_no}</td>
-                <td>{r.payment_date}</td>
+                <td>{fmtDate(r.payment_date)}</td>
                 <td>{r.owner_name}</td>
                 <td>{r.malmata_no ?? '-'}</td>
                 <td className="num">{Number(r.amount).toFixed(2)}</td>

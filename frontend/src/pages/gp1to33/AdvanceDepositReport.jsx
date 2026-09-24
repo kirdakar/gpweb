@@ -4,6 +4,7 @@ import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
+import { fmtDate } from '../../utils/formatDate';
 
 // नमुना १७ - अग्रिम/अनामत अहवाल (प्रिंट). डाटाएंट्री AdvanceDepositEntry.jsx
 // (दैनिक व्यवहार) वर; हे फक्त वाचनीय स्वरूप.
@@ -41,7 +42,7 @@ export default function AdvanceDepositReport() {
                 <tr key={r.id}>
                   <td>{r.party_name}</td>
                   <td>{r.description || '-'}</td>
-                  <td>{r.entry_date?.slice(0, 10)}</td>
+                  <td>{fmtDate(r.entry_date)}</td>
                   <td>{r.head_code} - {r.head_name}</td>
                   <td className="num">{Number(r.amount).toFixed(2)}</td>
                   <td className="num">{Number(r.settled_amount).toFixed(2)}</td>

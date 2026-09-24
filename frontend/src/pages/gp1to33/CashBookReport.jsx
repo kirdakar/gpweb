@@ -4,6 +4,7 @@ import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
+import { fmtDate } from '../../utils/formatDate';
 
 function firstOfMonth() {
   const d = new Date();
@@ -50,7 +51,7 @@ export default function CashBookReport() {
             <tbody>
               {list.map((r) => (
                 <tr key={r.id}>
-                  <td>{r.entry_date?.slice(0, 10)}</td>
+                  <td>{fmtDate(r.entry_date)}</td>
                   <td>{r.head_code} - {r.head_name}</td>
                   <td>{r.reference_no || '-'}</td>
                   <td>{r.payment_mode}</td>
@@ -93,7 +94,7 @@ export default function CashBookReport() {
       <div className="print-header">
         <h2>{gpLine}</h2>
         <p style={{ fontWeight: 700 }}>{register === 'मुख्य' ? 'दैनिक रोकड वही (नमुना ५)' : 'किरकोळ रोकडवही (नमुना १८)'}</p>
-        <p>आर्थिक वर्ष: {currentYear?.year_label || ''} | कालावधी: {from} ते {to}</p>
+        <p>आर्थिक वर्ष: {currentYear?.year_label || ''} | कालावधी: {fmtDate(from)} ते {fmtDate(to)}</p>
       </div>
 
       {loading ? <p>लोड होत आहे...</p> : (

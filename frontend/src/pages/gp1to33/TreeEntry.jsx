@@ -4,6 +4,7 @@ import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import HeadCombo from '../../components/HeadCombo';
+import { fmtDate } from '../../utils/formatDate';
 
 const fmt = (n) => Number(n || 0).toFixed(2);
 const today = () => new Date().toISOString().slice(0, 10);
@@ -100,7 +101,7 @@ export default function TreeEntry() {
                   <tr>
                     <td>{t.location_detail}</td><td>{t.tree_type}</td><td className="num">{t.tree_count}</td>
                     <td className="num">{fmt(t.expected_annual_income)}</td><td className="num"><strong>{fmt(t.actual_income_total)}</strong></td>
-                    <td>{t.disposal_date ? `${t.disposal_date} ${t.disposal_details || ''}` : '-'}</td>
+                    <td>{t.disposal_date ? `${fmtDate(t.disposal_date)} ${t.disposal_details || ''}` : '-'}</td>
                     <td style={{ display: 'flex', gap: 6 }}>
                       {can('trees', 'edit') && <button className="btn secondary small" type="button" onClick={() => { setIncomeId(incomeId === t.id ? null : t.id); setInc(emptyIncome); }}>उत्पन्न</button>}
                       {can('trees', 'edit') && <button className="btn secondary small" type="button" onClick={() => startEdit(t)}>संपादन</button>}
@@ -116,7 +117,7 @@ export default function TreeEntry() {
                         <input placeholder="शेरा" value={inc.remark} onChange={(e) => setInc({ ...inc, remark: e.target.value })} />
                         <button className="btn small" type="submit" disabled={busy}>नोंदवा (रोकड वहीत जमा)</button>
                       </form>
-                      {t.income.length > 0 && <div style={{ marginTop: 8, fontSize: 13 }}>{t.income.map((i) => <div key={i.id}>{i.income_date} — {fmt(i.amount)} ({i.head_code})</div>)}</div>}
+                      {t.income.length > 0 && <div style={{ marginTop: 8, fontSize: 13 }}>{t.income.map((i) => <div key={i.id}>{fmtDate(i.income_date)} — {fmt(i.amount)} ({i.head_code})</div>)}</div>}
                     </td></tr>
                   )}
                 </Fragment>

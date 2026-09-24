@@ -3,6 +3,7 @@ import client from '../../api/client';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
+import { fmtDate } from '../../utils/formatDate';
 
 const EMPLOYMENT_TYPES = ['पूर्णकालिक', 'अंशकालिक'];
 
@@ -35,9 +36,9 @@ export default function StaffMaster() {
     setEditingId(row.id);
     setForm({
       post_name: row.post_name || '', post_count: String(row.post_count ?? 1),
-      sanction_order_no: row.sanction_order_no || '', sanction_date: row.sanction_date ? row.sanction_date.slice(0, 10) : '',
+      sanction_order_no: row.sanction_order_no || '', sanction_date: row.sanction_date ? fmtDate(row.sanction_date) : '',
       employment_type: row.employment_type || 'पूर्णकालिक', pay_scale: row.pay_scale || '',
-      employee_name: row.employee_name || '', appointment_date: row.appointment_date ? row.appointment_date.slice(0, 10) : '',
+      employee_name: row.employee_name || '', appointment_date: row.appointment_date ? fmtDate(row.appointment_date) : '',
       is_active: !!row.is_active, remark: row.remark || '',
     });
   }
@@ -136,7 +137,7 @@ export default function StaffMaster() {
                   <td>{r.employment_type}</td>
                   <td>{r.pay_scale || '-'}</td>
                   <td>{r.employee_name || '-'}</td>
-                  <td>{r.appointment_date?.slice(0, 10) || '-'}</td>
+                  <td>{fmtDate(r.appointment_date) || '-'}</td>
                   <td>{r.is_active ? 'सक्रिय' : 'निष्क्रिय'}</td>
                   <td className="no-print" style={{ display: 'flex', gap: 6 }}>
                     {can('staff_master', 'edit') && <button className="btn secondary small" onClick={() => startEdit(r)}>संपादन</button>}

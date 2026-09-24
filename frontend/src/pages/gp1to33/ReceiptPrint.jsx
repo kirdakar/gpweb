@@ -5,6 +5,7 @@ import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
 import { amountToMarathiWords } from '../../utils/numberToMarathiWords';
+import { fmtDate } from '../../utils/formatDate';
 
 // नमुना ७ - सामान्य पावती. वेगळी नोंदवही नाही - निवडलेल्या cash_book_entries
 // (नमुना ५/१८) जमा नोंदीचेच कागदी-नमुन्यातील प्रिंट स्वरूप.
@@ -43,7 +44,7 @@ export default function ReceiptPrint() {
             <h2>{gpLine}</h2>
           </div>
           <p>पुस्तक क्रमांक ....................... पावती क्रमांक {row.reference_no || `#${row.id}`}</p>
-          <p>दिनांक: {row.entry_date?.slice(0, 10)}</p>
+          <p>दिनांक: {fmtDate(row.entry_date)}</p>
           <p style={{ lineHeight: 2 }}>
             श्री./श्रीमती ....................................... कडून <strong>{row.head_name}</strong> ({row.narration || '-'}) बद्दल
             रुपये <strong>{Number(row.amount).toFixed(2)}</strong> (अक्षरी रुपये {amountToMarathiWords(row.amount)}) एवढी रक्कम मिळाली.

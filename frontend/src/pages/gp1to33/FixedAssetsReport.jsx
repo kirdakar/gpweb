@@ -3,6 +3,7 @@ import client from '../../api/client';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
+import { fmtDate } from '../../utils/formatDate';
 
 const CATEGORIES = [
   { value: 'जंगम', label: 'जंगम मालमत्ता नोंदवही (नमुना १६)' },
@@ -39,11 +40,11 @@ export default function FixedAssetsReport() {
               {list.map((r) => (
                 <tr key={r.id}>
                   <td>{r.description}</td>
-                  <td>{r.acquired_date?.slice(0, 10) || '-'}</td>
+                  <td>{fmtDate(r.acquired_date) || '-'}</td>
                   <td>{r.acquired_mode || '-'}</td>
                   <td>{r.quantity_or_measure || '-'}</td>
                   <td className="num">{Number(r.cost_amount).toFixed(2)}</td>
-                  <td>{r.disposal_date ? `${r.disposal_date.slice(0, 10)} - ${r.disposal_details || ''}` : '-'}</td>
+                  <td>{r.disposal_date ? `${fmtDate(r.disposal_date)} - ${r.disposal_details || ''}` : '-'}</td>
                 </tr>
               ))}
               {list.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center' }}>नोंदी नाहीत</td></tr>}

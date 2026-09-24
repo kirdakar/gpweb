@@ -3,6 +3,7 @@ import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
+import { fmtDate } from '../../utils/formatDate';
 
 const KINDS = { 'अग्रिम': 'खर्च', 'अनामत': 'जमा' };
 
@@ -174,7 +175,7 @@ export default function AdvanceDepositEntry() {
                       <td style={{ color: r.kind === 'अग्रिम' ? 'var(--danger)' : 'var(--success)' }}>{r.kind}</td>
                       <td>{r.party_name}</td>
                       <td>{r.description || '-'}</td>
-                      <td>{r.entry_date?.slice(0, 10)}</td>
+                      <td>{fmtDate(r.entry_date)}</td>
                       <td>{r.head_code} - {r.head_name}</td>
                       <td className="num">{Number(r.amount).toFixed(2)}</td>
                       <td className="num">{Number(r.settled_amount).toFixed(2)}</td>

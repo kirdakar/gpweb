@@ -4,6 +4,7 @@ import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import HeadCombo from '../../components/HeadCombo';
+import { fmtDate } from '../../utils/formatDate';
 
 const fmt = (n) => Number(n || 0).toFixed(2);
 const today = () => new Date().toISOString().slice(0, 10);
@@ -88,7 +89,7 @@ export default function MiscDemandEntry() {
               {rows.map((d) => (
                 <Fragment key={d.id}>
                   <tr>
-                    <td>{d.party_name}</td><td>{d.nature || '-'}</td><td>{d.demand_no || '-'} {d.demand_date || ''}</td>
+                    <td>{d.party_name}</td><td>{d.nature || '-'}</td><td>{d.demand_no || '-'} {fmtDate(d.demand_date)}</td>
                     <td className="num">{fmt(d.amount)}</td><td className="num">{fmt(d.recovered_total)}</td><td className="num">{fmt(d.waived_total)}</td><td className="num"><strong>{fmt(d.balance)}</strong></td>
                     <td>{can('misc_demands', 'edit') && d.balance > 0 && <button className="btn secondary small" type="button" onClick={() => { setOpenId(openId === d.id ? null : d.id); setEv(emptyEvent); }}>वसुली/सूट</button>}</td>
                   </tr>

@@ -17,7 +17,9 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  /* गावाचे चित्र (public/gp-bg.svg) - सर्व स्क्रीनवर मागे स्थिर; इतर स्क्रीनवर
+     वरून फिकट आवरण जेणेकरून टेबल/फॉर्म सहज वाचता येतील, डॅशबोर्डवर चित्र स्पष्ट दिसते. */
+  background: var(--bg) url('/gp-bg.svg') center bottom / cover no-repeat fixed;
   color: var(--text);
 }
 
@@ -297,7 +299,14 @@ tbody tr:hover { background: #f8fafc; }
   padding: 4px;
 }
 
-.main-content { flex: 1; }
+.main-content { flex: 1; background: rgba(244, 246, 248, 0.9); min-height: calc(100vh - 48px); }
+body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05); }
+.dashboard-page .page-header h1 {
+  display: inline-block; background: rgba(255, 255, 255, 0.88); padding: 6px 18px;
+  border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+}
+.dashboard-page .table-wrap { background: rgba(255, 255, 255, 0.94); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18); border-radius: 10px; }
+.dashboard-page > .card { background: rgba(255, 255, 255, 0.94); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18); }
 
 .pagination { display: flex; gap: 8px; align-items: center; margin-top: 12px; justify-content: flex-end; }
 
@@ -421,6 +430,7 @@ tbody tr:hover { background: #f8fafc; }
 @media print {
   .no-print { display: none !important; }
   body { background: #fff; }
+  .main-content { background: none; }
   .page { max-width: none; padding: 0; }
 }
 

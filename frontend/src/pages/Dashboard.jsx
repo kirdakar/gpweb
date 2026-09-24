@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import client from '../api/client';
 import { useYear } from '../context/YearContext';
 
@@ -44,43 +44,66 @@ export default function Dashboard() {
   function sumField(field) {
     return oldNewRows.reduce((s, r) => s + Number(r[field] || 0), 0);
   }
+  // व्यक्ती संख्या = त्या रकान्यात रक्कम > 0 असलेले वेगळे मिळकत कोड (एक कोड = एक व्यक्ती).
+  function countField(field) {
+    const codes = new Set();
+    for (const r of oldNewRows) if (Number(r[field] || 0) > 0) codes.add(r.property_code ?? `__${r.property_id}`);
+    return codes.size;
+  }
+
+  const big = { fontSize: 20, fontWeight: 700 };
+  const head = { fontSize: 19, fontWeight: 800 };
 
   return (
-    <div className="page">
+    <div className="page dashboard-page">
       <div className="page-header">
-        <h1>डॅशबोर्ड {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
+        <h1 style={{ fontSize: 30, fontWeight: 800 }}>डॅशबोर्ड {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
       </div>
 
       {loading ? <p>लोड होत आहे...</p> : (
         <>
           <div className="card" style={{ display: 'inline-block', marginBottom: 16, borderTop: '3px solid #1d4ed8' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#1d4ed8', marginBottom: 6 }}>एकूण मिळकती</div>
-            <div style={{ fontSize: 22, fontWeight: 700 }}>{propertyCount ?? '-'}</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#1d4ed8', marginBottom: 6 }}>एकूण मिळकती</div>
+            <div style={{ fontSize: 34, fontWeight: 800 }}>{propertyCount ?? '-'}</div>
           </div>
 
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>हेड</th>
-                  {COLUMNS.map((c) => <th key={c.key} className="num" style={{ color: c.color }}>{c.label}</th>)}
+                  <th rowSpan={2} style={head}>हेड</th>
+                  {COLUMNS.map((c) => <th key={c.key} colSpan={2} className="num" style={{ ...head, color: c.color, textAlign: 'center', borderBottom: `2px solid ${c.color}` }}>{c.label}</th>)}
+                </tr>
+                <tr>
+                  {COLUMNS.map((c) => (
+                    <Fragment key={c.key}>
+                      <th className="num" style={{ ...head, fontSize: 16, color: c.color }}>व्यक्ती</th>
+                      <th className="num" style={{ ...head, fontSize: 16, color: c.color }}>रक्कम</th>
+                    </Fragment>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {ROWS.map((r) => (
                   <tr key={r.key}>
-                    <td>{r.label}</td>
+                    <td style={big}>{r.label}</td>
                     {COLUMNS.map((c) => (
-                      <td key={c.key} className="num">{sumField(`${c.key}_${r.key}`).toFixed(2)}</td>
+                      <Fragment key={c.key}>
+                        <td className="num" style={big}>{countField(`${c.key}_${r.key}`)}</td>
+                        <td className="num" style={big}>{sumField(`${c.key}_${r.key}`).toFixed(2)}</td>
+                      </Fragment>
                     ))}
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="total-row">
-                  <td>एकूण</td>
+                  <td style={big}>एकूण</td>
                   {COLUMNS.map((c) => (
-                    <td key={c.key} className="num" style={{ color: c.color }}>{sumField(c.totalField).toFixed(2)}</td>
+                    <Fragment key={c.key}>
+                      <td className="num" style={{ ...big, fontSize: 22, color: c.color }}>{countField(c.totalField)}</td>
+                      <td className="num" style={{ ...big, fontSize: 22, color: c.color }}>{sumField(c.totalField).toFixed(2)}</td>
+                    </Fragment>
                   ))}
                 </tr>
               </tfoot>

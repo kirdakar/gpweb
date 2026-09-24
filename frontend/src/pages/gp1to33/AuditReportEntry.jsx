@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react';
 import client from '../../api/client';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
+import { fmtDate } from '../../utils/formatDate';
 
 const emptyForm = {
   report_year: '', received_date: '', total_objections: '', info_only_count: '', objection_numbers: '',
@@ -35,7 +36,7 @@ export default function AuditReportEntry() {
     setEditingId(r.id);
     const f = {};
     for (const k of Object.keys(emptyForm)) f[k] = r[k] == null ? '' : String(r[k]);
-    f.received_date = r.received_date ? r.received_date.slice(0, 10) : '';
+    f.received_date = r.received_date ? fmtDate(r.received_date) : '';
     setForm(f);
   }
   function cancelEdit() { setEditingId(null); setForm(emptyForm); }
@@ -145,7 +146,7 @@ export default function AuditReportEntry() {
                   <Fragment key={r.id}>
                     <tr>
                       <td>{r.report_year}</td>
-                      <td>{r.received_date?.slice(0, 10) || '-'}</td>
+                      <td>{fmtDate(r.received_date) || '-'}</td>
                       <td className="num">{r.total_objections}</td>
                       <td className="num">{r.to_comply_count}</td>
                       <td className="num">{r.complied_total}</td>
@@ -166,7 +167,7 @@ export default function AuditReportEntry() {
                               <tbody>
                                 {logs.map((l) => (
                                   <tr key={l.id}>
-                                    <td>{l.log_date?.slice(0, 10)}</td>
+                                    <td>{fmtDate(l.log_date)}</td>
                                     <td className="num">{l.complied_count}</td>
                                     <td className="num">{l.ps_accepted_count}</td>
                                     <td className="num">{l.auditor_accepted_count}</td>

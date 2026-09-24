@@ -3,6 +3,7 @@ import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
+import { fmtDate } from '../../utils/formatDate';
 
 const emptyForm = {
   traveller_name: '', travel_date: '', from_place: '', to_place: '', purpose: '',
@@ -148,7 +149,7 @@ export default function TravelBillEntry() {
                 {rows.map((r) => (
                   <tr key={r.id}>
                     <td>{r.traveller_name}</td>
-                    <td>{r.travel_date?.slice(0, 10)}</td>
+                    <td>{fmtDate(r.travel_date)}</td>
                     <td>{r.from_place || '-'} - {r.to_place || '-'}</td>
                     <td>{r.head_code} - {r.head_name}</td>
                     <td className="num">{Number(r.total_amount).toFixed(2)}</td>

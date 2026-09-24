@@ -5,6 +5,7 @@ import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
 import { amountToMarathiWords } from '../../utils/numberToMarathiWords';
+import { fmtDate } from '../../utils/formatDate';
 
 // नमुना १२ - आकस्मिक खर्चाचे प्रमाणक. वेगळी नोंदवही नाही - निवडलेल्या
 // cash_book_entries (नमुना ५/१८) खर्च नोंदीचेच कागदी-नमुन्यातील प्रिंट स्वरूप.
@@ -43,7 +44,7 @@ export default function VoucherPrint() {
             <h2>{gpLine}</h2>
             <p style={{ fontWeight: 700 }}>आकस्मिक खर्चाचे प्रमाणक (नमुना १२)</p>
           </div>
-          <p>देयक क्रमांक: {row.reference_no || `#${row.id}`} | दिनांक: {row.entry_date?.slice(0, 10)}</p>
+          <p>देयक क्रमांक: {row.reference_no || `#${row.id}`} | दिनांक: {fmtDate(row.entry_date)}</p>
           <div className="table-wrap">
             <table>
               <thead><tr><th>मागविलेल्या वस्तूचे/मालाचे नाव</th><th>लेखाशीर्ष</th><th className="num">रक्कम</th></tr></thead>

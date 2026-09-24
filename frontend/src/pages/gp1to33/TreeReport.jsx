@@ -3,6 +3,7 @@ import client from '../../api/client';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
+import { fmtDate } from '../../utils/formatDate';
 
 const fmt = (n) => Number(n || 0).toFixed(2);
 
@@ -33,7 +34,7 @@ export default function TreeReport() {
               <tr key={t.id}>
                 <td>{t.location_detail}</td><td>{t.tree_type}</td><td>{t.info || '-'}</td><td className="num">{t.tree_count}</td>
                 <td className="num">{fmt(t.expected_annual_income)}</td><td className="num">{fmt(t.actual_income_total)}</td>
-                <td>{t.disposal_date ? `${t.disposal_date} - ${t.disposal_details || ''}` : '-'}</td>
+                <td>{t.disposal_date ? `${fmtDate(t.disposal_date)} - ${t.disposal_details || ''}` : '-'}</td>
               </tr>
             ))}
             {rows.length === 0 && <tr><td colSpan={7} style={{ textAlign: 'center' }}>नोंदी नाहीत</td></tr>}

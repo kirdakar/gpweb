@@ -4,6 +4,7 @@ import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
+import { fmtDate } from '../../utils/formatDate';
 
 const fmt = (n) => Number(n || 0).toFixed(2);
 
@@ -46,8 +47,8 @@ export default function MiscDemandReport() {
             {rows.map((d, i) => (
               <tr key={d.id}>
                 <td>{i + 1}</td><td>{d.party_name}{d.address ? `, ${d.address}` : ''}</td><td>{d.nature || '-'}</td><td>{d.authority || '-'}</td>
-                <td className="num">{d.installment_count}</td><td className="num">{fmt(d.amount)}</td><td>{d.demand_no || '-'} {d.demand_date || ''}</td>
-                <td>{d.events.filter((e) => e.kind === 'वसुली').map((e) => <div key={e.id}>{e.receipt_no || '-'} / {e.event_date} / {fmt(e.amount)}</div>)}</td>
+                <td className="num">{d.installment_count}</td><td className="num">{fmt(d.amount)}</td><td>{d.demand_no || '-'} {fmtDate(d.demand_date)}</td>
+                <td>{d.events.filter((e) => e.kind === 'वसुली').map((e) => <div key={e.id}>{e.receipt_no || '-'} / {fmtDate(e.event_date)} / {fmt(e.amount)}</div>)}</td>
                 <td>{d.events.filter((e) => e.kind === 'सूट').map((e) => <div key={e.id}>{e.order_no || '-'} / {fmt(e.amount)}</div>)}</td>
                 <td className="num">{fmt(d.balance)}</td><td>{d.remark || ''}</td>
               </tr>

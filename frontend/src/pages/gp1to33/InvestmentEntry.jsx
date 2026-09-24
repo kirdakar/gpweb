@@ -3,6 +3,7 @@ import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
+import { fmtDate } from '../../utils/formatDate';
 
 // नमुना २५ - गुंतवणूक नोंदणी (मुदत ठेव/राष्ट्रीय बचत/सरकारी रोखे). नोंद
 // करताच रोकड वहीत (नमुना ५) खर्च नोंदते; परिपक्व/भरणा झाल्यावर "परिपक्व
@@ -157,10 +158,10 @@ export default function InvestmentEntry() {
                   <Fragment key={r.id}>
                     <tr>
                       <td>{r.description}</td>
-                      <td>{r.investment_date?.slice(0, 10)}</td>
+                      <td>{fmtDate(r.investment_date)}</td>
                       <td>{r.head_code} - {r.head_name}</td>
                       <td className="num">{Number(r.purchase_price).toFixed(2)}</td>
-                      <td>{r.maturity_date?.slice(0, 10) || '-'}</td>
+                      <td>{fmtDate(r.maturity_date) || '-'}</td>
                       <td>{r.is_matured ? `परिपक्व (${Number(r.matured_amount).toFixed(2)})` : 'सुरू'}</td>
                       <td>{!r.is_matured && canEdit && <button className="btn secondary small" onClick={() => startMature(r)}>परिपक्व करा</button>}</td>
                     </tr>

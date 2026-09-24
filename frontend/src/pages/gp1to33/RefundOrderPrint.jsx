@@ -5,6 +5,7 @@ import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
 import { amountToMarathiWords } from '../../utils/numberToMarathiWords';
+import { fmtDate } from '../../utils/formatDate';
 
 // नमुना ३२ - रकमेच्या परताव्यासाठीचा आदेश. वेगळी नोंदवही नाही - निवडलेल्या
 // cash_book_entries (नमुना ५/१८, किंवा नमुना १७ च्या अनामत-परतफेडीतून आलेली)
@@ -47,7 +48,7 @@ export default function RefundOrderPrint() {
           <p>मूळ पावती क्रमांक: {row.reference_no || '.......................'} | मूळ रक्कम दिनांक: .......................</p>
           <p>उधारीचे नाव/तपशील: {row.narration || '-'} | लेखाशीर्ष: {row.head_code} - {row.head_name}</p>
 
-          <p style={{ marginTop: 20 }}>दिनांक: {row.entry_date?.slice(0, 10)}</p>
+          <p style={{ marginTop: 20 }}>दिनांक: {fmtDate(row.entry_date)}</p>
           <p style={{ lineHeight: 2 }}>
             श्री./श्रीमती ....................................... यांस रुपये <strong>{Number(row.amount).toFixed(2)}</strong> (अक्षरी रुपये {amountToMarathiWords(row.amount)})
             परत करावयाचा आदेश देण्यात येत आहे.

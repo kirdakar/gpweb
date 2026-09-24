@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import client from '../../api/client';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
+import { fmtDate } from '../../utils/formatDate';
 
 const CATEGORIES = [
   { value: 'जंगम', label: 'जंगम मालमत्ता (नमुना १६)' },
@@ -41,11 +42,11 @@ export default function FixedAssetsEntry() {
     setEditingId(row.id);
     setForm({
       description: row.description || '',
-      acquired_date: row.acquired_date ? row.acquired_date.slice(0, 10) : '',
+      acquired_date: row.acquired_date ? fmtDate(row.acquired_date) : '',
       acquired_mode: row.acquired_mode || '',
       quantity_or_measure: row.quantity_or_measure || '',
       cost_amount: row.cost_amount ?? '',
-      disposal_date: row.disposal_date ? row.disposal_date.slice(0, 10) : '',
+      disposal_date: row.disposal_date ? fmtDate(row.disposal_date) : '',
       disposal_details: row.disposal_details || '',
       remark: row.remark || '',
     });
@@ -170,11 +171,11 @@ export default function FixedAssetsEntry() {
                 {rows.map((r) => (
                   <tr key={r.id}>
                     <td>{r.description}</td>
-                    <td>{r.acquired_date?.slice(0, 10) || '-'}</td>
+                    <td>{fmtDate(r.acquired_date) || '-'}</td>
                     <td>{r.acquired_mode || '-'}</td>
                     <td>{r.quantity_or_measure || '-'}</td>
                     <td className="num">{Number(r.cost_amount).toFixed(2)}</td>
-                    <td>{r.disposal_date ? `${r.disposal_date.slice(0, 10)} - ${r.disposal_details || ''}` : '-'}</td>
+                    <td>{r.disposal_date ? `${fmtDate(r.disposal_date)} - ${r.disposal_details || ''}` : '-'}</td>
                     <td style={{ display: 'flex', gap: 6 }}>
                       {can('fixed_assets', 'edit') && <button className="btn secondary small" onClick={() => startEdit(r)}>संपादन</button>}
                       {can('fixed_assets', 'delete') && <button className="btn danger small" onClick={() => handleDelete(r.id)}>मिटवा</button>}

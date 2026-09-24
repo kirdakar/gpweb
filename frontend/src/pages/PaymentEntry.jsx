@@ -4,6 +4,7 @@ import { useYear } from '../context/YearContext';
 import { usePermissions } from '../context/PermissionsContext';
 import { amountToMarathiWords } from '../utils/numberToMarathiWords';
 import CloseReportButton from '../components/CloseReportButton';
+import { fmtDate } from '../utils/formatDate';
 
 // घरपट्टी पावती (नमुना नं. १०) = घरपट्टी + दिवाबत्ती(वीज कर) + आरोग्य कर,
 // पाणीपट्टी पावती (नमुना नं. १०, वेगळे पुस्तक) = फक्त पाणी पट्टी - दोन्ही
@@ -413,7 +414,7 @@ export default function PaymentEntry() {
                   {summary.history.map((h) => (
                     <tr key={h.id}>
                       <td>{h.receipt_no}</td>
-                      <td>{h.payment_date}</td>
+                      <td>{fmtDate(h.payment_date)}</td>
                       <td>{h.year_label}</td>
                       <td className="num">
                         {(Number(h.amount) + Number(h.khuli_jaga_amount || 0) + Number(h.notice_fee_amount || 0)

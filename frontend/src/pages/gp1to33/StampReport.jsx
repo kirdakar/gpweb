@@ -4,6 +4,7 @@ import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
+import { fmtDate } from '../../utils/formatDate';
 
 const fmt = (n) => Number(n || 0).toFixed(2);
 
@@ -44,9 +45,9 @@ export default function StampReport() {
           <tbody>
             {rows.map((r) => (
               <tr key={r.id}>
-                <td>{r.entry_date}</td>
+                <td>{fmtDate(r.entry_date)}</td>
                 <td>{r.kind === 'मिळाले' ? (r.ref_no || '-') : ''}</td><td className="num">{r.kind === 'मिळाले' ? fmt(r.amount) : ''}</td>
-                <td>{r.kind === 'वापरले' ? `${r.ref_no || '-'} ${r.ref_date || ''}` : ''}</td><td className="num">{r.kind === 'वापरले' ? fmt(r.amount) : ''}</td>
+                <td>{r.kind === 'वापरले' ? `${r.ref_no || '-'} ${fmtDate(r.ref_date)}` : ''}</td><td className="num">{r.kind === 'वापरले' ? fmt(r.amount) : ''}</td>
                 <td className="num">{fmt(r.balance)}</td><td style={{ minWidth: 70 }}></td><td>{r.remark || ''}</td>
               </tr>
             ))}
