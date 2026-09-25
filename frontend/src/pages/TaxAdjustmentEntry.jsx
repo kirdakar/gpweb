@@ -3,6 +3,7 @@ import client from '../api/client';
 import { useYear } from '../context/YearContext';
 import { usePermissions } from '../context/PermissionsContext';
 import CloseReportButton from '../components/CloseReportButton';
+import PersonCombo from '../components/PersonCombo';
 import { fmtDate } from '../utils/formatDate';
 
 const COMPONENTS = [
@@ -29,12 +30,23 @@ export default function TaxAdjustmentEntry() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [dues, setDues] = useState(null); // निवडलेल्या व्यक्तीची येणे बाकी (घरपट्टी-गट व पाणीपट्टी-गट)
 
   function load() {
     if (!yearId) return;
     client.get('/tax-adjustments', { params: { financialYearId: yearId } }).then(({ data }) => setRows(data));
   }
   useEffect(() => { load(); setPreview(null); }, [yearId]);
+
+  // एका व्यक्तीस निवडल्यावर तिची उर्वरित येणे बाकी (जमा वजा करून) आणतो - निवडलेल्या हेड/बाकीनुसार खाली दाखवतो
+  useEffect(() => {
+    if (form.scope !== 'एक' || !form.property_code || !yearId) { setDues(null); return; }
+    let cancelled = false;
+    Promise.all(['gharpatti', 'panipatti'].map((t) =>
+      client.get('/payments/due-summary', { params: { propertyCode: form.property_code, yearId, receiptType: t } }).then(({ data }) => data.balance_by_component).catch(() => ({}))
+    )).then(([g, p]) => { if (!cancelled) setDues({ ...g, ...p }); });
+    return () => { cancelled = true; };
+  }, [form.scope, form.property_code, yearId]);
 
   const payload = () => ({ ...form, financial_year_id: yearId });
   const set = (patch) => { setForm({ ...form, ...patch }); setPreview(null); };
@@ -50,6 +62,7 @@ export default function TaxAdjustmentEntry() {
   async function save(e) {
     e.preventDefault();
     setError(''); setNotice('');
+    if (form.scope === 'एक' && !form.property_code) { setError('कृपया यादीतून व्यक्ती निवडा'); return; }
     setBusy(true);
     try {
       await client.post('/tax-adjustments', payload());
@@ -95,7 +108,7 @@ export default function TaxAdjustmentEntry() {
                 </select>
               </div>
               {form.scope === 'एक' && (
-                <div className="field"><label>व्यक्तीचा कोड</label><input type="number" min="1" value={form.property_code} onChange={(e) => set({ property_code: e.target.value })} required /></div>
+                <div className="field" style={{ gridColumn: 'span 2' }}><label>व्यक्ती (कोड - नाव)</label><PersonCombo yearId={yearId} value={form.property_code} onChange={(code) => set({ property_code: code })} /></div>
               )}
               <div className="field">
                 <label>प्रकार</label>
@@ -112,7 +125,7 @@ export default function TaxAdjustmentEntry() {
               <div className="field">
                 <label>टक्के / रक्कम</label>
                 <select value={form.mode} onChange={(e) => set({ mode: e.target.value })}>
-                  <option value="टक्के">टक्केवारी (%)</option><option value="रक्कम">रक्कम (₹, प्रत्येक व्यक्तीस)</option>
+                  <option value="टक्के">टक्केवारी (%)</option><option value="रक्कम">{form.scope === 'एक' ? 'रक्कम (₹) - निवडलेल्या व्यक्तीस' : 'रक्कम (₹, प्रत्येक व्यक्तीस)'}</option>
                 </select>
               </div>
               <div className="field"><label>{form.mode === 'टक्के' ? 'टक्केवारी' : 'रक्कम (₹)'}</label><input type="number" step="0.01" min="0" value={form.value} onChange={(e) => set({ value: e.target.value })} required /></div>
@@ -130,13 +143,56 @@ export default function TaxAdjustmentEntry() {
               <div className="field"><label>ठराव/आदेश क्र.</label><input value={form.order_no} onChange={(e) => set({ order_no: e.target.value })} /></div>
               <div className="field"><label>ठराव/आदेश दिनांक</label><input type="date" value={form.order_date} onChange={(e) => set({ order_date: e.target.value })} /></div>
             </div>
+            {form.scope === 'एक' && form.property_code && dues && (
+              <div className="table-wrap" style={{ marginTop: 14 }}>
+                <p style={{ margin: '0 0 6px', fontWeight: 700 }}>निवडलेल्या व्यक्तीची येणे बाकी (उर्वरित) - निवडलेल्या कर/बाकीनुसार</p>
+                <table>
+                  <thead><tr><th>कर</th><th className="num">मागील बाकी</th><th className="num">चालू बाकी</th><th className="num">निवडलेली एकूण</th></tr></thead>
+                  <tbody>
+                    {COMPONENTS.filter((c) => form[`on_${c.key}`]).map((c) => {
+                      const prev = Number(dues[`previous_${c.key}`] || 0);
+                      const cur = Number(dues[`current_${c.key}`] || 0);
+                      const usePrev = form.applies_to !== 'चालू';
+                      const useCur = form.applies_to !== 'मागील';
+                      return (
+                        <tr key={c.key}>
+                          <td>{c.label}</td>
+                          <td className="num" style={{ opacity: usePrev ? 1 : 0.35 }}>{prev.toFixed(2)}</td>
+                          <td className="num" style={{ opacity: useCur ? 1 : 0.35 }}>{cur.toFixed(2)}</td>
+                          <td className="num"><strong>{((usePrev ? prev : 0) + (useCur ? cur : 0)).toFixed(2)}</strong></td>
+                        </tr>
+                      );
+                    })}
+                    <tr className="total-row">
+                      <td>एकूण</td>
+                      {['previous', 'current'].map((b) => {
+                        const on = b === 'previous' ? form.applies_to !== 'चालू' : form.applies_to !== 'मागील';
+                        const v = COMPONENTS.filter((c) => form[`on_${c.key}`]).reduce((t, c) => t + Number(dues[`${b}_${c.key}`] || 0), 0);
+                        return <td key={b} className="num" style={{ opacity: on ? 1 : 0.35 }}>{v.toFixed(2)}</td>;
+                      })}
+                      <td className="num">
+                        {COMPONENTS.filter((c) => form[`on_${c.key}`]).reduce((t, c) => t
+                          + (form.applies_to !== 'चालू' ? Number(dues[`previous_${c.key}`] || 0) : 0)
+                          + (form.applies_to !== 'मागील' ? Number(dues[`current_${c.key}`] || 0) : 0), 0).toFixed(2)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
             <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '10px 0 0' }}>
-              रक्कम निवडल्यास ती प्रत्येक व्यक्तीस (कोडास) लागते व निवडलेल्या बाकीत मूळ रकमेच्या प्रमाणात वाटली जाते. सूट मूळ रकमेपेक्षा जास्त होत नाही.
+              {form.scope === 'एक'
+                ? 'हा नियम फक्त निवडलेल्या व्यक्तीस लागतो. रक्कम निवडल्यास ती निवडलेल्या बाकीत मूळ रकमेच्या प्रमाणात वाटली जाते. सूट मूळ रकमेपेक्षा जास्त होत नाही.'
+                : 'रक्कम निवडल्यास ती प्रत्येक व्यक्तीस (कोडास) लागते व निवडलेल्या बाकीत मूळ रकमेच्या प्रमाणात वाटली जाते. सूट मूळ रकमेपेक्षा जास्त होत नाही.'}
             </p>
             <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               <button className="btn secondary" type="button" onClick={doPreview}>परिणाम पहा</button>
               <button className="btn" type="submit" disabled={busy || !preview}>{form.kind} लागू करा</button>
-              {preview && <strong>{preview.persons} व्यक्तींना, एकूण ₹{preview.total.toFixed(2)} {form.kind}</strong>}
+              {preview && (
+                form.scope === 'एक'
+                  ? <strong>{preview.total > 0 ? `या व्यक्तीस ₹${preview.total.toFixed(2)} ${form.kind}` : 'निवडलेल्या कर/बाकीवर या व्यक्तीची देय रक्कम नाही'}</strong>
+                  : <strong>{preview.persons} व्यक्तींना, एकूण ₹{preview.total.toFixed(2)} {form.kind}</strong>
+              )}
               {!preview && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>लागू करण्याआधी "परिणाम पहा" दाबा</span>}
             </div>
           </form>

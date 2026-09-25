@@ -530,6 +530,12 @@ function ReceiptCopy({ receipt, property, receiptType }) {
   ];
   const totalPrevious = rows.reduce((s, r) => s + r.previous, 0);
   const totalCurrent = rows.reduce((s, r) => s + r.current, 0);
+  // सूट/दंड (या पावतीच्या कर-गटातील घटकांसाठी) - देय रकमेत आधीच वजा/समाविष्ट, पावतीवर माहितीसाठी वेगळे
+  const sumAdj = (kind, bucket) => components.reduce((t, c) => t + Number(receipt.dues?.[`${kind}_${bucket}_${c.key}`] || 0), 0);
+  const discountPrev = sumAdj('discount', 'previous');
+  const discountCur = sumAdj('discount', 'current');
+  const penaltyPrev = sumAdj('penalty', 'previous');
+  const penaltyCur = sumAdj('penalty', 'current');
 
   return (
     <div className="bill-copy">
@@ -577,6 +583,28 @@ function ReceiptCopy({ receipt, property, receiptType }) {
           </tr>
         </tbody>
       </table>
+      {(discountPrev + discountCur > 0 || penaltyPrev + penaltyCur > 0) && (
+        <table className="bill-table" style={{ fontSize: 11 }}>
+          <tbody>
+            {discountPrev + discountCur > 0 && (
+              <tr>
+                <td>वरील देय रकमेत सूट वजा केली</td>
+                <td className="num">{discountPrev.toFixed(2)}</td>
+                <td className="num">{discountCur.toFixed(2)}</td>
+                <td className="num">{(discountPrev + discountCur).toFixed(2)}</td>
+              </tr>
+            )}
+            {penaltyPrev + penaltyCur > 0 && (
+              <tr>
+                <td>वरील देय रकमेत दंड समाविष्ट</td>
+                <td className="num">{penaltyPrev.toFixed(2)}</td>
+                <td className="num">{penaltyCur.toFixed(2)}</td>
+                <td className="num">{(penaltyPrev + penaltyCur).toFixed(2)}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      )}
 
       <p className="bill-line"><strong>अक्षरी रु.:</strong> {amountToMarathiWords(grandTotal)}</p>
       <p className="bill-line">
