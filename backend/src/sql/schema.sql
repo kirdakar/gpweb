@@ -795,3 +795,31 @@ CREATE TABLE IF NOT EXISTS tree_income (
 ALTER TABLE cash_book_entries ADD COLUMN IF NOT EXISTS tax_payment_id INT NULL;
 ALTER TABLE cash_book_entries ADD FOREIGN KEY IF NOT EXISTS fk_cash_tax_payment
   (tax_payment_id) REFERENCES tax_payments(id) ON DELETE CASCADE;
+
+-- घरपट्टी सूट/दंड नियम. आकारणी (property_tax_assessment) कधीही बदलली जात नाही; येणे
+-- बाकी काढताना हे नियम वरून लागतात (पहा utils/taxAdjustments.js) - म्हणून कर जमा भरणे,
+-- नमुना ९क, येणे बाकी अहवाल, डॅशबोर्ड सर्वत्र निव्वळ रक्कम आपोआप येते.
+-- financial_year_id: कोणत्या वर्षासाठी (चालू = त्या वर्षाची आकारणी, मागील = त्याआधीच्या
+-- वर्षांची बाकी). एक व्यक्ती = एक कोड (पावत्या कोडनिहाय भरल्या जातात).
+CREATE TABLE IF NOT EXISTS tax_adjustments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  financial_year_id INT NOT NULL,
+  scope ENUM('सर्व','एक') NOT NULL DEFAULT 'सर्व',
+  property_code INT NULL,
+  kind ENUM('सूट','दंड') NOT NULL,
+  applies_to ENUM('मागील','चालू','दोन्ही') NOT NULL DEFAULT 'चालू',
+  on_gharpatti TINYINT(1) NOT NULL DEFAULT 1,
+  on_divabatti TINYINT(1) NOT NULL DEFAULT 0,
+  on_arogya TINYINT(1) NOT NULL DEFAULT 0,
+  on_panipatti TINYINT(1) NOT NULL DEFAULT 0,
+  mode ENUM('टक्के','रक्कम') NOT NULL,
+  value DECIMAL(12,2) NOT NULL,
+  reason VARCHAR(255) NULL,
+  order_no VARCHAR(100) NULL,
+  order_date DATE NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_by INT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_tax_adj_year (financial_year_id, is_active),
+  CONSTRAINT fk_tax_adj_year FOREIGN KEY (financial_year_id) REFERENCES financial_years(id) ON DELETE CASCADE
+) ENGINE=InnoDB;

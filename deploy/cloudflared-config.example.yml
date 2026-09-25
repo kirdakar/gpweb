@@ -1,0 +1,8 @@
+# C:\Users\<तुमचे नाव>\.cloudflared\config.yml  येथे कॉपी करा, <...> बदला.
+tunnel: gpweb
+credentials-file: C:\Users\<तुमचे नाव>\.cloudflared\<TUNNEL-ID>.json
+
+ingress:
+  - hostname: gp.<तुमचे-डोमेन>.com
+    service: http://localhost:8080
+  - service: http_status:404

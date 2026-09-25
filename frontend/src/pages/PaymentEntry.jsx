@@ -317,6 +317,18 @@ export default function PaymentEntry() {
                     {components.map((c) => <td key={c.key} className="num">{Number(summary.property[`current_${c.key}`] || 0).toFixed(2)}</td>)}
                     <td className="num">{components.reduce((s, c) => s + Number(summary.property[`current_${c.key}`] || 0), 0).toFixed(2)}</td>
                   </tr>
+                  {['discount', 'penalty'].map((kind) => {
+                    const perComp = components.map((c) => Number(summary.property[`${kind}_previous_${c.key}`] || 0) + Number(summary.property[`${kind}_current_${c.key}`] || 0));
+                    const sum = perComp.reduce((a, b) => a + b, 0);
+                    if (sum <= 0) return null;
+                    return (
+                      <tr key={kind} style={{ fontStyle: 'italic', color: kind === 'discount' ? 'var(--success)' : 'var(--danger)' }}>
+                        <td>{kind === 'discount' ? 'यात सूट (वजा केलेली)' : 'यात दंड (समाविष्ट)'}</td>
+                        {perComp.map((v, i) => <td key={components[i].key} className="num">{v.toFixed(2)}</td>)}
+                        <td className="num">{sum.toFixed(2)}</td>
+                      </tr>
+                    );
+                  })}
                   <tr style={{ color: 'var(--success)' }}>
                     <td>आजवर जमा (वसूल) <button type="button" className="detail-btn" onClick={() => openDetail('paid')}>तपशील</button></td>
                     {components.map((c) => (

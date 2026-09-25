@@ -41,6 +41,7 @@ const MENUS = [
     items: [
       { to: '/properties', label: 'मिळकत नोंदी', screen: 'properties' },
       { to: '/payments', label: 'कर जमा भरणे', screen: 'payments' },
+      { to: '/tax-adjustments', label: 'घरपट्टी सूट / दंड नोंदणी', screen: 'tax_adjustments' },
       {
         label: 'ग्रामपंचायत १ ते ३३ नमूना',
         submenu: [

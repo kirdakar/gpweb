@@ -4,6 +4,7 @@
 // थकबाकी/येणे बाकी report. Shared so payment entry, receipts, and reports
 // all compute it identically.
 const { withOwnerNameFallback } = require('./ownerName');
+const { applyRulesForYear } = require('./taxAdjustments');
 const {
   allocate, GHARPATTI_GROUP_ORDER, PANIPATTI_GROUP_ORDER, explodeDuesByPortion, collapseByComponentForProperty,
 } = require('./dueAllocation');
@@ -39,7 +40,8 @@ async function getDueBreakdownForProperty(pool, propertyId, yearId) {
     [yearId, year.year_label, propertyId]
   );
   if (!row) return { year, row: null };
-  return { year, row: withOwnerNameFallback([row])[0] };
+  const [adjusted] = await applyRulesForYear(pool, [row], yearId);
+  return { year, row: withOwnerNameFallback([adjusted])[0] };
 }
 
 // एका कोडखालील (मालकाच्या) सर्व मालमत्ता (portions) - प्रत्येकीचा स्वतंत्र
@@ -76,7 +78,7 @@ async function getDueBreakdownForCode(pool, propertyCode, yearId) {
      ORDER BY pm.malmata_no, pm.id`,
     [yearId, year.year_label, propertyCode]
   );
-  return { year, portions: withOwnerNameFallback(portions) };
+  return { year, portions: withOwnerNameFallback(await applyRulesForYear(pool, portions, yearId)) };
 }
 
 // एका कोडखालील सर्व मालमत्तांच्या (निवडलेल्या वर्षापर्यंतच्या) प्रत्येक
@@ -115,7 +117,7 @@ async function getTotalPaidForCode(pool, propertyCode, receiptType) {
 }
 
 // Every property that has some due (current or previous) as of the given year.
-async function getDueBreakdownBulk(pool, yearId) {
+async function getDueBreakdownBulk(pool, yearId, { skipAdjustments = false } = {}) {
   const [[year]] = await pool.query('SELECT * FROM financial_years WHERE id = ?', [yearId]);
   if (!year) return { year: null, rows: [] };
 
@@ -145,7 +147,7 @@ async function getDueBreakdownBulk(pool, yearId) {
      ORDER BY pm.property_code, pm.malmata_no`,
     [yearId, year.year_label]
   );
-  return { year, rows: withOwnerNameFallback(rows) };
+  return { year, rows: withOwnerNameFallback(await applyRulesForYear(pool, rows, yearId, { skip: skipAdjustments })) };
 }
 
 // Total ever paid by a property (all payments regardless of which

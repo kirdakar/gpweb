@@ -4,6 +4,7 @@ const { requireAuth } = require('../middleware/auth');
 const { fallbackOwnerName, withOwnerNameFallback } = require('../utils/ownerName');
 const { allocate, round2, GROUP_ORDER_BY_TYPE, GHARPATTI_GROUP_ORDER, PANIPATTI_GROUP_ORDER, explodeDuesByPortion, collapseByComponent } = require('../utils/dueAllocation');
 const { getTotalPaidBulk, getDueBreakdownForCode } = require('../utils/dueBreakdown');
+const { applyRulesForYear } = require('../utils/taxAdjustments');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -100,7 +101,9 @@ async function computeOldNewComparison(yearId) {
 
   // एकूण बाकी (total_*) = previous_* + current_*, computed here so the
   // client doesn't have to redo float addition on strings from MySQL.
-  const withTotals = withOwnerNameFallback(rows).map((r) => ({
+  // सूट/दंड नियम लावून निव्वळ बाकी (previous_*/current_*/…_due) - डॅशबोर्ड, येणे बाकी अहवाल, नमुना ४ A1 सर्वत्र
+  const adjustedRows = await applyRulesForYear(pool, rows, yearId);
+  const withTotals = withOwnerNameFallback(adjustedRows).map((r) => ({
     ...r,
     total_gharpatti: Number(r.previous_gharpatti) + Number(r.current_gharpatti),
     total_divabatti: Number(r.previous_divabatti) + Number(r.current_divabatti),
@@ -168,7 +171,11 @@ async function computeOldNewComparison(yearId) {
     });
   }
 
-  return { year, rows: withPayments };
+  const adjustmentTotals = {
+    discount: round2(withTotals.reduce((t, r) => t + Number(r.discount_total || 0), 0)),
+    penalty: round2(withTotals.reduce((t, r) => t + Number(r.penalty_total || 0), 0)),
+  };
+  return { year, rows: withPayments, adjustment_totals: adjustmentTotals };
 }
 
 router.get('/old-new-comparison', async (req, res) => {

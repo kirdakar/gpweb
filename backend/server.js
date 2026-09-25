@@ -36,6 +36,7 @@ const miscDemandsRoutes = require('./src/routes/miscDemands.routes');
 const stampsRoutes = require('./src/routes/stamps.routes');
 const stockRoutes = require('./src/routes/stock.routes');
 const treesRoutes = require('./src/routes/trees.routes');
+const taxAdjustmentsRoutes = require('./src/routes/taxAdjustments.routes');
 
 const app = express();
 app.use(cors());
@@ -79,6 +80,7 @@ app.use('/api/misc-demands', miscDemandsRoutes);
 app.use('/api/stamps', stampsRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/trees', treesRoutes);
+app.use('/api/tax-adjustments', taxAdjustmentsRoutes);
 
 // Central error handler - keeps route handlers free of try/catch boilerplate
 // for unexpected DB errors (express-async-errors-style wrapping below).

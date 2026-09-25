@@ -24,12 +24,18 @@ function BillCopy({ summary, settings, periodText, billNo, billDate }) {
     label: c.label,
     thakbaki: Number(bal[`previous_${c.key}`] || 0),
     chalu: Number(bal[`current_${c.key}`] || 0),
+    // सूट/दंड (मागील+चालू) - थकबाकी/चालू रकमांमध्ये आधीच वजा/समाविष्ट केलेले, वेगळे दाखवण्यासाठी
+    discount: Number(property[`discount_previous_${c.key}`] || 0) + Number(property[`discount_current_${c.key}`] || 0),
+    penalty: Number(property[`penalty_previous_${c.key}`] || 0) + Number(property[`penalty_current_${c.key}`] || 0),
   }));
+  const hasAdjustment = rows.some((r) => r.discount > 0 || r.penalty > 0);
   const total = rows.reduce((acc, r) => {
     acc.thakbaki += r.thakbaki;
     acc.chalu += r.chalu;
+    acc.discount += r.discount;
+    acc.penalty += r.penalty;
     return acc;
-  }, { thakbaki: 0, chalu: 0 });
+  }, { thakbaki: 0, chalu: 0, discount: 0, penalty: 0 });
   const gpLine = [settings.gp_name, settings.taluka ? `ता. ${settings.taluka}` : '', settings.district ? `जि. ${settings.district}` : '']
     .filter(Boolean).join(' ') || '(ग्रामपंचायतीचे नाव सेटिंग्जमध्ये नोंदवा)';
 
@@ -60,6 +66,8 @@ function BillCopy({ summary, settings, periodText, billNo, billDate }) {
             <th className="num">थकबाकी</th>
             <th className="num">चालू</th>
             <th className="num">एकूण</th>
+            {hasAdjustment && <th className="num">सूट *</th>}
+            {hasAdjustment && <th className="num">दंड *</th>}
           </tr>
         </thead>
         <tbody>
@@ -69,6 +77,8 @@ function BillCopy({ summary, settings, periodText, billNo, billDate }) {
               <td className="num">{r.thakbaki.toFixed(2)}</td>
               <td className="num">{r.chalu.toFixed(2)}</td>
               <td className="num">{(r.thakbaki + r.chalu).toFixed(2)}</td>
+              {hasAdjustment && <td className="num">{r.discount.toFixed(2)}</td>}
+              {hasAdjustment && <td className="num">{r.penalty.toFixed(2)}</td>}
             </tr>
           ))}
           <tr className="total-row">
@@ -76,9 +86,12 @@ function BillCopy({ summary, settings, periodText, billNo, billDate }) {
             <td className="num">{total.thakbaki.toFixed(2)}</td>
             <td className="num">{total.chalu.toFixed(2)}</td>
             <td className="num">{(total.thakbaki + total.chalu).toFixed(2)}</td>
+            {hasAdjustment && <td className="num">{total.discount.toFixed(2)}</td>}
+            {hasAdjustment && <td className="num">{total.penalty.toFixed(2)}</td>}
           </tr>
         </tbody>
       </table>
+      {hasAdjustment && <p className="bill-line" style={{ fontSize: 11 }}>* वरील थकबाकी/चालू रकमांमध्ये सूट वजा करून व दंड समाविष्ट करून निव्वळ देय रक्कम दाखवली आहे.</p>}
 
       <p className="bill-line">
         हे बिल आपणास प्राप्त झाल्यापासुन देय रक्कमांचा भरणा १५ दिवसांचे आत करावा अन्यथा

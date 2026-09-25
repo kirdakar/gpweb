@@ -36,6 +36,7 @@ export default function OldNewComparisonReport() {
   const { can } = usePermissions();
   const { gpLine } = useGpSettings();
   const [year, setYear] = useState(null);
+  const [adj, setAdj] = useState({ discount: 0, penalty: 0 });
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +44,7 @@ export default function OldNewComparisonReport() {
     if (!yearId) return;
     setLoading(true);
     client.get('/reports/old-new-comparison', { params: { yearId } })
-      .then(({ data }) => { setYear(data.year); setRows(data.rows); })
+      .then(({ data }) => { setYear(data.year); setRows(data.rows); setAdj(data.adjustment_totals || { discount: 0, penalty: 0 }); })
       .finally(() => setLoading(false));
   }, [yearId]);
 
@@ -87,6 +88,9 @@ export default function OldNewComparisonReport() {
         <h2>{gpLine}</h2>
         <p style={{ fontWeight: 700 }}>येणे बाकी अहवाल (जमा व उर्वरित)</p>
         <p>चालू वर्ष: {year?.year_label || ''} (जुनी = या वर्षाआधीच्या सर्व वर्षांची बेरीज)</p>
+        {(adj.discount > 0 || adj.penalty > 0) && (
+          <p>सूट ₹{adj.discount.toFixed(2)} वजा व दंड ₹{adj.penalty.toFixed(2)} समाविष्ट करून निव्वळ बाकी दाखवली आहे</p>
+        )}
       </div>
 
       {loading ? <p>लोड होत आहे...</p> : (

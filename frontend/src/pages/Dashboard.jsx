@@ -29,6 +29,7 @@ export default function Dashboard() {
   const nameSize = Math.max(14, Math.min(32, 175 / (Math.max(gpShort.length, 5) * 0.62)));
   const [oldNewRows, setOldNewRows] = useState([]);
   const [propertyCount, setPropertyCount] = useState(null);
+  const [adjTotals, setAdjTotals] = useState({ discount: 0, penalty: 0 });
   const [loading, setLoading] = useState(true);
   // सविस्तर टेबल सुरुवातीस लपवलेले - "डॅशबोर्ड" शीर्षकावर क्लिक केल्यावर दिसते/लपते
   const [showDetails, setShowDetails] = useState(false);
@@ -43,6 +44,7 @@ export default function Dashboard() {
     ]).then(([oldNewRes, propRes]) => {
       if (cancelled) return;
       setOldNewRows(oldNewRes.data.rows);
+      setAdjTotals(oldNewRes.data.adjustment_totals || { discount: 0, penalty: 0 });
       setPropertyCount(propRes.data.total);
     }).finally(() => !cancelled && setLoading(false));
     return () => { cancelled = true; };
@@ -132,6 +134,11 @@ export default function Dashboard() {
                 </tr>
               </tfoot>
             </table>
+            {(adjTotals.discount > 0 || adjTotals.penalty > 0) && (
+              <div style={{ padding: '6px 12px', fontSize: 15, fontWeight: 700 }}>
+                वरील बाकीत सूट ₹{adjTotals.discount.toFixed(2)} वजा व दंड ₹{adjTotals.penalty.toFixed(2)} समाविष्ट (घरपट्टी सूट / दंड नोंदणीनुसार)
+              </div>
+            )}
           </div>}
         </>
       )}

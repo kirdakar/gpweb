@@ -1,5 +1,6 @@
 const express = require('express');
 const { postTaxPaymentToCashBook } = require('../utils/taxCashPosting');
+const { ADJUSTMENT_KEYS, scaleYearRowsToNet } = require('../utils/taxAdjustments');
 const pool = require('../config/db');
 const { requireAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/permissions');
@@ -39,9 +40,11 @@ function aggregatePortions(portions) {
     malmata_no_list: [...new Set(portions.map((p) => p.malmata_no).filter(Boolean))].join(', '),
     portion_count: portions.length,
   };
-  for (const key of DUE_COMPONENTS) {
+  for (const key of [...DUE_COMPONENTS, ...ADJUSTMENT_KEYS]) {
     base[key] = round2(portions.reduce((s, p) => s + Number(p[key] || 0), 0));
   }
+  base.discount_total = round2(portions.reduce((s, p) => s + Number(p.discount_total || 0), 0));
+  base.penalty_total = round2(portions.reduce((s, p) => s + Number(p.penalty_total || 0), 0));
   return base;
 }
 
@@ -149,7 +152,9 @@ router.get('/due-detail', async (req, res) => {
   if (!year) return res.status(404).json({ error: 'Financial year not found' });
   if (portions.length === 0) return res.status(404).json({ error: 'Property not found' });
 
-  const { rows: yearRows } = await getYearWiseDueRowsForCode(pool, propertyCode, yearId);
+  const { rows: rawYearRows } = await getYearWiseDueRowsForCode(pool, propertyCode, yearId);
+  // सूट/दंड मुळे निव्वळ झालेल्या मागील बाकीशी वर्षवार ओळी जुळवतो
+  const yearRows = scaleYearRowsToNet(rawYearRows, portions, year.year_label);
   const totalPaid = await getTotalPaidForCode(pool, propertyCode, receiptType);
   const baseOrder = GROUP_ORDER_BY_TYPE[receiptType];
   const detail = getDetailedAllocationRows(portions, yearRows, baseOrder, { id: Number(yearId), year_label: year.year_label }, totalPaid);
