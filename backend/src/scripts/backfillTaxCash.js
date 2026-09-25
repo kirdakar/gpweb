@@ -6,6 +6,8 @@ const paymentsRouter = require('../routes/payments.routes');
 const { postTaxPaymentToCashBook } = require('../utils/taxCashPosting');
 
 (async () => {
+  // --rebuild: कर जमा पावत्यांच्या सर्व आपोआप रोकड वही ओळी मिटवून सध्याच्या सूट/दंड नियमांनुसार पुन्हा तयार करतो
+  if (process.argv.includes('--rebuild')) await pool.query('DELETE FROM cash_book_entries WHERE tax_payment_id IS NOT NULL');
   const [rows] = await pool.query(
     `SELECT p.*, DATE_FORMAT(p.payment_date, '%Y-%m-%d') AS payment_date_str, pm.property_code
      FROM tax_payments p JOIN property_master pm ON pm.id = p.property_id
@@ -18,7 +20,7 @@ const { postTaxPaymentToCashBook } = require('../utils/taxCashPosting');
     try {
       await conn.beginTransaction();
       const alloc = await paymentsRouter.computeReceiptAllocation(conn, p.property_code, p.financial_year_id, p.id, p.receipt_type);
-      const n = await postTaxPaymentToCashBook(conn, { ...p, payment_date: p.payment_date_str }, alloc && alloc.coveredByThisReceipt, null);
+      const n = await postTaxPaymentToCashBook(conn, { ...p, payment_date: p.payment_date_str }, alloc && alloc.coveredByThisReceipt, null, alloc && alloc.dues);
       await conn.commit();
       done += 1;
       console.log(`पावती #${p.id} (${p.receipt_type} ${p.receipt_no}) -> ${n} रोकड वही ओळी`);

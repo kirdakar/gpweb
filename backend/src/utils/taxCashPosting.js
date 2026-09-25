@@ -15,19 +15,34 @@ const OTHER_HEAD = '1.b.13'; // इतर जमा - खुली जागा/
 const COMPONENT_LABEL = { gharpatti: 'घरपट्टी', divabatti: 'दिवाबत्ती कर', arogya: 'आरोग्य कर', panipatti: 'पाणीपट्टी' };
 
 // payment: tax_payments ओळ (+ property_code), covered: घटकनिहाय या पावतीने भरलेली रक्कम
-async function postTaxPaymentToCashBook(conn, payment, covered, userId) {
+// dues: पावतीच्या वेळची एकत्रित देय (aggregatePortions) - penalty_* वरून पावतीतील दंडाचा भाग वेगळ्या शीर्षावर जातो
+async function postTaxPaymentToCashBook(conn, payment, covered, userId, dues) {
   const codes = [...Object.values(COMPONENT_HEAD), OTHER_HEAD];
   const [heads] = await conn.query('SELECT id, code FROM ledger_heads WHERE code IN (?)', [codes]);
   const headId = Object.fromEntries(heads.map((h) => [h.code, h.id]));
 
   const lines = [];
+  let penaltyPaid = 0;
   for (const [component, code] of Object.entries(COMPONENT_HEAD)) {
     // covered च्या किल्ल्या 'previous_gharpatti'/'current_gharpatti' अशा (मागील+चालू) - दोन्ही मिळवतो
-    const amt = round2(Object.keys(covered || {})
-      .filter((k) => k === component || k.endsWith(`_${component}`))
-      .reduce((sum, k) => sum + Number(covered[k] || 0), 0));
-    if (amt > 0 && headId[code]) lines.push({ headId: headId[code], amount: amt, label: COMPONENT_LABEL[component] });
+    let compTotal = 0;
+    let compPenalty = 0;
+    for (const k of Object.keys(covered || {})) {
+      if (!(k === component || k.endsWith(`_${component}`))) continue;
+      const paid = Number(covered[k] || 0);
+      compTotal += paid;
+      // या रकान्यातील दंडाचा हिस्सा = भरलेली रक्कम x (रकान्यातील दंड / निव्वळ देय)
+      const net = Number(dues && dues[k]) || 0;
+      const pen = Number(dues && dues[`penalty_${k}`]) || 0;
+      if (net > 0 && pen > 0) compPenalty += paid * Math.min(1, pen / net);
+    }
+    compTotal = round2(compTotal);
+    compPenalty = Math.min(round2(compPenalty), compTotal);
+    penaltyPaid = round2(penaltyPaid + compPenalty);
+    const taxPart = round2(compTotal - compPenalty);
+    if (taxPart > 0 && headId[code]) lines.push({ headId: headId[code], amount: taxPart, label: COMPONENT_LABEL[component] });
   }
+  if (penaltyPaid > 0 && headId[OTHER_HEAD]) lines.push({ headId: headId[OTHER_HEAD], amount: penaltyPaid, label: 'दंड (कर थकबाकी/विलंब)' });
   const extras = round2(Number(payment.khuli_jaga_amount || 0) + Number(payment.notice_fee_amount || 0)
     + Number(payment.warrant_fee_amount || 0) + Number(payment.other_amount || 0));
   if (extras > 0 && headId[OTHER_HEAD]) lines.push({ headId: headId[OTHER_HEAD], amount: extras, label: 'खुली जागा/नोटीस/वारंट/इतर फी' });

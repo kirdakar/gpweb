@@ -344,7 +344,7 @@ router.post('/', requirePermission('payments', 'add'), async (req, res) => {
       id: result.insertId, financial_year_id, property_code, receipt_type, receipt_no: nextNo,
       payment_date, payment_mode: mode, amount: amt,
       khuli_jaga_amount: khuliJaga, notice_fee_amount: noticeFee, warrant_fee_amount: warrantFee, other_amount: other,
-    }, alloc && alloc.coveredByThisReceipt, req.user.id);
+    }, alloc && alloc.coveredByThisReceipt, req.user.id, alloc && alloc.dues);
     const [[payment]] = await conn.query(
       `SELECT p.*, fy.year_label FROM tax_payments p
        JOIN financial_years fy ON fy.id = p.financial_year_id

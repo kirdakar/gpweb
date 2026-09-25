@@ -77,6 +77,7 @@ router.get('/', async (req, res) => {
       ...item,
       amount: amountByCode[item.code] ?? 0,
       derived: Boolean(DERIVED_ASSET_CODES[item.code]) || item.code === DERIVED_TAX_CODE,
+      adjustment: item.code === DERIVED_TAX_CODE && comparison ? comparison.adjustment_totals : null,
       derived_from: item.code === DERIVED_TAX_CODE ? 'tax' : (DERIVED_ASSET_CODES[item.code] ? 'assets' : null),
     }));
   }
