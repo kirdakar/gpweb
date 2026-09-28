@@ -27,6 +27,9 @@
   "pkg": {
     "scripts": [
       "src/**/*.js"
+    ],
+    "assets": [
+      "src/sql/schema.sql"
     ]
   }
 }

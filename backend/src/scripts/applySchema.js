@@ -5,7 +5,6 @@ const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
-const { getBaseDir } = require('../utils/baseDir');
 
 async function main() {
   const host = process.env.DB_HOST || 'localhost';
@@ -16,10 +15,10 @@ async function main() {
 
   const conn = await mysql.createConnection({ host, port, user, password, multipleStatements: true });
 
-  // पॅकेज केलेल्या (.exe) वितरणात schema.sql .exe शेजारी साध्या फाईल म्हणून असते (baseDir);
-  // विकासादरम्यान नेहमीचीच src/sql/schema.sql वापरतो - दोन्हीपैकी जी सापडेल ती.
-  const externalSchemaPath = path.join(getBaseDir(), 'schema.sql');
-  const schemaPath = fs.existsSync(externalSchemaPath) ? externalSchemaPath : path.join(__dirname, '..', 'sql', 'schema.sql');
+  // schema.sql नेहमी src/sql/ मधूनच वाचतो. पॅकेज केलेल्या (.exe) वितरणात ही फाईल pkg च्या
+  // "assets" द्वारे .exe च्या आतच बंद (embedded) असते - पार्टीच्या मशिनवर ती स्वतंत्र, वाचता
+  // येणारी फाईल म्हणून दिसत नाही (package.json मधील "pkg.assets" पहा).
+  const schemaPath = path.join(__dirname, '..', 'sql', 'schema.sql');
   const schemaSql = fs.readFileSync(schemaPath, 'utf8');
   console.log(`Applying schema to database "${dbName}" on ${host}:${port} ...`);
   await conn.query(schemaSql);

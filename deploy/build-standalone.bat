@@ -1,7 +1,8 @@
 @echo off
 REM gpweb - पार्टीच्या मशिनवर सोर्स कोडशिवाय देण्यासाठी "स्टँडअलोन" पॅकेज तयार करतो.
-REM निकाल: deploy\dist-standalone\  (हाच पूर्ण फोल्डर पार्टीला द्यायचा - .js सोर्स फाईल्स नसतात,
-REM फक्त gpweb-backend.exe + public\ (build झालेले frontend) + schema.sql + सूचना).
+REM निकाल: deploy\dist-standalone\  (हाच पूर्ण फोल्डर पार्टीला द्यायचा - .js सोर्स फाईल्स किंवा
+REM schema.sql दिसत नाही, फक्त gpweb-backend.exe + public\ (build झालेले frontend) + सूचना;
+REM डेटाबेस रचना .exe च्या आतच बंद (embedded) असते).
 setlocal
 set "PROJECT=%~dp0.."
 set "OUT=%~dp0dist-standalone"
@@ -20,10 +21,10 @@ call npx @yao-pkg/pkg server.js --targets node22-win-x64 --output "%OUT%\gpweb-b
 if errorlevel 1 ( echo BUILD FAILED & popd & pause & exit /b 1 )
 popd
 
-echo [3/4] frontend build व schema.sql कॉपी करत आहे...
+echo [3/4] frontend build कॉपी करत आहे...
 if exist "%OUT%\public" rmdir /s /q "%OUT%\public"
 robocopy "%PROJECT%\frontend\dist" "%OUT%\public" /MIR /NFL /NDL /NJH /NJS >nul
-copy /y "%PROJECT%\backend\src\sql\schema.sql" "%OUT%\schema.sql" >nul
+if exist "%OUT%\schema.sql" del /q "%OUT%\schema.sql"
 
 echo [4/4] .env व पार्टी-सूचना तयार करत आहे...
 if not exist "%OUT%\.env" (
