@@ -91,6 +91,27 @@ router.post('/', requirePermission('tax_adjustments', 'add'), async (req, res) =
   res.status(201).json({ id: result.insertId });
 });
 
+router.put('/:id', requirePermission('tax_adjustments', 'edit'), async (req, res) => {
+  const r = readRule(req.body || {});
+  const err = validate(r);
+  if (err) return res.status(400).json({ error: err });
+  if (r.scope === 'एक') {
+    const [[pm]] = await pool.query('SELECT id FROM property_master WHERE property_code = ? LIMIT 1', [r.property_code]);
+    if (!pm) return res.status(404).json({ error: 'हा कोड सापडला नाही' });
+  }
+  const [result] = await pool.query(
+    `UPDATE tax_adjustments SET
+       financial_year_id = ?, scope = ?, property_code = ?, kind = ?, applies_to = ?,
+       on_gharpatti = ?, on_divabatti = ?, on_arogya = ?, on_panipatti = ?, mode = ?, value = ?,
+       reason = ?, order_no = ?, order_date = ?
+     WHERE id = ?`,
+    [r.financial_year_id, r.scope, r.property_code, r.kind, r.applies_to, r.on_gharpatti, r.on_divabatti, r.on_arogya, r.on_panipatti,
+      r.mode, r.value, r.reason, r.order_no, r.order_date, req.params.id]
+  );
+  if (result.affectedRows === 0) return res.status(404).json({ error: 'सापडले नाही' });
+  res.json({ ok: true });
+});
+
 router.patch('/:id/active', requirePermission('tax_adjustments', 'edit'), async (req, res) => {
   const active = req.body && (req.body.is_active === true || req.body.is_active === 1) ? 1 : 0;
   const [r] = await pool.query('UPDATE tax_adjustments SET is_active = ? WHERE id = ?', [active, req.params.id]);

@@ -31,6 +31,7 @@ export default function TaxAdjustmentEntry() {
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [dues, setDues] = useState(null); // निवडलेल्या व्यक्तीची येणे बाकी (घरपट्टी-गट व पाणीपट्टी-गट)
+  const [editingId, setEditingId] = useState(null); // यादीतील ओळीवर क्लिक केल्यावर दुरुस्तीसाठी तो नियम इथे उघडतो
 
   function load() {
     if (!yearId) return;
@@ -65,10 +66,30 @@ export default function TaxAdjustmentEntry() {
     if (form.scope === 'एक' && !form.property_code) { setError('कृपया यादीतून व्यक्ती निवडा'); return; }
     setBusy(true);
     try {
-      await client.post('/tax-adjustments', payload());
-      setNotice(`${form.kind} लागू केली - कर जमा भरणे, नमुना ९क, येणे बाकी अहवाल व डॅशबोर्डवर आता निव्वळ रक्कम दिसेल.`);
-      setForm(emptyForm); setPreview(null); load();
+      if (editingId) {
+        await client.put(`/tax-adjustments/${editingId}`, payload());
+        setNotice(`${form.kind} अद्ययावत केली - कर जमा भरणे, नमुना ९क, येणे बाकी अहवाल व डॅशबोर्डवर आता निव्वळ रक्कम दिसेल.`);
+      } else {
+        await client.post('/tax-adjustments', payload());
+        setNotice(`${form.kind} लागू केली - कर जमा भरणे, नमुना ९क, येणे बाकी अहवाल व डॅशबोर्डवर आता निव्वळ रक्कम दिसेल.`);
+      }
+      setEditingId(null); setForm(emptyForm); setPreview(null); load();
     } catch (err) { setError(err.response?.data?.error || 'जतन करताना त्रुटी आली'); } finally { setBusy(false); }
+  }
+
+  function startEdit(r) {
+    if (!can('tax_adjustments', 'edit')) return;
+    setEditingId(r.id);
+    setForm({
+      scope: r.scope, property_code: r.scope === 'एक' ? r.property_code : '',
+      kind: r.kind, applies_to: r.applies_to,
+      on_gharpatti: !!r.on_gharpatti, on_divabatti: !!r.on_divabatti, on_arogya: !!r.on_arogya, on_panipatti: !!r.on_panipatti,
+      mode: r.mode, value: String(r.value), reason: r.reason || '', order_no: r.order_no || '', order_date: r.order_date || '',
+    });
+    setPreview(null); setError(''); setNotice('');
+  }
+  function cancelEdit() {
+    setEditingId(null); setForm(emptyForm); setPreview(null); setError(''); setNotice('');
   }
 
   async function toggle(r) {
@@ -87,6 +108,7 @@ export default function TaxAdjustmentEntry() {
     return `${comps} — ${val}`;
   };
   const canAdd = can('tax_adjustments', 'add');
+  const canEdit = can('tax_adjustments', 'edit');
 
   return (
     <div className="page">
@@ -97,8 +119,9 @@ export default function TaxAdjustmentEntry() {
       {error && <div className="error-box">{error}</div>}
       {notice && <div className="notice-box">{notice}</div>}
 
-      {canAdd && (
+      {(canAdd || editingId) && (
         <div className="card" style={{ marginBottom: 20 }}>
+          {editingId && <p style={{ margin: '0 0 10px', fontWeight: 700, color: 'var(--primary)' }}>दुरुस्ती करत आहात - जतन केल्यावर हाच नियम अद्ययावत होईल</p>}
           <form onSubmit={save}>
             <div className="form-grid">
               <div className="field">
@@ -187,7 +210,8 @@ export default function TaxAdjustmentEntry() {
             </p>
             <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               <button className="btn secondary" type="button" onClick={doPreview}>परिणाम पहा</button>
-              <button className="btn" type="submit" disabled={busy || !preview}>{form.kind} लागू करा</button>
+              <button className="btn" type="submit" disabled={busy || !preview}>{editingId ? 'बदल जतन करा' : `${form.kind} लागू करा`}</button>
+              {editingId && <button className="btn secondary" type="button" onClick={cancelEdit}>रद्द करा</button>}
               {preview && (
                 form.scope === 'एक'
                   ? <strong>{preview.total > 0 ? `या व्यक्तीस ₹${preview.total.toFixed(2)} ${form.kind}` : 'निवडलेल्या कर/बाकीवर या व्यक्तीची देय रक्कम नाही'}</strong>
@@ -204,14 +228,19 @@ export default function TaxAdjustmentEntry() {
           <thead><tr><th>प्रकार</th><th>कोणाला</th><th>बाकी</th><th>कर व मूल्य</th><th>कारण / आदेश</th><th>स्थिती</th><th></th></tr></thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} style={{ opacity: r.is_active ? 1 : 0.5 }}>
+              <tr
+                key={r.id}
+                onClick={() => startEdit(r)}
+                title={canEdit ? 'दुरुस्तीसाठी क्लिक करा' : undefined}
+                style={{ opacity: r.is_active ? 1 : 0.5, cursor: canEdit ? 'pointer' : 'default', background: editingId === r.id ? 'var(--bg)' : undefined }}
+              >
                 <td style={{ fontWeight: 700, color: r.kind === 'सूट' ? 'var(--success)' : 'var(--danger)' }}>{r.kind}</td>
                 <td>{r.scope === 'सर्व' ? 'सर्वांना' : `कोड ${r.property_code}${r.owner_name ? ` - ${r.owner_name}` : ''}`}</td>
                 <td>{r.applies_to}</td>
                 <td>{describe(r)}</td>
                 <td>{r.reason || '-'}{r.order_no ? ` | ${r.order_no}` : ''}{r.order_date ? ` (${fmtDate(r.order_date)})` : ''}</td>
                 <td>{r.is_active ? 'लागू' : 'बंद'}</td>
-                <td style={{ display: 'flex', gap: 6 }}>
+                <td style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
                   {can('tax_adjustments', 'edit') && <button className="btn secondary small" type="button" onClick={() => toggle(r)}>{r.is_active ? 'बंद करा' : 'पुन्हा लागू करा'}</button>}
                   {can('tax_adjustments', 'delete') && <button className="btn danger small" type="button" onClick={() => remove(r)}>मिटवा</button>}
                 </td>
