@@ -17,23 +17,30 @@ export default function Properties() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  // मालकाचे नाव नोंदलेले नसलेल्या (यादीत नुसता "कोड X" दिसणाऱ्या) नोंदी तात्पुरत्या लपवण्यासाठी -
+  // डीफॉल्ट लपवलेल्याच, गरज पडल्यास टिक काढून परत दाखवता येतात (डेटा मिटत नाही).
+  const [hideMissingOwner, setHideMissingOwner] = useState(true);
+  const [missingOwnerCount, setMissingOwnerCount] = useState(0);
 
   // शोध बदलल्यावर पहिल्या पानावर परत जा (नाहीतर जुन्या शोधाचे पान 3
   // उघडे राहून नवीन शोधात तितकी पाने नसतील तर रिकामे दिसू शकते).
-  useEffect(() => { setPage(1); }, [debouncedSearch]);
+  useEffect(() => { setPage(1); }, [debouncedSearch, hideMissingOwner]);
 
   const load = useCallback(async () => {
     if (!yearId) return;
     setLoading(true);
     try {
-      const { data } = await client.get('/properties', { params: { search: debouncedSearch, page, pageSize: 25, yearId } });
+      const { data } = await client.get('/properties', {
+        params: { search: debouncedSearch, page, pageSize: 25, yearId, hideMissingOwner: hideMissingOwner ? '1' : '0' },
+      });
       setRows(data.data);
       setTotalPages(data.totalPages);
       setTotal(data.total);
+      setMissingOwnerCount(data.missingOwnerCount || 0);
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, page, yearId]);
+  }, [debouncedSearch, page, yearId, hideMissingOwner]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -47,8 +54,13 @@ export default function Properties() {
         </div>
       </div>
 
-      <form className="search-bar" onSubmit={(e) => e.preventDefault()}>
+      <form className="search-bar" onSubmit={(e) => e.preventDefault()} style={{ alignItems: 'center', flexWrap: 'wrap' }}>
         <input placeholder="मालक, मालमत्ता क्र., कोड किंवा अ.क्र. टाइप करा (शोध आपोआप होतो)" value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 400, whiteSpace: 'nowrap' }}>
+          <input type="checkbox" checked={hideMissingOwner} onChange={(e) => setHideMissingOwner(e.target.checked)} />
+          मालकाचे नाव नसलेल्या नोंदी लपवा
+          {missingOwnerCount > 0 && <span style={{ color: 'var(--text-muted)' }}>({missingOwnerCount})</span>}
+        </label>
       </form>
 
       {loading ? <p>लोड होत आहे...</p> : (

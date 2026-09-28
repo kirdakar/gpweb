@@ -19,6 +19,10 @@ router.get('/', async (req, res) => {
   const offset = (page - 1) * pageSize;
   const search = (req.query.search || '').trim();
   const yearId = req.query.yearId ? parseInt(req.query.yearId, 10) : null;
+  // मालकाचे नाव नोंदलेले नसलेल्या नोंदी (मिळकत यादीत नुसता "कोड X" दिसणाऱ्या) तात्पुरत्या
+  // लपवण्यासाठी - डेटा मिटत नाही, फक्त या यादीतून वगळल्या जातात (toggle ने परत दिसतात).
+  const hideMissingOwner = req.query.hideMissingOwner === '1';
+  const ownerFilterSql = "pm.owner_name IS NOT NULL AND pm.owner_name <> ''";
 
   const where = [];
   const params = [];
@@ -28,6 +32,15 @@ router.get('/', async (req, res) => {
     const asNum = Number.isFinite(Number(search)) ? Number(search) : -1;
     params.push(like, like, asNum, asNum);
   }
+
+  // सध्याच्या शोधाच्या (search) अंतर्गत नाव नसलेल्या नोंदींची संख्या - toggle बंद असतानाही
+  // किती नोंदी लपवलेल्या आहेत हे कार्यालयाला दिसावे म्हणून.
+  const missingWhereSql = `WHERE ${[...where, `NOT (${ownerFilterSql})`].join(' AND ')}`;
+  const [[{ missing: missingOwnerCount }]] = await pool.query(
+    `SELECT COUNT(*) AS missing FROM property_master pm ${missingWhereSql}`, params
+  );
+
+  if (hideMissingOwner) where.push(ownerFilterSql);
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
   const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM property_master pm ${whereSql}`, params);
@@ -51,7 +64,7 @@ router.get('/', async (req, res) => {
     [...joinParams, ...params, pageSize, offset]
   );
 
-  res.json({ data: withOwnerNameFallback(rows), page, pageSize, total, totalPages: Math.ceil(total / pageSize) });
+  res.json({ data: withOwnerNameFallback(rows), page, pageSize, total, totalPages: Math.ceil(total / pageSize), missingOwnerCount });
 });
 
 router.get('/:id', async (req, res) => {
