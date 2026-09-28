@@ -9,7 +9,8 @@
     "dev": "node --watch server.js",
     "migrate:schema": "node src/scripts/applySchema.js",
     "migrate:data": "node src/scripts/migrateFromAccessCsv.js",
-    "seed:ledger-heads": "node src/scripts/seedLedgerHeads.js"
+    "seed:ledger-heads": "node src/scripts/seedLedgerHeads.js",
+    "build:exe": "npx @yao-pkg/pkg server.js --targets node22-win-x64 --output ../deploy/dist-standalone/gpweb-backend.exe"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -19,5 +20,13 @@
     "express-async-errors": "^3.1.1",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.11.0"
+  },
+  "devDependencies": {
+    "@yao-pkg/pkg": "^6.22.0"
+  },
+  "pkg": {
+    "scripts": [
+      "src/**/*.js"
+    ]
   }
 }

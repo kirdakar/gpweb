@@ -5,6 +5,12 @@ node_modules/
 dist/
 dist-ssr/
 
+# स्टँडअलोन (.exe, पार्टीच्या मशिनसाठी) पॅकेजचे build outputs - deploy\build-standalone.bat
+# ने पुन्हा तयार होतात, त्यामुळे git मध्ये ठेवत नाही (मोठी बायनरी फाईल)
+deploy/dist-standalone/gpweb-backend.exe
+deploy/dist-standalone/public/
+deploy/dist-standalone/schema.sql
+
 # Env / secrets
 .env
 .env.local

@@ -1,6 +1,6 @@
 # gpweb ला XAMPP वर चालवून Cloudflare द्वारे वेबवर सुरू करणे
 
-**रचना:** इंटरनेट → Cloudflare → Tunnel (`cloudflared`) → XAMPP Apache (पोर्ट 8080) → `/api` = Node backend (पोर्ट 4000) → MariaDB (XAMPP).
+**रचना:** इंटरनेट → Cloudflare → Tunnel (`cloudflared`) → XAMPP Apache (पोर्ट 8090) → `/api` = Node backend (पोर्ट 4000) → MariaDB (XAMPP).
 डेटा तुमच्याच संगणकावर राहतो; Cloudflare फक्त सुरक्षित रस्ता (HTTPS) देते. संगणक व इंटरनेट चालू असेल तेव्हाच वेबसाईट चालेल.
 
 > टीप: XAMPP/MariaDB मध्ये `.ora` फाईल नसते (ती Oracle ची आहे). Apache साठी त्याच कामाची फाईल `.conf` — ती `deploy\gpweb.conf` येथे तयार आहे.
@@ -27,7 +27,7 @@
 1. `deploy\build-and-deploy.bat` वर डबल-क्लिक करा → frontend build होऊन `C:\xampp\htdocs\gpweb` मध्ये जाईल.
 2. डेटाबेस तयार नसेल तर एकदा: `cd backend` → `npm run migrate:schema`.
 3. `deploy\start-gpweb.bat` चालवा (काळी विंडो उघडी राहू द्या) → "gpweb backend listening on http://localhost:4000".
-4. ब्राउझरमध्ये तपासा: **http://localhost:8080** → लॉगिन पान दिसले पाहिजे.
+4. ब्राउझरमध्ये तपासा: **http://localhost:8090** → लॉगिन पान दिसले पाहिजे.
 
 पुढे संगणक चालू झाल्यावर आपोआप सुरू व्हायला: Windows **Task Scheduler** → Create Task → Trigger "At log on" → Action `deploy\start-gpweb.bat`. XAMPP Apache/MySQL ला Control Panel मध्ये "Service" म्हणून install करा (हिरवी X वर क्लिक).
 
@@ -43,7 +43,7 @@
 6. चाचणी: `cloudflared tunnel run gpweb` → **https://gp.तुमचेडोमेन.com** उघडा.
 7. कायमचे (संगणक चालू होताच): `cloudflared service install`
 
-**डोमेनशिवाय तात्पुरते (डेमो/चाचणी):** `cloudflared tunnel --url http://localhost:8080` → `https://xxxx.trycloudflare.com` अशी तात्पुरती लिंक मिळते (बंद केल्यावर बदलते).
+**डोमेनशिवाय तात्पुरते (डेमो/चाचणी):** `cloudflared tunnel --url http://localhost:8090` → `https://xxxx.trycloudflare.com` अशी तात्पुरती लिंक मिळते (बंद केल्यावर बदलते).
 
 ## भाग ४ - सुरक्षा (वेबवर टाकण्यापूर्वी आवश्यक)
 
@@ -59,7 +59,18 @@
 ## अडचणी
 | लक्षण | उपाय |
 |---|---|
-| Apache Start होत नाही | `httpd.conf` मधील `Include`/`LoadModule` ओळी तपासा; पोर्ट 8080 दुसरे कोणी वापरत नाही ना |
+| Apache Start होत नाही | `httpd.conf` मधील `Include`/`LoadModule` ओळी तपासा; पोर्ट 8090 दुसरे कोणी वापरत नाही ना |
 | पान दिसते पण लॉगिन/डेटा येत नाही | `start-gpweb.bat` चालू आहे का; http://localhost:4000/api/health `{"ok":true}` देतो का |
 | /login थेट उघडल्यावर 404 | `mod_rewrite` सुरू केलेले नाही |
-| 502 Bad Gateway (Cloudflare) | Apache (8080) बंद आहे किंवा config.yml मधील `service` चुकीची |
+| 502 Bad Gateway (Cloudflare) | Apache (8090) बंद आहे किंवा config.yml मधील `service` चुकीची |
+
+## नवशिक्यांसाठी सोपी पद्धत - Cloudflare वेबसाईटवरून Tunnel (config.yml न बनवता)
+
+1. https://dash.cloudflare.com येथे खाते उघडा/लॉगिन करा आणि तुमचे डोमेन Cloudflare वर जोडलेले असावे.
+2. डाव्या मेनूत **Zero Trust** (किंवा Networks) → **Networks → Tunnels** → **Create a tunnel**.
+3. प्रकार **Cloudflared** निवडा → नाव `gpweb` → **Save tunnel**.
+4. "Choose your environment" मध्ये **Windows** निवडा. खाली दिसणारा `cloudflared.exe service install <मोठा-टोकन>` हा आदेश कॉपी करा.
+5. संगणकावर **Command Prompt (Administrator)** उघडा → आधी `winget install --id Cloudflare.cloudflared` → मग कॉपी केलेला आदेश पेस्ट करून Enter.
+6. वेबसाईटवर Connector "Connected" दिसेपर्यंत थांबा → **Next**.
+7. **Public hostname** जोडा: Subdomain `gp`, Domain तुमचे डोमेन, Service Type **HTTP**, URL **localhost:8090** → **Save**.
+8. **https://gp.तुमचेडोमेन.com** उघडा - लॉगिन पान दिसेल. (Tunnel Windows Service म्हणून बसल्याने संगणक चालू झाल्यावर आपोआप सुरू होतो.)

@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
+const { getBaseDir } = require('../utils/baseDir');
 
 async function main() {
   const host = process.env.DB_HOST || 'localhost';
@@ -15,7 +16,10 @@ async function main() {
 
   const conn = await mysql.createConnection({ host, port, user, password, multipleStatements: true });
 
-  const schemaPath = path.join(__dirname, '..', 'sql', 'schema.sql');
+  // पॅकेज केलेल्या (.exe) वितरणात schema.sql .exe शेजारी साध्या फाईल म्हणून असते (baseDir);
+  // विकासादरम्यान नेहमीचीच src/sql/schema.sql वापरतो - दोन्हीपैकी जी सापडेल ती.
+  const externalSchemaPath = path.join(getBaseDir(), 'schema.sql');
+  const schemaPath = fs.existsSync(externalSchemaPath) ? externalSchemaPath : path.join(__dirname, '..', 'sql', 'schema.sql');
   const schemaSql = fs.readFileSync(schemaPath, 'utf8');
   console.log(`Applying schema to database "${dbName}" on ${host}:${port} ...`);
   await conn.query(schemaSql);
@@ -55,7 +59,13 @@ async function main() {
   console.log('Done.');
 }
 
-main().catch((err) => {
-  console.error('Schema setup failed:', err);
-  process.exit(1);
-});
+module.exports = { main };
+
+// `node src/scripts/applySchema.js` म्हणून थेट चालवल्यासच स्वयंचलित चालते; server.js
+// कडून `--migrate` साठी require() केल्यास दोनदा चालू नये म्हणून हा गार्ड.
+if (require.main === module) {
+  main().catch((err) => {
+    console.error('Schema setup failed:', err);
+    process.exit(1);
+  });
+}

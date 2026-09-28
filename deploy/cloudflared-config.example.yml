@@ -4,5 +4,5 @@ credentials-file: C:\Users\<तुमचे नाव>\.cloudflared\<TUNNEL-ID>.
 
 ingress:
   - hostname: gp.<तुमचे-डोमेन>.com
-    service: http://localhost:8080
+    service: http://localhost:8090
   - service: http_status:404

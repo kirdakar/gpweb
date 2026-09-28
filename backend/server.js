@@ -1,4 +1,19 @@
-require('dotenv').config();
+const path = require('path');
+const fs = require('fs');
+const { getBaseDir } = require('./src/utils/baseDir');
+const baseDir = getBaseDir(); // dev मध्ये backend/ रूट; पॅकेज केलेल्या .exe मध्ये .exe चा स्वतःचा फोल्डर
+require('dotenv').config({ path: path.join(baseDir, '.env') });
+
+// पॅकेज केलेल्या (.exe) वितरणात एकदाच `gpweb-backend.exe --migrate` चालवून डेटाबेस
+// तयार करतात (टेबल्स + सुरुवातीची वर्षे + admin युजर), मग एक्झिट होते - सर्व्हर सुरू होत नाही.
+// (dev मध्ये नेहमीप्रमाणे `npm run migrate:schema` वापरा, हे फक्त पॅकेज केलेल्या exe साठी.)
+if (process.argv.includes('--migrate')) {
+  require('./src/scripts/applySchema').main()
+    .then(() => process.exit(0))
+    .catch((err) => { console.error('Schema setup failed:', err); process.exit(1); });
+  return;
+}
+
 const express = require('express');
 const cors = require('cors');
 require('express-async-errors'); // lets async route handlers throw straight into the error middleware below
@@ -81,6 +96,19 @@ app.use('/api/stamps', stampsRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/trees', treesRoutes);
 app.use('/api/tax-adjustments', taxAdjustmentsRoutes);
+
+// पॅकेज केलेल्या (.exe) वितरणात .exe शेजारी 'public' फोल्डर (frontend build) असेल तर
+// Node स्वतःच तो सर्व्ह करतो - वेगळा Apache/XAMPP htdocs/reverse-proxy लागत नाही
+// (पार्टीच्या मशिनवर सोर्स कोडशिवाय एकाच .exe ने चालणाऱ्या सर्व्हरसाठी). XAMPP वापरणाऱ्या
+// सध्याच्या dev/deploy सेटअपमध्ये हा फोल्डर नसतो, त्यामुळे तिथे काहीही बदलत नाही.
+const publicDir = path.join(baseDir, 'public');
+if (fs.existsSync(publicDir)) {
+  app.use(express.static(publicDir));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(publicDir, 'index.html'));
+  });
+}
 
 // Central error handler - keeps route handlers free of try/catch boilerplate
 // for unexpected DB errors (express-async-errors-style wrapping below).
