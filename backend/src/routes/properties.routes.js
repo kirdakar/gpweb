@@ -67,6 +67,21 @@ router.get('/', async (req, res) => {
   res.json({ data: withOwnerNameFallback(rows), page, pageSize, total, totalPages: Math.ceil(total / pageSize), missingOwnerCount });
 });
 
+// नवीन मिळकत नोंद भरताना अ.क्र. (SRNO) आपोआप सुचवण्यासाठी - GET /:id च्या आधी असावा,
+// नाहीतर "next-srno" हाच एक :id समजला जाईल. हा कोड (property_code) आधीच वापरलेला असेल
+// (म्हणजे त्याच मालकाची दुसरी मालमत्ता/portion जोडत आहोत) तर त्याच जुन्या नोंदीचाच अ.क्र.
+// परत देतो; कोड सर्वस्वी नवीन असेल तर सध्याच्या सर्वात मोठ्या अ.क्र. च्या पुढचा (+१) सुचवतो.
+router.get('/next-srno', async (req, res) => {
+  const code = req.query.propertyCode;
+  if (!code) return res.status(400).json({ error: 'propertyCode आवश्यक आहे' });
+  const [[existing]] = await pool.query(
+    'SELECT srno FROM property_master WHERE property_code = ? AND srno IS NOT NULL ORDER BY id LIMIT 1', [code]
+  );
+  if (existing) return res.json({ srno: existing.srno, existing: true });
+  const [[{ next }]] = await pool.query('SELECT COALESCE(MAX(srno), 0) + 1 AS next FROM property_master');
+  res.json({ srno: next, existing: false });
+});
+
 router.get('/:id', async (req, res) => {
   const [[property]] = await pool.query(
     `SELECT pm.*, pt.par_name AS construction_type_name

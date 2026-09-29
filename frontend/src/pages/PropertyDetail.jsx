@@ -31,6 +31,20 @@ async function fillOwnerFromGpMaster(code, master, setMaster) {
   }
 }
 
+// अ.क्र. (SRNO) आपोआप सुचवते - "only if empty" पद्धतीनेच (fillOwnerFromGpMaster प्रमाणेच),
+// त्यामुळे संपादन करतानाचा आधीच भरलेला अ.क्र. कधीही बदलत नाही. हा कोड आधीपासून वापरलेला
+// असेल (त्याच मालकाची दुसरी मालमत्ता जोडत आहोत) तर त्याच जुन्या नोंदीचा अ.क्र. येतो;
+// कोड सर्वस्वी नवीन असेल तर सध्याच्या सर्वात मोठ्या अ.क्र. च्या पुढचा (+१) येतो.
+async function fillSrnoSuggestion(code, master, setMaster) {
+  if (!code || master.srno) return;
+  try {
+    const { data } = await client.get('/properties/next-srno', { params: { propertyCode: code } });
+    setMaster((m) => (m.srno || m.property_code !== code ? m : { ...m, srno: String(data.srno) }));
+  } catch {
+    // अंदाज आणता आला नाही - स्टाफ स्वतः अ.क्र. टाइप करू शकतो.
+  }
+}
+
 // मूळ माहिती (Property Master) चे फील्ड्स - नवीन व अस्तित्वात असलेल्या
 // दोन्ही मिळकतींसाठी वापरले जातात (नोंदी वेगळ्या पण फील्ड्स तीच).
 function MasterFields({ master, setMaster, particulars, gpmasterList }) {
@@ -61,6 +75,7 @@ function MasterFields({ master, setMaster, particulars, gpmasterList }) {
     setMaster({ ...master, property_code: String(g.code), owner_name: g.owner_name });
     setCodeSearch(String(g.code));
     setCodeDropdownOpen(false);
+    fillSrnoSuggestion(String(g.code), master, setMaster);
   }
 
   function handleCodeChange(value) {
@@ -78,7 +93,7 @@ function MasterFields({ master, setMaster, particulars, gpmasterList }) {
             value={codeSearch}
             onChange={(e) => handleCodeChange(e.target.value)}
             onFocus={() => setCodeDropdownOpen(true)}
-            onBlur={(e) => fillOwnerFromGpMaster(e.target.value, master, setMaster)}
+            onBlur={(e) => { fillOwnerFromGpMaster(e.target.value, master, setMaster); fillSrnoSuggestion(e.target.value, master, setMaster); }}
             placeholder="कोड किंवा मालकाचे नाव टाइप करा"
           />
           {codeDropdownOpen && (
