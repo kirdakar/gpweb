@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import AutoUpdateChecker from './components/AutoUpdateChecker';
 import { AuthProvider } from './context/AuthContext';
 import { YearProvider } from './context/YearContext';
 import { PermissionsProvider } from './context/PermissionsContext';
@@ -92,6 +93,7 @@ function AppShell() {
 export default function App() {
   return (
     <AuthProvider>
+      <AutoUpdateChecker />
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />

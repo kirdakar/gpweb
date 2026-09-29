@@ -103,9 +103,17 @@ app.use('/api/tax-adjustments', taxAdjustmentsRoutes);
 // सध्याच्या dev/deploy सेटअपमध्ये हा फोल्डर नसतो, त्यामुळे तिथे काहीही बदलत नाही.
 const publicDir = path.join(baseDir, 'public');
 if (fs.existsSync(publicDir)) {
-  app.use(express.static(publicDir));
+  // ब्राउझर कायम जुनेच पान दाखवत राहू नये (नवीन .exe टाकूनही जुनाच कोड दिसणे) म्हणून
+  // index.html कधीही cache होऊ देत नाही; assets/index-XXXX.js/css चे नाव प्रत्येक build ला
+  // बदलते (content hash), त्यामुळे त्या कायमस्वरूपी cache करणे सुरक्षित व वेगवान आहे.
+  app.use(express.static(publicDir, {
+    setHeaders: (res, filePath) => {
+      res.setHeader('Cache-Control', filePath.endsWith('.html') ? 'no-store, no-cache, must-revalidate' : 'public, max-age=31536000, immutable');
+    },
+  }));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.sendFile(path.join(publicDir, 'index.html'));
   });
 }
