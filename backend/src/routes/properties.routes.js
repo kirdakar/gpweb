@@ -89,14 +89,20 @@ router.get('/:id', async (req, res) => {
   res.json({ ...property, assessments });
 });
 
-async function assertCodeAvailable(propertyCode, excludeId) {
+// एका कोडखाली अनेक मालमत्ता (portions) असू शकतात - तोच कोड वेगवेगळ्या मालमत्ता क्रं.
+// (malmata_no) साठी वापरणे बरोबर आहे (कर जमा भरणे इ. मध्ये असेच एकत्रित हाताळले जाते,
+// पहा payments.routes.js explodeDuesByPortion). फक्त तोच कोड + तीच मालमत्ता क्रं. जोडी
+// (खरी डुप्लिकेट नोंद) परत टाकण्यापासून रोखतो.
+async function assertCodeAvailable(propertyCode, malmataNo, excludeId) {
   if (!propertyCode) return;
   const params = [propertyCode];
   let sql = 'SELECT id FROM property_master WHERE property_code = ?';
+  if (malmataNo) { sql += ' AND malmata_no = ?'; params.push(malmataNo); }
+  else { sql += " AND (malmata_no IS NULL OR malmata_no = '')"; }
   if (excludeId) { sql += ' AND id != ?'; params.push(excludeId); }
   const [rows] = await pool.query(sql, params);
   if (rows.length > 0) {
-    const err = new Error(`Property code ${propertyCode} is already used by another property`);
+    const err = new Error(`कोड ${propertyCode} व मालमत्ता क्र. ${malmataNo || '(रिकामे)'} ही जोडी आधीच एका नोंदीसाठी वापरलेली आहे`);
     err.status = 409;
     throw err;
   }
@@ -107,9 +113,7 @@ router.post('/', requirePermission('properties', 'add'), async (req, res) => {
   if (!b.owner_name) return res.status(400).json({ error: 'owner_name is required' });
 
   try {
-    // Uniqueness of property_code is enforced going forward for new records
-    // (see schema.sql note on why legacy duplicates weren't collapsed).
-    await assertCodeAvailable(b.property_code || null, null);
+    await assertCodeAvailable(b.property_code || null, b.malmata_no || null, null);
 
     const [result] = await pool.query(
       `INSERT INTO property_master
@@ -132,7 +136,7 @@ router.post('/', requirePermission('properties', 'add'), async (req, res) => {
 router.put('/:id', requirePermission('properties', 'edit'), async (req, res) => {
   const b = req.body || {};
   try {
-    await assertCodeAvailable(b.property_code || null, req.params.id);
+    await assertCodeAvailable(b.property_code || null, b.malmata_no || null, req.params.id);
 
     const [result] = await pool.query(
       `UPDATE property_master SET
