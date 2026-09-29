@@ -23,7 +23,12 @@ const TOP_COLUMNS = [
   { num: 4, label: 'मालमत्ता क्रं.', width: '7%', render: (r) => r.malmata_no ?? '-' },
   { num: 5, label: 'मालकाचे नांव', width: '15%', render: (r) => r.owner_name },
   { num: 6, label: 'भोगवटादाराचे नांव', width: '11%', render: (r) => r.bhogvatdar || '-' },
-  { num: 7, label: 'मालमत्तेचे वर्णन', width: '14%', render: (r) => r.particulars || r.construction_type_name || '-' },
+  // बांधकाम प्रकार (construction_type_name) हे मालकाने निवडलेल्या ठराविक यादीतील (dropdown)
+  // खरे वर्णन आहे - मालमत्तेचे वर्णन इथेच प्रथम दाखवायला हवे. "तपशील (Particulars)" हा
+  // मोकळा मजकूर रकाना कधीकधी शेरा/इतर टिपणीसाठी वापरला जातो, त्यामुळे तो फक्त बांधकाम
+  // प्रकार रिकामा असेल तरच दुय्यम पर्याय म्हणून दाखवतो; शेरा (narration) इथे कधीही दाखवत नाही
+  // (तो स्वतंत्र २७ व्या रकान्यात आहे).
+  { num: 7, label: 'मालमत्तेचे वर्णन', width: '14%', render: (r) => r.construction_type_name || r.particulars || '-' },
   { num: 8, label: 'मिळकत बांधकामाचे वर्ष', width: '7%', render: (r) => r.milkat_year || '-' },
   { num: '9अ', label: 'क्षेत्रफळ चौ.फू.', width: '6%', num_cls: true, group: 'क्षेत्रफळ', render: (r) => Number(r.area_sqft || 0).toFixed(2) },
   { num: '9ब', label: 'क्षेत्रफळ चौ.मी.', width: '6%', num_cls: true, group: 'क्षेत्रफळ', render: (r) => Number(r.area_sqm || 0).toFixed(2) },
