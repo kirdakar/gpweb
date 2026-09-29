@@ -93,7 +93,14 @@ function MasterFields({ master, setMaster, particulars, gpmasterList }) {
             value={codeSearch}
             onChange={(e) => handleCodeChange(e.target.value)}
             onFocus={() => setCodeDropdownOpen(true)}
-            onBlur={(e) => { fillOwnerFromGpMaster(e.target.value, master, setMaster); fillSrnoSuggestion(e.target.value, master, setMaster); }}
+            onBlur={(e) => {
+              // यादीतील नावावर क्लिक केल्यास onMouseDown (selectGpCode) आधीच बंद करतो, ते
+              // नेहमी या blur च्या आधी चालते; Tab दाबून किंवा इतरत्र क्लिक करून बाहेर
+              // पडल्यासही यादी इथे बंद व्हायला हवी.
+              setCodeDropdownOpen(false);
+              fillOwnerFromGpMaster(e.target.value, master, setMaster);
+              fillSrnoSuggestion(e.target.value, master, setMaster);
+            }}
             placeholder="कोड किंवा मालकाचे नाव टाइप करा"
           />
           {codeDropdownOpen && (
