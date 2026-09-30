@@ -108,7 +108,7 @@ export default function BudgetEntry() {
   }
 
   return (
-    <div className="page">
+    <div className="page budget-entry-page">
       <div className="page-header no-print">
         <h1>वार्षिक अंदाजपत्रक नोंदणी (नमुना १) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
