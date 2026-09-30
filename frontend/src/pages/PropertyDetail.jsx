@@ -364,16 +364,25 @@ export default function PropertyDetail() {
   // the effect below (keyed on the selected particular, not on year/form
   // state, so switching years or reloading an already-filled record never
   // clobbers real saved figures - it only fills currently-empty fields).
-  function fillDefaultsFromMaster(particular) {
+  // force=false (useEffect कडून, बांधकाम प्रकार निवडल्यावर आपोआप): फक्त
+  // रिकाम्या रकान्यांतच मास्टरचा दर भरतो, आधीच भरलेला (जतन केलेला किंवा
+  // हाताने बदललेला) आकडा कधीही बदलत नाही.
+  // force=true ("दर मास्टरमधून भरा" बटण, स्टाफने स्पष्ट क्लिक केल्यावर): हेतू
+  // स्पष्ट आहे - सर्व दर मास्टरप्रमाणे परत भरा, म्हणून आधीचा आकडा काहीही
+  // असला तरी मास्टरच्या दराने बदलतो. आधी दोन्ही ठिकाणी "फक्त रिकामे असेल तरच"
+  // हाच नियम असल्याने, आधीच भरलेल्या (उदा. अस्तित्वात असलेल्या नोंदीच्या)
+  // रकान्यांवर बटण दाबूनही काहीच बदल दिसत नसे - क्लिक "काम करत नाही" असे वाटे.
+  function fillDefaultsFromMaster(particular, force = false) {
     if (!particular) return;
     setAssessmentForm((f) => {
+      const keep = (current) => !force && Number(current);
       const next = {
         ...f,
-        karacha_rate: Number(f.karacha_rate) ? f.karacha_rate : particular.gharpatti_rate,
-        jamin_rate_used: Number(f.jamin_rate_used) ? f.jamin_rate_used : particular.jamin_rate,
-        divabatti: Number(f.divabatti) ? f.divabatti : particular.divabatti_rate,
-        arogya: Number(f.arogya) ? f.arogya : particular.arogya_rate,
-        panipatti: Number(f.panipatti) ? f.panipatti : particular.panipatti_rate,
+        karacha_rate: keep(f.karacha_rate) ? f.karacha_rate : particular.gharpatti_rate,
+        jamin_rate_used: keep(f.jamin_rate_used) ? f.jamin_rate_used : particular.jamin_rate,
+        divabatti: keep(f.divabatti) ? f.divabatti : particular.divabatti_rate,
+        arogya: keep(f.arogya) ? f.arogya : particular.arogya_rate,
+        panipatti: keep(f.panipatti) ? f.panipatti : particular.panipatti_rate,
       };
       const sqm = Number(next.area_sqm) || 0;
       const jamin = Number(next.jamin_rate_used) || 0;
@@ -516,7 +525,7 @@ export default function PropertyDetail() {
               <textarea rows={2} value={assessmentForm.narration} onChange={(e) => setAssessmentForm({ ...assessmentForm, narration: e.target.value })} />
             </div>
             <div style={{ marginTop: 14 }}>
-              <button className="btn secondary" type="button" onClick={() => fillDefaultsFromMaster(selectedParticular)} disabled={!selectedParticular}>
+              <button className="btn secondary" type="button" onClick={() => fillDefaultsFromMaster(selectedParticular, true)} disabled={!selectedParticular}>
                 दर मास्टरमधून भरा
               </button>
             </div>
@@ -566,7 +575,7 @@ export default function PropertyDetail() {
                 <textarea rows={2} value={assessmentForm.narration} onChange={(e) => setAssessmentForm({ ...assessmentForm, narration: e.target.value })} />
               </div>
               <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
-                <button className="btn secondary" type="button" onClick={() => fillDefaultsFromMaster(selectedParticular)} disabled={!selectedParticular}>
+                <button className="btn secondary" type="button" onClick={() => fillDefaultsFromMaster(selectedParticular, true)} disabled={!selectedParticular}>
                   दर मास्टरमधून भरा
                 </button>
                 <button className="btn" type="submit" disabled={!can('properties', existingAssessmentId ? 'edit' : 'add')}>{existingAssessmentId ? 'अद्ययावत करा' : 'जतन करा'}</button>
