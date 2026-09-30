@@ -120,6 +120,15 @@ tbody tr:hover { background: #f8fafc; }
 }
 .field input::placeholder, .field textarea::placeholder { color: #94a3b8; }
 .field.readonly input { background: #f1f5f9; color: var(--text-muted); }
+/* आकड्यांच्या रकान्यांवरील ब्राउझरचे वर-खाली बाण (spinner) सर्वत्र काढले
+   (.field च्या आतले व टेबल-सेलमधील बाहेरचे दोन्ही) - साधे दिसावे म्हणून;
+   टायपिंगने आकडा बदलण्यास काहीही अडचण नाही. */
+input[type="number"] { -moz-appearance: textfield; }
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 
 /* मूळ माहिती: मिळकत कोड/अ.क्र./मालमत्ता क्र. आखूड जागेत, मालकाचे नाव
    कोडनंतर लगेच व दोन स्तंभांइतकी जास्त रुंद जागा घेऊन. */
