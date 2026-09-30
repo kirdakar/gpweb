@@ -8,10 +8,14 @@ import { amountToMarathiWords } from '../../utils/numberToMarathiWords';
 import { fmtDate } from '../../utils/formatDate';
 
 // नोंद कर जमा भरणेतून (tax_payments) आलेली असल्यास narration च्या शेवटी
-// "- पावती घ-6" असा संदर्भ जोडलेला असतो (पहा backend taxCashPosting.js) -
-// तो आता पावती नं. स्वतंत्रपणे वरच दाखवला जात असल्याने इथे पुन्हा नको.
+// "- कोड 555 - मोहन सोपान चव्हाण - पावती घ-6" असा संदर्भ जोडलेला असतो (पहा
+// backend taxCashPosting.js) - पावती नं. व कोड+नाव आता वरच (श्री./श्रीमती
+// पुढे, स्वतंत्रपणे) दाखवले जात असल्याने इथे narration मध्ये पुन्हा नको.
 function displayNarration(narration) {
-  return (narration || '-').replace(/\s*-\s*पावती\s+\S+\s*$/, '');
+  let n = (narration || '-');
+  n = n.replace(/\s*-\s*पावती\s+\S+\s*$/, '');
+  n = n.replace(/\s*-\s*कोड\s+\S+(\s*-\s*[^-]+)?\s*$/, '');
+  return n || '-';
 }
 
 // पावती नं. नेहमी साधा आकडा (१ ते ९९९९९) हवा - "घ-6"/"पा-12" सारखा
