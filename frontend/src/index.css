@@ -386,6 +386,10 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
 /* मिळकत नोंदी (यादी): कोड/अ.क्र./मालमत्ता क्रं. आखूड, मालकाचे नाव कोडनंतर
    लगेच व जास्त रुंद (colgroup, वरची टिपण्णी पहा). */
 .property-rows-table { table-layout: fixed; }
+
+/* दैनिक रोकड वही - अलीकडील नोंदी: लेखाशीर्ष/संदर्भ/नोंद आखूड रुंदीत wrap
+   (col-wrap) होतात, त्यामुळे सर्व स्तंभ आडवा स्क्रोलशिवाय एका स्क्रीनवर बसतात. */
+.cash-book-recent-table { table-layout: fixed; }
 .property-rows-table td.num, .property-rows-table th.num { white-space: nowrap; }
 
 /* सर्व स्तंभांसह ए-४ लँडस्केपवर बसावे म्हणून - .a4-page प्रमाणेच आधीच

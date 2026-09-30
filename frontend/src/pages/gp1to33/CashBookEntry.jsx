@@ -198,7 +198,17 @@ export default function CashBookEntry() {
         <h2 style={{ fontSize: 15, marginTop: 0 }}>अलीकडील नोंदी</h2>
         {loadingRecent ? <p>लोड होत आहे...</p> : (
           <div className="table-wrap">
-            <table>
+            <table className="cash-book-recent-table">
+              <colgroup>
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '6%' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '9%' }} />
+                <col style={{ width: '7%' }} />
+                <col style={{ width: '9%' }} />
+                <col style={{ width: '23%' }} />
+                <col style={{ width: '20%' }} />
+              </colgroup>
               <thead>
                 <tr><th>दिनांक</th><th>प्रकार</th><th>लेखाशीर्ष</th><th className="num">रक्कम</th><th>मोड</th><th>संदर्भ</th><th>नोंद</th><th></th></tr>
               </thead>
@@ -207,11 +217,11 @@ export default function CashBookEntry() {
                   <tr key={e.id}>
                     <td>{fmtDate(e.entry_date)}</td>
                     <td style={{ color: e.entry_type === 'जमा' ? 'var(--success)' : 'var(--danger)' }}>{e.entry_type}</td>
-                    <td>{e.head_code} - {e.head_name}</td>
+                    <td className="col-wrap">{e.head_code} - {e.head_name}</td>
                     <td className="num">{Number(e.amount).toFixed(2)}</td>
                     <td>{e.payment_mode}</td>
-                    <td>{e.reference_no || '-'}</td>
-                    <td>{e.narration || '-'}</td>
+                    <td className="col-wrap">{e.reference_no || '-'}</td>
+                    <td className="col-wrap">{e.narration || '-'}</td>
                     <td style={{ display: 'flex', gap: 6 }}>
                       {can('reports_receipt_voucher', 'print') && (
                         e.entry_type === 'जमा'
