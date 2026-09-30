@@ -1,9 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import client from '../api/client';
 
 export default function Login() {
   const { login } = useAuth();
+  // लॉगिन पान उघडताच (टायपिंग सुरू असतानाच) बॅकएंडशी हलकी विनंती पाठवून
+  // जोडणी आधीच "गरम" करतो - Cloudflare Tunnel वरील पहिल्याच विनंतीचा TLS/बोगदा
+  // हँडशेक (सुमारे ४००-५०० ms) यामुळे लॉगिन बटण दाबण्याआधीच पूर्ण होतो, त्यामुळे
+  // प्रत्यक्ष लॉगिन विनंती जलद (फक्त गरम कनेक्शनचा वेळ) मिळते.
+  useEffect(() => { client.get('/health').catch(() => {}); }, []);
   const navigate = useNavigate();
   const location = useLocation();
   const [username, setUsername] = useState('');
