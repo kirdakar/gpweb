@@ -54,7 +54,7 @@ export default function MiscDemandEntry() {
   }
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>किरकोळ मागणी नोंदणी (नमुना ११) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <CloseReportButton />

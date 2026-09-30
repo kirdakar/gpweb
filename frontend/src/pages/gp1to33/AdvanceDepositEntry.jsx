@@ -109,7 +109,7 @@ export default function AdvanceDepositEntry() {
   const canEdit = can('advance_deposits', 'edit');
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>अग्रिम/अनामत नोंदणी (नमुना १७) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <CloseReportButton />

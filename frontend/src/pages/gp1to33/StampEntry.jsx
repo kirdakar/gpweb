@@ -40,7 +40,7 @@ export default function StampEntry() {
   }
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>मुद्रांक हिशोब नोंदणी (नमुना १४) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <CloseReportButton />

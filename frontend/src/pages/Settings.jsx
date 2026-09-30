@@ -30,10 +30,10 @@ export default function Settings() {
     }
   }
 
-  if (loading) return <div className="page"><p>लोड होत आहे...</p></div>;
+  if (loading) return <div className="page data-entry-page"><p>लोड होत आहे...</p></div>;
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header"><h1>ग्रामपंचायत माहिती (Settings)</h1><CloseReportButton /></div>
       <div className="card" style={{ maxWidth: 480 }}>
         <p style={{ marginTop: 0, color: 'var(--text-muted)', fontSize: 13 }}>

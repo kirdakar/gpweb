@@ -55,7 +55,7 @@ export default function RateScheduleMaster() {
   const canEdit = can('rate_schedule', 'add') || can('rate_schedule', 'edit');
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>दरसूची मास्टर</h1>
         <CloseReportButton />

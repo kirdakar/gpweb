@@ -79,7 +79,7 @@ export default function Users() {
   }
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header">
         <h1>यूजर मास्टर</h1>
         <CloseReportButton />

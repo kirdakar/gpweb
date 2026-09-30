@@ -84,7 +84,7 @@ export default function AssetsLiabilities() {
   }
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>पंचायतीचे भत्ते व दायित्वे नोंदणी (नमुना ४) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <div style={{ display: 'flex', gap: 8 }}>

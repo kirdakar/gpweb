@@ -101,7 +101,7 @@ export default function AuditReportEntry() {
   );
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>लेखापरीक्षण आक्षेप नोंदणी (नमुना ३०)</h1>
         <CloseReportButton />

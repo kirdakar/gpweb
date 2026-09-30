@@ -69,7 +69,7 @@ export default function BalanceStatementEntry() {
   const canEdit = can('balance_statements', 'edit');
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>मासिक शिल्लक विवरण नोंदणी (नमुना २६-ख) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <div style={{ display: 'flex', gap: 8 }}>

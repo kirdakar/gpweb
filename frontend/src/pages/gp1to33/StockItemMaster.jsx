@@ -30,7 +30,7 @@ export default function StockItemMaster() {
   }
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print"><h1>उपभोग्य वस्तू मास्टर (नमुना १५)</h1><CloseReportButton /></div>
       {error && <div className="error-box">{error}</div>}
       {(can('stock_items', 'add') || can('stock_items', 'edit')) && (

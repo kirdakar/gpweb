@@ -69,7 +69,7 @@ export default function Particulars() {
   }
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header">
         <h1>बांधकाम प्रकार / दर मास्टर</h1>
         <CloseReportButton />

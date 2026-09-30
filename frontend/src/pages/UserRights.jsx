@@ -73,11 +73,11 @@ export default function UserRights() {
     }
   }
 
-  if (loading) return <div className="page"><p>लोड होत आहे...</p></div>;
+  if (loading) return <div className="page data-entry-page"><p>लोड होत आहे...</p></div>;
 
   if (!targetUser) {
     return (
-      <div className="page">
+      <div className="page data-entry-page">
         <div className="page-header"><h1>अधिकार</h1><CloseReportButton /></div>
         <div className="error-box">वापरकर्ता सापडला नाही.</div>
         <button className="btn secondary" onClick={() => navigate('/users')}>यूजर मास्टरकडे परत जा</button>
@@ -87,7 +87,7 @@ export default function UserRights() {
 
   if (targetUser.role === 'admin') {
     return (
-      <div className="page">
+      <div className="page data-entry-page">
         <div className="page-header"><h1>अधिकार — {targetUser.username}</h1><CloseReportButton /></div>
         <p style={{ color: 'var(--text-muted)' }}>प्रशासक (admin) वापरकर्त्याला नेहमी सर्व अधिकार असतात - इथे बदल करण्याची गरज नाही.</p>
         <button className="btn secondary" onClick={() => navigate('/users')}>यूजर मास्टरकडे परत जा</button>
@@ -96,7 +96,7 @@ export default function UserRights() {
   }
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header">
         <h1>अधिकार — {targetUser.full_name || targetUser.username} ({targetUser.username})</h1>
         <div style={{ display: 'flex', gap: 8 }}>

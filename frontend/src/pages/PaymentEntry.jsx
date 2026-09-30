@@ -186,7 +186,7 @@ export default function PaymentEntry() {
   const extraFields = EXTRA_FIELDS[receiptType];
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>कर जमा भरणे {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <CloseReportButton />

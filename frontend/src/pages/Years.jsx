@@ -59,7 +59,7 @@ export default function Years() {
   }
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header"><h1>आर्थिक वर्ष व्यवस्थापन</h1><CloseReportButton /></div>
 
       <div className="card" style={{ marginBottom: 20 }}>

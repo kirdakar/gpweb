@@ -104,7 +104,7 @@ export default function LoanEntry() {
   const canEdit = can('loans', 'edit');
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>कर्ज नोंदणी (नमुना २९) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <CloseReportButton />

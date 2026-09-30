@@ -91,7 +91,7 @@ export default function BudgetRevision() {
   }
 
   return (
-    <div className="page budget-revision-page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>पुनर्विनियोजन नोंदणी (नमुना २) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <div style={{ display: 'flex', gap: 8 }}>

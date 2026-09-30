@@ -111,7 +111,7 @@ export default function CashBookEntry() {
   }
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>{register === 'मुख्य' ? 'दैनिक रोकड वही (नमुना ५)' : 'किरकोळ रोकडवही (नमुना १८)'} {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <CloseReportButton />

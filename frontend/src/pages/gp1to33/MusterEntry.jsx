@@ -123,7 +123,7 @@ export default function MusterEntry() {
   const locked = posted;
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>हजेरीपट नोंदणी (नमुना १९) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <CloseReportButton />

@@ -98,7 +98,7 @@ export default function FixedAssetsEntry() {
   const canEdit = can('fixed_assets', 'add') || can('fixed_assets', 'edit');
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>मालमत्ता नोंदणी (नमुना १६/२२/२३/२४)</h1>
         <CloseReportButton />

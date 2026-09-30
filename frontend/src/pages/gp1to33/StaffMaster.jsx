@@ -72,7 +72,7 @@ export default function StaffMaster() {
   const canEdit = can('staff_master', 'add') || can('staff_master', 'edit');
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>कर्मचारी सूची व वेतनश्रेणी (नमुना १३)</h1>
         <div style={{ display: 'flex', gap: 8 }}>

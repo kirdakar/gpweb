@@ -111,7 +111,7 @@ export default function TaxAdjustmentEntry() {
   const canEdit = can('tax_adjustments', 'edit');
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>घरपट्टी सूट / दंड नोंदणी {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <CloseReportButton />

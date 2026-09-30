@@ -100,7 +100,7 @@ export default function StaffSalaryEntry() {
   const canEdit = can('staff_salary_bills', 'edit');
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>मासिक वेतन देयक नोंदणी (नमुना २१) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <div style={{ display: 'flex', gap: 8 }}>

@@ -95,7 +95,7 @@ export default function LedgerHeadMaster() {
   }
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header">
         <h1>लेखाशीर्ष मास्टर (नमुना १)</h1>
         <CloseReportButton />

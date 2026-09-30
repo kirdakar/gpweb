@@ -80,7 +80,7 @@ export default function GpMaster() {
   }
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header">
         <h1>मिळकतदार मास्टर (GPMASTER)</h1>
         <CloseReportButton />

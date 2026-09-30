@@ -52,7 +52,7 @@ export default function ContractorMaster() {
   const canEdit = can('contractors', 'add') || can('contractors', 'edit');
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>कंत्राटदार मास्टर</h1>
         <CloseReportButton />

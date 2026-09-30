@@ -61,7 +61,7 @@ export default function TreeEntry() {
   const canForm = editingId ? can('trees', 'edit') : can('trees', 'add');
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>वृक्ष नोंदणी (नमुना ३३) {currentYear ? `— चालू वर्ष ${currentYear.year_label}` : ''}</h1>
         <CloseReportButton />

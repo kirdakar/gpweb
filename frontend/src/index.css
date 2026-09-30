@@ -130,15 +130,17 @@ input[type="number"]::-webkit-inner-spin-button {
   margin: 0;
 }
 
-/* नमुना १ (वार्षिक अंदाजपत्रक नोंदणी) - मोठी फॉन्ट, वाचायला/भरायला सोपे जावे म्हणून. */
-.budget-entry-page table { font-size: 15px; }
-.budget-entry-page table input { font-size: 15px; }
-.budget-entry-page h3 { font-size: 17px; }
-
-/* नमुना २ (पुनर्विनियोजन नोंदणी) - मोठी फॉन्ट, वाचायला/भरायला सोपे जावे म्हणून. */
-.budget-revision-page table { font-size: 15px; }
-.budget-revision-page table input { font-size: 15px; }
-.budget-revision-page h3 { font-size: 17px; }
+/* सर्व डेटा भरणे (दैनिक व्यवहार/मास्टर) स्क्रीन्सवर मोठी फॉन्ट - नमुना १
+   (वार्षिक अंदाजपत्रक नोंदणी) वर आधी वापरून पाहिलेली, वाचायला/भरायला सोपी
+   वाटलेली फॉन्ट आता सर्वत्र (रिपोर्ट/छापील पानांना धक्का न लावता, तिथली
+   फॉन्ट कागदावर नेमकी बसवलेली असते). */
+.data-entry-page table { font-size: 15px; }
+.data-entry-page table input { font-size: 15px; }
+.data-entry-page h3 { font-size: 17px; }
+.data-entry-page .field input,
+.data-entry-page .field select,
+.data-entry-page .field textarea { font-size: 15px; }
+.data-entry-page .field label { font-size: 13px; }
 
 /* मूळ माहिती: मिळकत कोड/अ.क्र./मालमत्ता क्र. आखूड जागेत, मालकाचे नाव
    कोडनंतर लगेच व दोन स्तंभांइतकी जास्त रुंद जागा घेऊन. */

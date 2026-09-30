@@ -42,7 +42,7 @@ export default function StockEntry() {
   }
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print"><h1>उपभोग्य वस्तू साठा नोंदणी (नमुना १५)</h1><CloseReportButton /></div>
       {error && <div className="error-box">{error}</div>}
       <div className="card no-print" style={{ marginBottom: 20 }}>

@@ -132,7 +132,7 @@ export default function WorkEntry() {
   const canEdit = can('works', 'edit');
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>बांधकाम नोंदणी (नमुना २०/२०क/२०ख) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <CloseReportButton />

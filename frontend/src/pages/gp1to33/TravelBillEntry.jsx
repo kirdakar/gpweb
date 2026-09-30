@@ -75,7 +75,7 @@ export default function TravelBillEntry() {
   const canAdd = can('travel_bills', 'add');
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>प्रवास भत्ता देयक नोंदणी (नमुना ३१) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <CloseReportButton />

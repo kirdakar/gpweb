@@ -99,7 +99,7 @@ export default function InvestmentEntry() {
   const canEdit = can('investments', 'edit');
 
   return (
-    <div className="page">
+    <div className="page data-entry-page">
       <div className="page-header no-print">
         <h1>गुंतवणूक नोंदणी (नमुना २५) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <CloseReportButton />
