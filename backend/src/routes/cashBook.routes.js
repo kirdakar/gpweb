@@ -78,10 +78,20 @@ router.post('/', requirePermission('cash_book', 'add'), async (req, res) => {
 // स्वरूप आहेत (जमा नोंदीसाठी पावती, खर्च नोंदीसाठी प्रमाणक), म्हणून इथेच
 // त्याच ओळीचे तपशील परत करतो - रक्कम/तारीख/लेखाशीर्ष दुसऱ्यांदा टाईप करायची
 // गरज नाही.
+// तर या जमा नोंदीचा उगम कर जमा भरणे (tax_payments) असेल (पहा
+// taxCashPosting.js), तेव्हा पावतीवर "श्री./श्रीमती" पुढे कोड+मालकाचे नाव व
+// मालमत्ता क्रं. आपोआप दाखवण्यासाठी - narration मधील मजकूर फोडण्याऐवजी
+// प्रत्यक्ष property_master वरूनच खात्रीशीर आणतो. सर्वसाधारण (कर-नसलेल्या)
+// जमा नोंदीसाठी हे रिकामेच राहतात, स्टाफ हाताने भरतो (आधीप्रमाणेच).
 router.get('/:id/receipt', async (req, res) => {
   const [[row]] = await pool.query(
-    `SELECT c.*, lh.code AS head_code, lh.name AS head_name
-     FROM cash_book_entries c JOIN ledger_heads lh ON lh.id = c.ledger_head_id WHERE c.id = ?`,
+    `SELECT c.*, lh.code AS head_code, lh.name AS head_name,
+            pm.property_code, pm.malmata_no, pm.owner_name
+     FROM cash_book_entries c
+     JOIN ledger_heads lh ON lh.id = c.ledger_head_id
+     LEFT JOIN tax_payments tp ON tp.id = c.tax_payment_id
+     LEFT JOIN property_master pm ON pm.id = tp.property_id
+     WHERE c.id = ?`,
     [req.params.id]
   );
   if (!row) return res.status(404).json({ error: 'नोंद सापडली नाही' });
