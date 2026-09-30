@@ -49,13 +49,16 @@ export function formatDateDMY(dateStr) {
 // प्रत्यक्ष कागदी नमुना नं. १० पावतीशी जुळणारे शीर्षक + A4 वर एकाच पावती
 // क्रमांकाच्या दोन प्रती (एक मालमत्ताधारकास, एक ऑफिस फाईलसाठी) - नमुना ९ क
 // (कर मागणी बिल) साठी आधीच वापरलेला .bill-page/.bill-cut-line पॅटर्न.
-export function ReceiptPrintout({ receipt, property, receiptType, canPrint }) {
+// hidePrintButton: PaymentReceiptView.jsx सारख्या स्वतंत्र पानावर "बंद करा"
+// शेजारी वरच स्वतःचे प्रिंट बटण दाखवायचे असेल तर आतले (खालचे) बटण लपवतो -
+// PaymentEntry.jsx वरील मधल्या-पानातील वापरासाठी मात्र आधीप्रमाणेच आतच राहते.
+export function ReceiptPrintout({ receipt, property, receiptType, canPrint, hidePrintButton = false }) {
   return (
     <div className="a4-page bill-page">
       <ReceiptCopy receipt={receipt} property={property} receiptType={receiptType} />
       <div className="bill-cut-line" />
       <ReceiptCopy receipt={receipt} property={property} receiptType={receiptType} />
-      {canPrint && (
+      {canPrint && !hidePrintButton && (
         <div className="no-print" style={{ marginTop: 14 }}>
           <button className="btn secondary" onClick={() => window.print()}>पावती प्रिंट करा</button>
         </div>

@@ -34,7 +34,12 @@ export default function PaymentReceiptView() {
     <div className="page">
       <div className="page-header no-print">
         <h1>पावती (नमुना नं. १०)</h1>
-        <CloseReportButton />
+        <div style={{ display: 'flex', gap: 8 }}>
+          {receipt && can('payments', 'print') && (
+            <button className="btn secondary" onClick={() => window.print()}>पावती प्रिंट करा</button>
+          )}
+          <CloseReportButton />
+        </div>
       </div>
 
       {error && <div className="error-box">{error}</div>}
@@ -46,6 +51,7 @@ export default function PaymentReceiptView() {
           property={property}
           receiptType={receipt.payment.receipt_type}
           canPrint={can('payments', 'print')}
+          hidePrintButton
         />
       )}
     </div>
