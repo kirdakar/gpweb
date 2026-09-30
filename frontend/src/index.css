@@ -135,6 +135,11 @@ input[type="number"]::-webkit-inner-spin-button {
 .budget-entry-page table input { font-size: 15px; }
 .budget-entry-page h3 { font-size: 17px; }
 
+/* नमुना २ (पुनर्विनियोजन नोंदणी) - मोठी फॉन्ट, वाचायला/भरायला सोपे जावे म्हणून. */
+.budget-revision-page table { font-size: 15px; }
+.budget-revision-page table input { font-size: 15px; }
+.budget-revision-page h3 { font-size: 17px; }
+
 /* मूळ माहिती: मिळकत कोड/अ.क्र./मालमत्ता क्र. आखूड जागेत, मालकाचे नाव
    कोडनंतर लगेच व दोन स्तंभांइतकी जास्त रुंद जागा घेऊन. */
 .property-detail-page .narrow-field { justify-self: start; max-width: 160px; }
