@@ -3,6 +3,7 @@ import AutoUpdateChecker from './components/AutoUpdateChecker';
 import { AuthProvider } from './context/AuthContext';
 import { YearProvider } from './context/YearContext';
 import { PermissionsProvider } from './context/PermissionsContext';
+import { GpSettingsProvider } from './context/GpSettingsContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import RequireView from './components/RequireView';
 import RequireAdmin from './components/RequireAdmin';
@@ -83,7 +84,9 @@ function AppShell() {
     <ProtectedRoute>
       <YearProvider>
         <PermissionsProvider>
-          <Layout />
+          <GpSettingsProvider>
+            <Layout />
+          </GpSettingsProvider>
         </PermissionsProvider>
       </YearProvider>
     </ProtectedRoute>

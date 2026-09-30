@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
 import { usePermissions } from '../context/PermissionsContext';
+import { useGpSettingsContext } from '../context/GpSettingsContext';
 import CloseReportButton from '../components/CloseReportButton';
 
 export default function Settings() {
   const { can } = usePermissions();
+  const { refresh: refreshGpSettings } = useGpSettingsContext();
   const [form, setForm] = useState({ gp_name: '', taluka: '', district: '' });
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
@@ -22,6 +24,7 @@ export default function Settings() {
       const { data } = await client.put('/settings', form);
       setForm(data);
       setNotice('जतन झाले.');
+      refreshGpSettings(); // इतर सर्व पानांवरील (cached) नाव/तालुका/जिल्हा लगेच ताजे व्हावे
     } finally {
       setBusy(false);
     }

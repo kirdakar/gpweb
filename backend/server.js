@@ -16,6 +16,7 @@ if (process.argv.includes('--migrate')) {
 
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 require('express-async-errors'); // lets async route handlers throw straight into the error middleware below
 
 const authRoutes = require('./src/routes/auth.routes');
@@ -55,6 +56,9 @@ const taxAdjustmentsRoutes = require('./src/routes/taxAdjustments.routes');
 
 const app = express();
 app.use(cors());
+// gpmaster/मिळकत यादी सारखे मोठे JSON प्रतिसाद (शेकडो KB) दाबून पाठवतो -
+// संथ इंटरनेट/Cloudflare Tunnel वरून वापरताना पानांचा वेग लक्षणीय वाढतो.
+app.use(compression());
 app.use(express.json());
 // All data here is live tax/assessment data (and changes during active
 // development too) - never let the browser cache API GET responses.

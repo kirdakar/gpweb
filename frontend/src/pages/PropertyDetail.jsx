@@ -4,6 +4,7 @@ import client from '../api/client';
 import { useYear } from '../context/YearContext';
 import { usePermissions } from '../context/PermissionsContext';
 import { round2 } from '../utils/taxCalc';
+import { fetchGpmasterList } from '../utils/gpmasterCache';
 import CloseReportButton from '../components/CloseReportButton';
 
 const emptyMaster = {
@@ -272,7 +273,7 @@ export default function PropertyDetail() {
 
   useEffect(() => {
     client.get('/particulars').then(({ data }) => setParticulars(data));
-    client.get('/gpmaster').then(({ data }) => setGpmasterList(data));
+    fetchGpmasterList().then(setGpmasterList);
   }, []);
 
   const loadProperty = useCallback(async () => {

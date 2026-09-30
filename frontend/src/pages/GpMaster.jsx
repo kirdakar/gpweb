@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import client from '../api/client';
 import { usePermissions } from '../context/PermissionsContext';
 import useDebouncedValue from '../hooks/useDebouncedValue';
+import { invalidateGpmasterCache } from '../utils/gpmasterCache';
 import CloseReportButton from '../components/CloseReportButton';
 
 const emptyForm = { code: '', owner_name: '' };
@@ -59,6 +60,7 @@ export default function GpMaster() {
       } else {
         await client.post('/gpmaster', form);
       }
+      invalidateGpmasterCache();
       resetForm();
       load();
     } catch (err) {
@@ -70,6 +72,7 @@ export default function GpMaster() {
     if (!window.confirm(`कोड ${code} मिटवायचा आहे का?`)) return;
     try {
       await client.delete(`/gpmaster/${code}`);
+      invalidateGpmasterCache();
       load();
     } catch (err) {
       alert(err.response?.data?.error || 'मिटवताना त्रुटी आली');
