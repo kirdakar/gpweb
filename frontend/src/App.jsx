@@ -16,6 +16,7 @@ import Years from './pages/Years';
 import Properties from './pages/Properties';
 import PropertyDetail from './pages/PropertyDetail';
 import PaymentEntry from './pages/PaymentEntry';
+import PaymentReceiptView from './pages/PaymentReceiptView';
 import TaxAdjustmentEntry from './pages/TaxAdjustmentEntry';
 import PropertyListReport from './pages/reports/PropertyListReport';
 import OldNewComparisonReport from './pages/reports/OldNewComparisonReport';
@@ -108,6 +109,7 @@ export default function App() {
             <Route path="/gpmaster" element={<RequireView screen="gpmaster"><GpMaster /></RequireView>} />
             <Route path="/years" element={<RequireView screen="years"><Years /></RequireView>} />
             <Route path="/payments" element={<RequireView screen="payments"><PaymentEntry /></RequireView>} />
+            <Route path="/payments/receipt/:id" element={<RequireView screen="payments"><PaymentReceiptView /></RequireView>} />
             <Route path="/tax-adjustments" element={<RequireView screen="tax_adjustments"><TaxAdjustmentEntry /></RequireView>} />
             <Route path="/reports/property-list" element={<RequireView screen="reports_property_list"><PropertyListReport /></RequireView>} />
             <Route path="/reports/old-new" element={<RequireView screen="reports_old_new"><OldNewComparisonReport /></RequireView>} />
