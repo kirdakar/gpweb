@@ -14,7 +14,7 @@ router.get('/property-list', async (req, res) => {
   const yearId = req.query.yearId;
   if (!yearId) return res.status(400).json({ error: 'yearId is required' });
   const [rows] = await pool.query(
-    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.bhogvatdar,
+    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.spouse_name, pm.bhogvatdar,
             pt.par_name AS construction_type_name,
             a.new_length, a.new_width, a.area_sqft, a.area_sqm, a.bhandvalimula_rs, a.karacha_rate,
             a.gharpatti, a.divabatti, a.arogya, a.panipatti, a.total_tax, a.gov_status
@@ -38,7 +38,7 @@ router.get('/assessment-register', async (req, res) => {
   const yearId = req.query.yearId;
   if (!yearId) return res.status(400).json({ error: 'yearId is required' });
   const [rows] = await pool.query(
-    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.bhogvatdar,
+    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.spouse_name, pm.bhogvatdar,
             pm.particulars, pm.milkat_year,
             pt.par_name AS construction_type_name,
             a.new_length, a.new_width, a.area_sqft, a.area_sqm,
@@ -71,7 +71,7 @@ async function computeOldNewComparison(yearId) {
   if (!year) return null;
 
   const [rows] = await pool.query(
-    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name,
+    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.spouse_name,
             COALESCE(cur.gharpatti, 0) AS current_gharpatti,
             COALESCE(cur.divabatti, 0) AS current_divabatti,
             COALESCE(cur.arogya, 0) AS current_arogya,
@@ -244,7 +244,7 @@ router.get('/tax-demand-by-code', async (req, res) => {
   if (!code || !yearId) return res.status(400).json({ error: 'code and yearId are required' });
 
   const [portions] = await pool.query(
-    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.bhogvatdar,
+    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.spouse_name, pm.bhogvatdar,
             pt.par_name AS construction_type_name,
             a.gharpatti, a.divabatti, a.arogya, a.panipatti, a.total_tax
      FROM property_master pm
@@ -269,7 +269,7 @@ router.get('/payment-receipts', async (req, res) => {
 
   // यादीत दाखवायच्या पावत्या: फक्त या वर्षात नोंदवलेल्या.
   const [wantedPayments] = await pool.query(
-    `SELECT p.*, fy.year_label, pm.owner_name, pm.property_code, pm.srno, pm.malmata_no
+    `SELECT p.*, fy.year_label, pm.owner_name, pm.spouse_name, pm.property_code, pm.srno, pm.malmata_no
      FROM tax_payments p
      JOIN financial_years fy ON fy.id = p.financial_year_id
      JOIN property_master pm ON pm.id = p.property_id

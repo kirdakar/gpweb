@@ -15,7 +15,7 @@ async function getDueBreakdownForProperty(pool, propertyId, yearId) {
   if (!year) return { year: null, row: null };
 
   const [[row]] = await pool.query(
-    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name,
+    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.spouse_name,
             COALESCE(cur.gharpatti, 0) AS current_gharpatti,
             COALESCE(cur.divabatti, 0) AS current_divabatti,
             COALESCE(cur.arogya, 0) AS current_arogya,
@@ -53,7 +53,7 @@ async function getDueBreakdownForCode(pool, propertyCode, yearId) {
   if (!year) return { year: null, portions: [] };
 
   const [portions] = await pool.query(
-    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name,
+    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.spouse_name,
             COALESCE(cur.gharpatti, 0) AS current_gharpatti,
             COALESCE(cur.divabatti, 0) AS current_divabatti,
             COALESCE(cur.arogya, 0) AS current_arogya,
@@ -122,7 +122,7 @@ async function getDueBreakdownBulk(pool, yearId, { skipAdjustments = false } = {
   if (!year) return { year: null, rows: [] };
 
   const [rows] = await pool.query(
-    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name,
+    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.spouse_name,
             COALESCE(cur.gharpatti, 0) AS current_gharpatti,
             COALESCE(cur.divabatti, 0) AS current_divabatti,
             COALESCE(cur.arogya, 0) AS current_arogya,

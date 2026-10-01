@@ -9,7 +9,7 @@ import CloseReportButton from '../components/CloseReportButton';
 
 const emptyMaster = {
   property_code: '', srno: '', malmata_no: '', particulars: '', construction_type: '',
-  owner_name: '', bhogvatdar: '', milkat_year: '', is_government: false, narration: '',
+  owner_name: '', spouse_name: '', bhogvatdar: '', milkat_year: '', is_government: false, narration: '',
 };
 
 const emptyAssessment = {
@@ -19,14 +19,14 @@ const emptyAssessment = {
 };
 
 // मिळकत कोड टाकल्यावर/बाहेर क्लिक केल्यावर मिळकतदार मास्टर (GPMASTER)
-// मधून मालकाचे नांव आपोआप भरते - फक्त मालकाचे नांव अजून रिकामे असेल तरच
-// (खरा/आधीच भरलेला वेगळा मालकाचे नाव कधीही न बदलणे, "only if empty" पद्धत).
+// मधून मालकाचे नांव व पत्नीचे नांव आपोआप भरते - फक्त ते अजून रिकामे असेल
+// तरच (खरा/आधीच भरलेला वेगळा मजकूर कधीही न बदलणे, "only if empty" पद्धत).
 // GPMASTER मध्ये तो कोड नसेल तर काहीच होत नाही, स्टाफ स्वतः नांव टाइप करतो.
 async function fillOwnerFromGpMaster(code, master, setMaster) {
   if (!code || master.owner_name) return;
   try {
     const { data } = await client.get(`/gpmaster/${code}`);
-    setMaster((m) => (m.owner_name || m.property_code !== code ? m : { ...m, owner_name: data.owner_name }));
+    setMaster((m) => (m.owner_name || m.property_code !== code ? m : { ...m, owner_name: data.owner_name, spouse_name: m.spouse_name || data.spouse_name || '' }));
   } catch {
     // GPMASTER मध्ये हा कोड नोंदलेला नाही - शांतपणे दुर्लक्ष करा.
   }
@@ -73,7 +73,7 @@ function MasterFields({ master, setMaster, particulars, gpmasterList }) {
   }, [gpmasterList, codeSearchTerm]);
 
   function selectGpCode(g) {
-    setMaster({ ...master, property_code: String(g.code), owner_name: g.owner_name });
+    setMaster({ ...master, property_code: String(g.code), owner_name: g.owner_name, spouse_name: master.spouse_name || g.spouse_name || '' });
     setCodeSearch(String(g.code));
     setCodeDropdownOpen(false);
     fillSrnoSuggestion(String(g.code), master, setMaster);
@@ -127,6 +127,10 @@ function MasterFields({ master, setMaster, particulars, gpmasterList }) {
       <div className="field wide-field">
         <label>मालकाचे नाव *</label>
         <input required value={master.owner_name} onChange={(e) => setMaster({ ...master, owner_name: e.target.value })} />
+      </div>
+      <div className="field wide-field">
+        <label>पत्नीचे नाव</label>
+        <input value={master.spouse_name} onChange={(e) => setMaster({ ...master, spouse_name: e.target.value })} />
       </div>
       <div className="field narrow-field">
         <label>अ.क्र. (SRNO)</label>
@@ -284,7 +288,7 @@ export default function PropertyDetail() {
       setMaster({
         property_code: data.property_code ?? '', srno: data.srno ?? '', malmata_no: data.malmata_no ?? '',
         particulars: data.particulars ?? '', construction_type: data.construction_type ?? '',
-        owner_name: data.owner_name ?? '', bhogvatdar: data.bhogvatdar ?? '', milkat_year: data.milkat_year ?? '',
+        owner_name: data.owner_name ?? '', spouse_name: data.spouse_name ?? '', bhogvatdar: data.bhogvatdar ?? '', milkat_year: data.milkat_year ?? '',
         is_government: !!data.is_government, narration: data.narration ?? '',
       });
       setAssessments(data.assessments || []);

@@ -37,6 +37,7 @@ function aggregatePortions(portions) {
   const base = {
     property_code: portions[0]?.property_code ?? null,
     owner_name: portions[0]?.owner_name ?? null,
+    spouse_name: portions[0]?.spouse_name ?? null,
     malmata_no_list: [...new Set(portions.map((p) => p.malmata_no).filter(Boolean))].join(', '),
     portion_count: portions.length,
   };

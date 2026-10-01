@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS user_permissions (
 CREATE TABLE IF NOT EXISTS gpmaster (
   code INT PRIMARY KEY,
   owner_name VARCHAR(255) NOT NULL,
+  spouse_name VARCHAR(255) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
@@ -111,6 +112,7 @@ CREATE TABLE IF NOT EXISTS property_master (
   particulars VARCHAR(255) NULL,
   construction_type INT NULL,             -- legacy T -> particular_master.par_code
   owner_name VARCHAR(255) NULL,
+  spouse_name VARCHAR(255) NULL,          -- मिळकतदाराच्या पत्नीचे नांव (GPMASTER वरून, owner_name प्रमाणेच)
   bhogvatdar VARCHAR(255) NULL,           -- occupant / bhogvatdar
   milkat_year VARCHAR(20) NULL,           -- legacy free-text field, kept for reference
   is_government TINYINT(1) NOT NULL DEFAULT 0,
@@ -823,3 +825,10 @@ CREATE TABLE IF NOT EXISTS tax_adjustments (
   INDEX idx_tax_adj_year (financial_year_id, is_active),
   CONSTRAINT fk_tax_adj_year FOREIGN KEY (financial_year_id) REFERENCES financial_years(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- मिळकतदाराच्या पत्नीचे नांव - GPMASTER (मूळ) व property_master (owner_name
+-- प्रमाणेच cached प्रत, कोड टाकल्यावर आपोआप भरण्यासाठी) दोन्हीकडे.
+-- आधीच बनलेल्या DB वर नवीन रकाना (जुन्या CREATE TABLE IF NOT EXISTS मुळे
+-- अस्तित्वात असलेल्या टेबलवर परिणाम होत नाही, त्यामुळे वेगळा ALTER आवश्यक).
+ALTER TABLE gpmaster ADD COLUMN IF NOT EXISTS spouse_name VARCHAR(255) NULL AFTER owner_name;
+ALTER TABLE property_master ADD COLUMN IF NOT EXISTS spouse_name VARCHAR(255) NULL AFTER owner_name;

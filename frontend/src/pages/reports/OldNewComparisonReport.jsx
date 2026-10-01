@@ -54,7 +54,7 @@ export default function OldNewComparisonReport() {
       const key = r.property_code ?? `__${r.property_id}`;
       if (!byCode.has(key)) {
         byCode.set(key, {
-          property_code: r.property_code, owner_name: r.owner_name, malmataNos: [], sums: emptyTotals(),
+          property_code: r.property_code, owner_name: r.owner_name, spouse_name: r.spouse_name, malmataNos: [], sums: emptyTotals(),
         });
       }
       const g = byCode.get(key);
@@ -118,7 +118,10 @@ export default function OldNewComparisonReport() {
               {groups.map((g) => (
                 <tr key={g.property_code ?? g.owner_name}>
                   <td>{g.property_code ?? '-'}</td>
-                  <td className="col-owner-name">{g.owner_name}</td>
+                  <td className="col-owner-name">
+                    {g.owner_name}
+                    {g.spouse_name && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{g.spouse_name}</div>}
+                  </td>
                   <td className="col-malmata">{g.malmataNos.join(', ')}</td>
                   {GROUPS.map((gr) => (
                     <td key={gr.field} className="num" style={gr.field === 'collected_amount' ? { color: 'var(--success)' } : undefined}>

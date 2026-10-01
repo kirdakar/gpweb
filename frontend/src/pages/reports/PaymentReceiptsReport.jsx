@@ -83,7 +83,10 @@ function ReceiptTypeTable({ type, rows }) {
               <tr key={r.id}>
                 <td>{r.receipt_no}</td>
                 <td>{fmtDate(r.payment_date)}</td>
-                <td>{r.owner_name}</td>
+                <td>
+                  {r.owner_name}
+                  {r.spouse_name && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.spouse_name}</div>}
+                </td>
                 <td>{r.malmata_no ?? '-'}</td>
                 <td className="num">{Number(r.amount).toFixed(2)}</td>
                 {components.map((c) => <td key={`p-${c.key}`} className="num">{Number(r[`previous_${c.key}`] || 0).toFixed(2)}</td>)}

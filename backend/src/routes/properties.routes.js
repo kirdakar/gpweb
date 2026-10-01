@@ -132,11 +132,11 @@ router.post('/', requirePermission('properties', 'add'), async (req, res) => {
 
     const [result] = await pool.query(
       `INSERT INTO property_master
-         (property_code, srno, malmata_no, particulars, construction_type, owner_name, bhogvatdar, milkat_year, is_government, narration)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (property_code, srno, malmata_no, particulars, construction_type, owner_name, spouse_name, bhogvatdar, milkat_year, is_government, narration)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         b.property_code || null, b.srno || null, b.malmata_no || null, b.particulars || null,
-        b.construction_type || null, b.owner_name, b.bhogvatdar || null, b.milkat_year || null,
+        b.construction_type || null, b.owner_name, b.spouse_name || null, b.bhogvatdar || null, b.milkat_year || null,
         b.is_government ? 1 : 0, b.narration || null,
       ]
     );
@@ -156,11 +156,11 @@ router.put('/:id', requirePermission('properties', 'edit'), async (req, res) => 
     const [result] = await pool.query(
       `UPDATE property_master SET
          property_code=?, srno=?, malmata_no=?, particulars=?, construction_type=?,
-         owner_name=?, bhogvatdar=?, milkat_year=?, is_government=?, narration=?
+         owner_name=?, spouse_name=?, bhogvatdar=?, milkat_year=?, is_government=?, narration=?
        WHERE id=?`,
       [
         b.property_code || null, b.srno || null, b.malmata_no || null, b.particulars || null,
-        b.construction_type || null, b.owner_name, b.bhogvatdar || null, b.milkat_year || null,
+        b.construction_type || null, b.owner_name, b.spouse_name || null, b.bhogvatdar || null, b.milkat_year || null,
         b.is_government ? 1 : 0, b.narration || null, req.params.id,
       ]
     );

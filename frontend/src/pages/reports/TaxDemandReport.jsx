@@ -15,6 +15,7 @@ function TaxDemandCard({ code, yearLabel, portions, gpLine }) {
         <p>आर्थिक वर्ष: {yearLabel} | कोड: {code}</p>
       </div>
       <p><strong>मालकाचे नाव:</strong> {portions[0]?.owner_name || '-'}</p>
+      {portions[0]?.spouse_name && <p><strong>पत्नीचे नाव:</strong> {portions[0].spouse_name}</p>}
       <p><strong>भोगवटादार:</strong> {portions[0]?.bhogvatdar || '-'}</p>
 
       <div className="table-wrap">

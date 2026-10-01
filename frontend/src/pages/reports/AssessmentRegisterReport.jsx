@@ -21,7 +21,15 @@ const TOP_COLUMNS = [
   { num: 2, label: 'रस्त्याचे नांव', width: '7%', render: () => '' },
   { num: 3, label: 'सिटी सर्व्हे नं.', width: '7%', render: () => '' },
   { num: 4, label: 'मालमत्ता क्रं.', width: '7%', render: (r) => r.malmata_no ?? '-' },
-  { num: 5, label: 'मालकाचे नांव', width: '15%', render: (r) => r.owner_name },
+  {
+    num: 5, label: 'मालकाचे नांव', width: '15%',
+    render: (r) => (
+      <>
+        {r.owner_name}
+        {r.spouse_name && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.spouse_name}</div>}
+      </>
+    ),
+  },
   { num: 6, label: 'भोगवटादाराचे नांव', width: '11%', render: (r) => r.bhogvatdar || '-' },
   // बांधकाम प्रकार (construction_type_name) हे मालकाने निवडलेल्या ठराविक यादीतील (dropdown)
   // खरे वर्णन आहे - मालमत्तेचे वर्णन इथेच प्रथम दाखवायला हवे. "तपशील (Particulars)" हा

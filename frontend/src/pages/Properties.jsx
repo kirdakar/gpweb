@@ -91,7 +91,10 @@ export default function Properties() {
                 {rows.map((r) => (
                   <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/properties/${r.id}`)}>
                     <td>{r.property_code ?? '-'}</td>
-                    <td className="col-wrap">{r.owner_name}</td>
+                    <td className="col-wrap">
+                      {r.owner_name}
+                      {r.spouse_name && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.spouse_name}</div>}
+                    </td>
                     <td>{r.srno ?? '-'}</td>
                     <td>{r.malmata_no ?? '-'}</td>
                     <td className="col-wrap">{r.construction_type_name || '-'}</td>

@@ -137,7 +137,12 @@ export default function PropertyListReport() {
                   onClick={can('properties', 'view') ? () => navigate(`/properties/${r.property_id}`) : undefined}
                 >
                   {idx === 0 && <td rowSpan={group.length}>{r.property_code ?? '-'}</td>}
-                  {idx === 0 && <td rowSpan={group.length} className="col-wrap">{r.owner_name}</td>}
+                  {idx === 0 && (
+                    <td rowSpan={group.length} className="col-wrap">
+                      {r.owner_name}
+                      {r.spouse_name && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.spouse_name}</div>}
+                    </td>
+                  )}
                   <td>{r.malmata_no ?? '-'}</td>
                   <td className="col-wrap">{r.construction_type_name || '-'}</td>
                   <td className="num">{Number(r.area_sqm || 0).toFixed(2)}</td>

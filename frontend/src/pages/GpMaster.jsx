@@ -5,7 +5,7 @@ import useDebouncedValue from '../hooks/useDebouncedValue';
 import { invalidateGpmasterCache } from '../utils/gpmasterCache';
 import CloseReportButton from '../components/CloseReportButton';
 
-const emptyForm = { code: '', owner_name: '' };
+const emptyForm = { code: '', owner_name: '', spouse_name: '' };
 
 export default function GpMaster() {
   const { can } = usePermissions();
@@ -40,7 +40,7 @@ export default function GpMaster() {
 
   function selectRow(row) {
     setEditing(true);
-    setForm({ code: row.code, owner_name: row.owner_name });
+    setForm({ code: row.code, owner_name: row.owner_name, spouse_name: row.spouse_name || '' });
     setError('');
   }
 
@@ -56,7 +56,7 @@ export default function GpMaster() {
     setError('');
     try {
       if (editing) {
-        await client.put(`/gpmaster/${form.code}`, { owner_name: form.owner_name });
+        await client.put(`/gpmaster/${form.code}`, { owner_name: form.owner_name, spouse_name: form.spouse_name });
       } else {
         await client.post('/gpmaster', form);
       }
@@ -101,6 +101,10 @@ export default function GpMaster() {
                 <label>मालकाचे नांव</label>
                 <input required value={form.owner_name} onChange={(e) => setForm({ ...form, owner_name: e.target.value })} />
               </div>
+              <div className="field">
+                <label>पत्नीचे नांव</label>
+                <input value={form.spouse_name} onChange={(e) => setForm({ ...form, spouse_name: e.target.value })} />
+              </div>
             </div>
             <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
               <button className="btn" type="submit">{editing ? 'अद्ययावत करा' : 'जतन करा'}</button>
@@ -118,13 +122,14 @@ export default function GpMaster() {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>कोड</th><th>मालकाचे नांव</th><th></th></tr>
+              <tr><th>कोड</th><th>मालकाचे नांव</th><th>पत्नीचे नांव</th><th></th></tr>
             </thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.code}>
                   <td>{r.code}</td>
                   <td>{r.owner_name}</td>
+                  <td>{r.spouse_name || '-'}</td>
                   <td>
                     {can('gpmaster', 'edit') && <button className="btn secondary small" onClick={() => selectRow(r)}>संपादन</button>}{' '}
                     {can('gpmaster', 'delete') && <button className="btn danger small" onClick={() => handleDelete(r.code)}>मिटवा</button>}
@@ -132,7 +137,7 @@ export default function GpMaster() {
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>नोंदी सापडल्या नाहीत</td></tr>
+                <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>नोंदी सापडल्या नाहीत</td></tr>
               )}
             </tbody>
           </table>

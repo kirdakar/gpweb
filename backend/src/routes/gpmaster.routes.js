@@ -41,10 +41,10 @@ router.get('/:code', async (req, res) => {
 });
 
 router.post('/', requirePermission('gpmaster', 'add'), async (req, res) => {
-  const { code, owner_name } = req.body || {};
+  const { code, owner_name, spouse_name } = req.body || {};
   if (!code || !owner_name) return res.status(400).json({ error: 'code and owner_name are required' });
   try {
-    await pool.query('INSERT INTO gpmaster (code, owner_name) VALUES (?, ?)', [code, owner_name]);
+    await pool.query('INSERT INTO gpmaster (code, owner_name, spouse_name) VALUES (?, ?, ?)', [code, owner_name, spouse_name || null]);
     const [[row]] = await pool.query('SELECT * FROM gpmaster WHERE code = ?', [code]);
     res.status(201).json(row);
   } catch (err) {
@@ -54,9 +54,9 @@ router.post('/', requirePermission('gpmaster', 'add'), async (req, res) => {
 });
 
 router.put('/:code', requirePermission('gpmaster', 'edit'), async (req, res) => {
-  const { owner_name } = req.body || {};
+  const { owner_name, spouse_name } = req.body || {};
   if (!owner_name) return res.status(400).json({ error: 'owner_name is required' });
-  const [result] = await pool.query('UPDATE gpmaster SET owner_name = ? WHERE code = ?', [owner_name, req.params.code]);
+  const [result] = await pool.query('UPDATE gpmaster SET owner_name = ?, spouse_name = ? WHERE code = ?', [owner_name, spouse_name || null, req.params.code]);
   if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found' });
   const [[row]] = await pool.query('SELECT * FROM gpmaster WHERE code = ?', [req.params.code]);
   res.json(row);
