@@ -19,14 +19,22 @@ const emptyAssessment = {
 };
 
 // मिळकत कोड टाकल्यावर/बाहेर क्लिक केल्यावर मिळकतदार मास्टर (GPMASTER)
-// मधून मालकाचे नांव व पत्नीचे नांव आपोआप भरते - फक्त ते अजून रिकामे असेल
-// तरच (खरा/आधीच भरलेला वेगळा मजकूर कधीही न बदलणे, "only if empty" पद्धत).
+// मधून मालकाचे नांव व पत्नीचे नांव आपोआप भरते - प्रत्येक रकाना स्वतंत्रपणे
+// "only if empty" (खरा/आधीच भरलेला मजकूर कधीही न बदलणे). मालकाचे नाव
+// आधीच भरलेले (उदा. जुनी/अस्तित्वात असलेली नोंद) असले तरी पत्नीचे नाव अजून
+// रिकामे असेल तर तेवढेच भरते - म्हणून owner_name भरलेला असला तरीही हे फंक्शन
+// पूर्णपणे न थांबता (आधी owner_name भरलेला दिसताच संपूर्ण थांबत असे, त्यामुळे
+// जुन्या नोंदींना पत्नीचे नाव कधीच मिळत नसे) पुढे जाऊन spouse_name तपासते.
 // GPMASTER मध्ये तो कोड नसेल तर काहीच होत नाही, स्टाफ स्वतः नांव टाइप करतो.
 async function fillOwnerFromGpMaster(code, master, setMaster) {
-  if (!code || master.owner_name) return;
+  if (!code || (master.owner_name && master.spouse_name)) return;
   try {
     const { data } = await client.get(`/gpmaster/${code}`);
-    setMaster((m) => (m.owner_name || m.property_code !== code ? m : { ...m, owner_name: data.owner_name, spouse_name: m.spouse_name || data.spouse_name || '' }));
+    setMaster((m) => (m.property_code !== code ? m : {
+      ...m,
+      owner_name: m.owner_name || data.owner_name,
+      spouse_name: m.spouse_name || data.spouse_name || '',
+    }));
   } catch {
     // GPMASTER मध्ये हा कोड नोंदलेला नाही - शांतपणे दुर्लक्ष करा.
   }
@@ -285,13 +293,20 @@ export default function PropertyDetail() {
     setLoading(true);
     try {
       const { data } = await client.get(`/properties/${id}`);
-      setMaster({
+      const nextMaster = {
         property_code: data.property_code ?? '', srno: data.srno ?? '', malmata_no: data.malmata_no ?? '',
         particulars: data.particulars ?? '', construction_type: data.construction_type ?? '',
         owner_name: data.owner_name ?? '', spouse_name: data.spouse_name ?? '', bhogvatdar: data.bhogvatdar ?? '', milkat_year: data.milkat_year ?? '',
         is_government: !!data.is_government, narration: data.narration ?? '',
-      });
+      };
+      setMaster(nextMaster);
       setAssessments(data.assessments || []);
+      // जुन्या (स्पाउस-नेम फीचर येण्याआधी भरलेल्या) नोंदींसाठी - पत्नीचे नाव
+      // अजून रिकामे असेल तर उघडताक्षणीच GPMASTER मधून एकदा भरून बघते (मालकाचे
+      // नाव आधीच असले तरी, fillOwnerFromGpMaster चा per-field नियम).
+      if (nextMaster.property_code && !nextMaster.spouse_name) {
+        fillOwnerFromGpMaster(nextMaster.property_code, nextMaster, setMaster);
+      }
     } finally {
       setLoading(false);
     }
