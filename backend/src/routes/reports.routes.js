@@ -14,13 +14,16 @@ router.get('/property-list', async (req, res) => {
   const yearId = req.query.yearId;
   if (!yearId) return res.status(400).json({ error: 'yearId is required' });
   const [rows] = await pool.query(
-    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.spouse_name, pm.bhogvatdar,
+    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.bhogvatdar,
+            COALESCE(gm.owner_name, pm.owner_name) AS owner_name,
+            COALESCE(gm.spouse_name, pm.spouse_name) AS spouse_name,
             pt.par_name AS construction_type_name,
             a.new_length, a.new_width, a.area_sqft, a.area_sqm, a.bhandvalimula_rs, a.karacha_rate,
             a.gharpatti, a.divabatti, a.arogya, a.panipatti, a.total_tax, a.gov_status
      FROM property_tax_assessment a
      JOIN property_master pm ON pm.id = a.property_id
      LEFT JOIN particular_master pt ON pt.par_code = pm.construction_type
+     LEFT JOIN gpmaster gm ON gm.code = pm.property_code
      WHERE a.financial_year_id = ?
      ORDER BY pm.property_code, pm.malmata_no`,
     [yearId]
@@ -38,7 +41,9 @@ router.get('/assessment-register', async (req, res) => {
   const yearId = req.query.yearId;
   if (!yearId) return res.status(400).json({ error: 'yearId is required' });
   const [rows] = await pool.query(
-    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.spouse_name, pm.bhogvatdar,
+    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.bhogvatdar,
+            COALESCE(gm.owner_name, pm.owner_name) AS owner_name,
+            COALESCE(gm.spouse_name, pm.spouse_name) AS spouse_name,
             pm.particulars, pm.milkat_year,
             pt.par_name AS construction_type_name,
             a.new_length, a.new_width, a.area_sqft, a.area_sqm,
@@ -47,6 +52,7 @@ router.get('/assessment-register', async (req, res) => {
      FROM property_tax_assessment a
      JOIN property_master pm ON pm.id = a.property_id
      LEFT JOIN particular_master pt ON pt.par_code = pm.construction_type
+     LEFT JOIN gpmaster gm ON gm.code = pm.property_code
      WHERE a.financial_year_id = ?
      ORDER BY pm.property_code, pm.malmata_no`,
     [yearId]
@@ -71,7 +77,9 @@ async function computeOldNewComparison(yearId) {
   if (!year) return null;
 
   const [rows] = await pool.query(
-    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.spouse_name,
+    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no,
+            COALESCE(gm.owner_name, pm.owner_name) AS owner_name,
+            COALESCE(gm.spouse_name, pm.spouse_name) AS spouse_name,
             COALESCE(cur.gharpatti, 0) AS current_gharpatti,
             COALESCE(cur.divabatti, 0) AS current_divabatti,
             COALESCE(cur.arogya, 0) AS current_arogya,
@@ -83,6 +91,7 @@ async function computeOldNewComparison(yearId) {
             COALESCE(prev.p_panipatti, 0) AS previous_panipatti,
             COALESCE(prev.p_total, 0) AS previous_due
      FROM property_master pm
+     LEFT JOIN gpmaster gm ON gm.code = pm.property_code
      LEFT JOIN property_tax_assessment cur
        ON cur.property_id = pm.id AND cur.financial_year_id = ?
      LEFT JOIN (
@@ -220,8 +229,12 @@ router.get('/tax-demand', async (req, res) => {
   if (!propertyId || !yearId) return res.status(400).json({ error: 'propertyId and yearId are required' });
 
   const [[property]] = await pool.query(
-    `SELECT pm.*, pt.par_name AS construction_type_name
-     FROM property_master pm LEFT JOIN particular_master pt ON pt.par_code = pm.construction_type
+    `SELECT pm.*, pt.par_name AS construction_type_name,
+            COALESCE(gm.owner_name, pm.owner_name) AS owner_name,
+            COALESCE(gm.spouse_name, pm.spouse_name) AS spouse_name
+     FROM property_master pm
+     LEFT JOIN particular_master pt ON pt.par_code = pm.construction_type
+     LEFT JOIN gpmaster gm ON gm.code = pm.property_code
      WHERE pm.id = ?`,
     [propertyId]
   );
@@ -244,11 +257,14 @@ router.get('/tax-demand-by-code', async (req, res) => {
   if (!code || !yearId) return res.status(400).json({ error: 'code and yearId are required' });
 
   const [portions] = await pool.query(
-    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.spouse_name, pm.bhogvatdar,
+    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.bhogvatdar,
+            COALESCE(gm.owner_name, pm.owner_name) AS owner_name,
+            COALESCE(gm.spouse_name, pm.spouse_name) AS spouse_name,
             pt.par_name AS construction_type_name,
             a.gharpatti, a.divabatti, a.arogya, a.panipatti, a.total_tax
      FROM property_master pm
      LEFT JOIN particular_master pt ON pt.par_code = pm.construction_type
+     LEFT JOIN gpmaster gm ON gm.code = pm.property_code
      LEFT JOIN property_tax_assessment a ON a.property_id = pm.id AND a.financial_year_id = ?
      WHERE pm.property_code = ?
      ORDER BY pm.malmata_no`,
@@ -269,10 +285,13 @@ router.get('/payment-receipts', async (req, res) => {
 
   // यादीत दाखवायच्या पावत्या: फक्त या वर्षात नोंदवलेल्या.
   const [wantedPayments] = await pool.query(
-    `SELECT p.*, fy.year_label, pm.owner_name, pm.spouse_name, pm.property_code, pm.srno, pm.malmata_no
+    `SELECT p.*, fy.year_label, pm.property_code, pm.srno, pm.malmata_no,
+            COALESCE(gm.owner_name, pm.owner_name) AS owner_name,
+            COALESCE(gm.spouse_name, pm.spouse_name) AS spouse_name
      FROM tax_payments p
      JOIN financial_years fy ON fy.id = p.financial_year_id
      JOIN property_master pm ON pm.id = p.property_id
+     LEFT JOIN gpmaster gm ON gm.code = pm.property_code
      WHERE p.financial_year_id = ?
      ORDER BY p.payment_date, p.id`,
     [yearId]

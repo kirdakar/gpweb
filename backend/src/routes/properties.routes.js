@@ -22,12 +22,17 @@ router.get('/', async (req, res) => {
   // मालकाचे नाव नोंदलेले नसलेल्या नोंदी (मिळकत यादीत नुसता "कोड X" दिसणाऱ्या) तात्पुरत्या
   // लपवण्यासाठी - डेटा मिटत नाही, फक्त या यादीतून वगळल्या जातात (toggle ने परत दिसतात).
   const hideMissingOwner = req.query.hideMissingOwner === '1';
-  const ownerFilterSql = "pm.owner_name IS NOT NULL AND pm.owner_name <> ''";
+  // मालकाचे नाव आता मिळकतदार मास्टर (GPMASTER) मधूनच अधिकृत मानतो (तिथे
+  // असेल तर तेच खरे, नसेल तरच property_master मधील जुनी/स्वतंत्र नोंद) -
+  // त्यामुळे "नाव नाही" ठरवतानाही दोन्हीपैकी एकातही नसेल तरच खरोखर "missing".
+  const ownerExpr = "COALESCE(gm.owner_name, pm.owner_name)";
+  const ownerFilterSql = `${ownerExpr} IS NOT NULL AND ${ownerExpr} <> ''`;
+  const gmJoinSql = 'LEFT JOIN gpmaster gm ON gm.code = pm.property_code';
 
   const where = [];
   const params = [];
   if (search) {
-    where.push('(pm.owner_name LIKE ? OR pm.malmata_no LIKE ? OR pm.property_code = ? OR pm.srno = ?)');
+    where.push(`(${ownerExpr} LIKE ? OR pm.malmata_no LIKE ? OR pm.property_code = ? OR pm.srno = ?)`);
     const like = `%${search}%`;
     const asNum = Number.isFinite(Number(search)) ? Number(search) : -1;
     params.push(like, like, asNum, asNum);
@@ -37,13 +42,13 @@ router.get('/', async (req, res) => {
   // किती नोंदी लपवलेल्या आहेत हे कार्यालयाला दिसावे म्हणून.
   const missingWhereSql = `WHERE ${[...where, `NOT (${ownerFilterSql})`].join(' AND ')}`;
   const [[{ missing: missingOwnerCount }]] = await pool.query(
-    `SELECT COUNT(*) AS missing FROM property_master pm ${missingWhereSql}`, params
+    `SELECT COUNT(*) AS missing FROM property_master pm ${gmJoinSql} ${missingWhereSql}`, params
   );
 
   if (hideMissingOwner) where.push(ownerFilterSql);
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
-  const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM property_master pm ${whereSql}`, params);
+  const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM property_master pm ${gmJoinSql} ${whereSql}`, params);
 
   const selectAssessment = yearId
     ? `, a.id AS assessment_id, a.gharpatti, a.divabatti, a.arogya, a.panipatti, a.total_tax`
@@ -54,9 +59,13 @@ router.get('/', async (req, res) => {
   const joinParams = yearId ? [yearId] : [];
 
   const [rows] = await pool.query(
-    `SELECT pm.*, pt.par_name AS construction_type_name ${selectAssessment}
+    `SELECT pm.*, pt.par_name AS construction_type_name,
+            COALESCE(gm.owner_name, pm.owner_name) AS owner_name,
+            COALESCE(gm.spouse_name, pm.spouse_name) AS spouse_name
+            ${selectAssessment}
      FROM property_master pm
      LEFT JOIN particular_master pt ON pt.par_code = pm.construction_type
+     LEFT JOIN gpmaster gm ON gm.code = pm.property_code
      ${joinAssessment}
      ${whereSql}
      ORDER BY pm.property_code, pm.malmata_no
@@ -84,9 +93,12 @@ router.get('/next-srno', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   const [[property]] = await pool.query(
-    `SELECT pm.*, pt.par_name AS construction_type_name
+    `SELECT pm.*, pt.par_name AS construction_type_name,
+            COALESCE(gm.owner_name, pm.owner_name) AS owner_name,
+            COALESCE(gm.spouse_name, pm.spouse_name) AS spouse_name
      FROM property_master pm
      LEFT JOIN particular_master pt ON pt.par_code = pm.construction_type
+     LEFT JOIN gpmaster gm ON gm.code = pm.property_code
      WHERE pm.id = ?`,
     [req.params.id]
   );

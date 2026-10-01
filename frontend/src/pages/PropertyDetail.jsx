@@ -132,13 +132,21 @@ function MasterFields({ master, setMaster, particulars, gpmasterList }) {
           )}
         </div>
       </div>
-      <div className="field wide-field">
+      <div className="field wide-field readonly">
         <label>मालकाचे नाव *</label>
-        <input required value={master.owner_name} onChange={(e) => setMaster({ ...master, owner_name: e.target.value })} />
+        <input required disabled value={master.owner_name} placeholder="मिळकत कोड निवडा - मालकाचे नाव आपोआप येईल" />
       </div>
-      <div className="field wide-field">
+      <div className="field wide-field readonly">
         <label>पत्नीचे नाव</label>
-        <input value={master.spouse_name} onChange={(e) => setMaster({ ...master, spouse_name: e.target.value })} />
+        <input disabled value={master.spouse_name} placeholder="GPMASTER मध्ये नोंदलेले असल्यास आपोआप येईल" />
+      </div>
+      <div className="field wide-field" style={{ marginTop: -8 }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+          मालकाचे व पत्नीचे नाव इथे टाइप करता येत नाही - ते मिळकतदार मास्टर (GPMASTER) मधूनच कोडनुसार आपोआप येते.
+          नाव चुकीचे/अपुरे असल्यास{' '}
+          <a href="/gpmaster" target="_blank" rel="noopener noreferrer">इथे क्लिक करून GPMASTER मध्ये दुरुस्त करा</a>
+          {' '}(नवीन टॅबमध्ये उघडेल), मग हे पान रिफ्रेश करा.
+        </span>
       </div>
       <div className="field narrow-field">
         <label>अ.क्र. (SRNO)</label>

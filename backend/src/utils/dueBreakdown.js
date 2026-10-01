@@ -15,7 +15,9 @@ async function getDueBreakdownForProperty(pool, propertyId, yearId) {
   if (!year) return { year: null, row: null };
 
   const [[row]] = await pool.query(
-    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.spouse_name,
+    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no,
+            COALESCE(gm.owner_name, pm.owner_name) AS owner_name,
+            COALESCE(gm.spouse_name, pm.spouse_name) AS spouse_name,
             COALESCE(cur.gharpatti, 0) AS current_gharpatti,
             COALESCE(cur.divabatti, 0) AS current_divabatti,
             COALESCE(cur.arogya, 0) AS current_arogya,
@@ -25,6 +27,7 @@ async function getDueBreakdownForProperty(pool, propertyId, yearId) {
             COALESCE(prev.p_arogya, 0) AS previous_arogya,
             COALESCE(prev.p_panipatti, 0) AS previous_panipatti
      FROM property_master pm
+     LEFT JOIN gpmaster gm ON gm.code = pm.property_code
      LEFT JOIN property_tax_assessment cur
        ON cur.property_id = pm.id AND cur.financial_year_id = ?
      LEFT JOIN (
@@ -53,7 +56,9 @@ async function getDueBreakdownForCode(pool, propertyCode, yearId) {
   if (!year) return { year: null, portions: [] };
 
   const [portions] = await pool.query(
-    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.spouse_name,
+    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no,
+            COALESCE(gm.owner_name, pm.owner_name) AS owner_name,
+            COALESCE(gm.spouse_name, pm.spouse_name) AS spouse_name,
             COALESCE(cur.gharpatti, 0) AS current_gharpatti,
             COALESCE(cur.divabatti, 0) AS current_divabatti,
             COALESCE(cur.arogya, 0) AS current_arogya,
@@ -63,6 +68,7 @@ async function getDueBreakdownForCode(pool, propertyCode, yearId) {
             COALESCE(prev.p_arogya, 0) AS previous_arogya,
             COALESCE(prev.p_panipatti, 0) AS previous_panipatti
      FROM property_master pm
+     LEFT JOIN gpmaster gm ON gm.code = pm.property_code
      LEFT JOIN property_tax_assessment cur
        ON cur.property_id = pm.id AND cur.financial_year_id = ?
      LEFT JOIN (
@@ -122,7 +128,9 @@ async function getDueBreakdownBulk(pool, yearId, { skipAdjustments = false } = {
   if (!year) return { year: null, rows: [] };
 
   const [rows] = await pool.query(
-    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no, pm.owner_name, pm.spouse_name,
+    `SELECT pm.id AS property_id, pm.property_code, pm.srno, pm.malmata_no,
+            COALESCE(gm.owner_name, pm.owner_name) AS owner_name,
+            COALESCE(gm.spouse_name, pm.spouse_name) AS spouse_name,
             COALESCE(cur.gharpatti, 0) AS current_gharpatti,
             COALESCE(cur.divabatti, 0) AS current_divabatti,
             COALESCE(cur.arogya, 0) AS current_arogya,
@@ -132,6 +140,7 @@ async function getDueBreakdownBulk(pool, yearId, { skipAdjustments = false } = {
             COALESCE(prev.p_arogya, 0) AS previous_arogya,
             COALESCE(prev.p_panipatti, 0) AS previous_panipatti
      FROM property_master pm
+     LEFT JOIN gpmaster gm ON gm.code = pm.property_code
      LEFT JOIN property_tax_assessment cur
        ON cur.property_id = pm.id AND cur.financial_year_id = ?
      LEFT JOIN (

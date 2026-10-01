@@ -21,10 +21,13 @@ router.get('/', async (req, res) => {
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
   const [rows] = await pool.query(
-    `SELECT a.*, fy.year_label, pm.owner_name, pm.malmata_no, pm.srno, pm.property_code
+    `SELECT a.*, fy.year_label, pm.malmata_no, pm.srno, pm.property_code,
+            COALESCE(gm.owner_name, pm.owner_name) AS owner_name,
+            COALESCE(gm.spouse_name, pm.spouse_name) AS spouse_name
      FROM property_tax_assessment a
      JOIN financial_years fy ON fy.id = a.financial_year_id
      JOIN property_master pm ON pm.id = a.property_id
+     LEFT JOIN gpmaster gm ON gm.code = pm.property_code
      ${whereSql}
      ORDER BY a.id DESC`,
     params

@@ -214,10 +214,13 @@ router.get('/', async (req, res) => {
   const where = propertyId ? 'WHERE p.property_id = ?' : '';
   const params = propertyId ? [propertyId] : [];
   const [rows] = await pool.query(
-    `SELECT p.*, fy.year_label, pm.owner_name, pm.property_code, pm.srno, pm.malmata_no
+    `SELECT p.*, fy.year_label, pm.property_code, pm.srno, pm.malmata_no,
+            COALESCE(gm.owner_name, pm.owner_name) AS owner_name,
+            COALESCE(gm.spouse_name, pm.spouse_name) AS spouse_name
      FROM tax_payments p
      JOIN financial_years fy ON fy.id = p.financial_year_id
      JOIN property_master pm ON pm.id = p.property_id
+     LEFT JOIN gpmaster gm ON gm.code = pm.property_code
      ${where}
      ORDER BY p.payment_date DESC, p.id DESC`,
     params

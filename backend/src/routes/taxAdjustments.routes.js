@@ -48,9 +48,14 @@ router.get('/', async (req, res) => {
     `SELECT t.id, t.financial_year_id, t.scope, t.property_code, t.kind, t.applies_to,
             t.on_gharpatti, t.on_divabatti, t.on_arogya, t.on_panipatti, t.mode, t.value,
             t.reason, t.order_no, DATE_FORMAT(t.order_date, '%Y-%m-%d') AS order_date, t.is_active, t.created_at,
-            (SELECT pm.owner_name FROM property_master pm WHERE pm.property_code = t.property_code
-               AND pm.owner_name IS NOT NULL AND pm.owner_name <> '' ORDER BY pm.id LIMIT 1) AS owner_name
-     FROM tax_adjustments t ${financialYearId ? 'WHERE t.financial_year_id = ?' : ''} ORDER BY t.id DESC`,
+            COALESCE(
+              gm.owner_name,
+              (SELECT pm.owner_name FROM property_master pm WHERE pm.property_code = t.property_code
+                 AND pm.owner_name IS NOT NULL AND pm.owner_name <> '' ORDER BY pm.id LIMIT 1)
+            ) AS owner_name
+     FROM tax_adjustments t
+     LEFT JOIN gpmaster gm ON gm.code = t.property_code
+     ${financialYearId ? 'WHERE t.financial_year_id = ?' : ''} ORDER BY t.id DESC`,
     financialYearId ? [financialYearId] : []
   );
   res.json(rows);

@@ -233,7 +233,8 @@ SELECT
   a.financial_year_id,
   fy.year_label,
   pm.property_code,
-  MAX(pm.owner_name) AS owner_name,
+  MAX(COALESCE(gm.owner_name, pm.owner_name)) AS owner_name,
+  MAX(COALESCE(gm.spouse_name, pm.spouse_name)) AS spouse_name,
   GROUP_CONCAT(DISTINCT pm.malmata_no ORDER BY pm.malmata_no SEPARATOR ', ') AS malmata_no_list,
   COUNT(*) AS portion_count,
   SUM(a.gharpatti) AS total_gharpatti,
@@ -244,6 +245,7 @@ SELECT
 FROM property_tax_assessment a
 JOIN property_master pm ON pm.id = a.property_id
 JOIN financial_years fy ON fy.id = a.financial_year_id
+LEFT JOIN gpmaster gm ON gm.code = pm.property_code
 GROUP BY a.financial_year_id, fy.year_label, pm.property_code;
 
 -- ---------------------------------------------------------------------
