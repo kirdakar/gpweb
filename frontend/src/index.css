@@ -99,7 +99,8 @@ tbody tr:hover { background: #f8fafc; }
   gap: 14px;
 }
 .field { display: flex; flex-direction: column; gap: 4px; }
-.field label { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+/* सर्व फॉर्मवरील लेबल व टेक्स्टबॉक्सची फॉन्ट (१५px) व ठळक (bold) - सर्वत्र एकसमान. */
+.field label { font-size: 15px; color: var(--text); font-weight: 700; }
 /* साधे पण आकर्षक टेक्स्टबॉक्स - पातळ बॉर्डर, गोलसर कोपरे, फोकसवर हलकीशी
    निळी झाक (glow) - आधी काही स्क्रीन्सवर (मिळकत नोंद) जाडसर बॉर्डर/ठळक
    अक्षरे/रंगीत gradient वेगळे दिसत होते, ते इथेच एकसमान करून सर्वत्र लागू
@@ -110,7 +111,8 @@ tbody tr:hover { background: #f8fafc; }
   border-radius: 8px;
   background: #fff;
   color: var(--text);
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 700;
   transition: border-color .15s ease, box-shadow .15s ease;
 }
 .field input:focus, .field select:focus, .field textarea:focus {
@@ -118,7 +120,7 @@ tbody tr:hover { background: #f8fafc; }
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
 }
-.field input::placeholder, .field textarea::placeholder { color: #94a3b8; }
+.field input::placeholder, .field textarea::placeholder { color: #94a3b8; font-weight: 400; }
 .field.readonly input { background: #f1f5f9; color: var(--text-muted); }
 /* आकड्यांच्या रकान्यांवरील ब्राउझरचे वर-खाली बाण (spinner) सर्वत्र काढले
    (.field च्या आतले व टेबल-सेलमधील बाहेरचे दोन्ही) - साधे दिसावे म्हणून;
@@ -135,12 +137,9 @@ input[type="number"]::-webkit-inner-spin-button {
    वाटलेली फॉन्ट आता सर्वत्र (रिपोर्ट/छापील पानांना धक्का न लावता, तिथली
    फॉन्ट कागदावर नेमकी बसवलेली असते). */
 .data-entry-page table { font-size: 15px; }
-.data-entry-page table input { font-size: 15px; }
+.data-entry-page table input { font-size: 15px; font-weight: 700; }
 .data-entry-page h3 { font-size: 17px; }
-.data-entry-page .field input,
-.data-entry-page .field select,
-.data-entry-page .field textarea { font-size: 15px; }
-.data-entry-page .field label { font-size: 13px; }
+
 
 /* मूळ माहिती: मिळकत कोड/अ.क्र./मालमत्ता क्र. आखूड जागेत, मालकाचे नाव
    कोडनंतर लगेच व दोन स्तंभांइतकी जास्त रुंद जागा घेऊन. */
@@ -297,7 +296,7 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
 .pagination { display: flex; gap: 8px; align-items: center; margin-top: 12px; justify-content: flex-end; }
 
 .search-bar { display: flex; gap: 8px; margin-bottom: 14px; }
-.search-bar input { flex: 1; max-width: 320px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; }
+.search-bar input { flex: 1; max-width: 320px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 15px; font-weight: 700; }
 
 .combo-wrap { position: relative; flex: 1; max-width: 480px; }
 .combo-wrap input { max-width: none; width: 100%; }
