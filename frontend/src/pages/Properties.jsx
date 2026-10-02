@@ -93,7 +93,7 @@ export default function Properties() {
                     <td>{r.property_code ?? '-'}</td>
                     <td className="col-wrap">
                       {r.owner_name}
-                      {r.spouse_name && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.spouse_name}</div>}
+                      {r.spouse_name && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>पत्नी - {r.spouse_name}</div>}
                     </td>
                     <td>{r.srno ?? '-'}</td>
                     <td>{r.malmata_no ?? '-'}</td>

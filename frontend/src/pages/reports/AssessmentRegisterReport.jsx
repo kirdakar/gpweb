@@ -30,7 +30,7 @@ const TOP_COLUMNS = [
       return (
         <>
           {r.owner_name}
-          {r.spouse_name && <div style={{ fontSize: 11 }}>{r.spouse_name}</div>}
+          {r.spouse_name && <div style={{ fontSize: 11 }}>पत्नी - {r.spouse_name}</div>}
         </>
       );
     },

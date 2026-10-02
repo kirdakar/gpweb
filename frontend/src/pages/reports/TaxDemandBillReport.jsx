@@ -56,7 +56,7 @@ function BillCopy({ summary, settings, periodText, billNo, billDate }) {
 
       <div className="bill-owner">
         <div>श्री./सौ. <strong>{property.owner_name}</strong></div>
-        {property.spouse_name && <div style={{ fontSize: 12 }}>पत्नी: {property.spouse_name}</div>}
+        {property.spouse_name && <div style={{ fontSize: 12 }}>पत्नी - {property.spouse_name}</div>}
       </div>
       <p className="bill-line">यांस कडून पुढील कराची रक्कम वसुली योग्य आहे. (मालमत्ता क्रं. {property.malmata_no_list || '-'})</p>
 

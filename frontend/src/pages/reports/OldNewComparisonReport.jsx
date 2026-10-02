@@ -120,7 +120,7 @@ export default function OldNewComparisonReport() {
                   <td>{g.property_code ?? '-'}</td>
                   <td className="col-owner-name">
                     {g.owner_name}
-                    {g.spouse_name && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{g.spouse_name}</div>}
+                    {g.spouse_name && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>पत्नी - {g.spouse_name}</div>}
                   </td>
                   <td className="col-malmata">{g.malmataNos.join(', ')}</td>
                   {GROUPS.map((gr) => (

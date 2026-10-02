@@ -140,7 +140,7 @@ export default function PropertyListReport() {
                   {idx === 0 && (
                     <td rowSpan={group.length} className="col-wrap">
                       {r.owner_name}
-                      {r.spouse_name && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.spouse_name}</div>}
+                      {r.spouse_name && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>पत्नी - {r.spouse_name}</div>}
                     </td>
                   )}
                   <td>{r.malmata_no ?? '-'}</td>
