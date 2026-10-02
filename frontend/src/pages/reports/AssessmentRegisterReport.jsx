@@ -23,12 +23,17 @@ const TOP_COLUMNS = [
   { num: 4, label: 'मालमत्ता क्रं.', width: '7%', render: (r) => r.malmata_no ?? '-' },
   {
     num: 5, label: 'मालकाचे नांव', width: '15%',
-    render: (r) => (
-      <>
-        {r.owner_name}
-        {r.spouse_name && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.spouse_name}</div>}
-      </>
-    ),
+    // एकाच कोडखाली (पानावर) अनेक मालमत्ता असल्या व मालकाचे नाव तेच असेल तर नाव
+    // (व पत्नीचे नाव) फक्त पहिल्या ओळीत; पुढच्या ओळींत रकाना रिकामा.
+    render: (r, i, all) => {
+      if (i > 0 && all[i - 1].owner_name === r.owner_name) return '';
+      return (
+        <>
+          {r.owner_name}
+          {r.spouse_name && <div style={{ fontSize: 11 }}>{r.spouse_name}</div>}
+        </>
+      );
+    },
   },
   { num: 6, label: 'भोगवटादाराचे नांव', width: '11%', render: (r) => r.bhogvatdar || '-' },
   // बांधकाम प्रकार (construction_type_name) हे मालकाने निवडलेल्या ठराविक यादीतील (dropdown)
@@ -96,8 +101,8 @@ function FormTable({ columns, groups, portions }) {
         <tr className="col-number-row">{columns.map((c) => <th key={c.num}><span className="col-num-box">{c.num}</span></th>)}</tr>
       </thead>
       <tbody>
-        {portions.map((row) => (
-          <tr key={row.property_id}>{columns.map((c) => <td key={c.num} className={c.num_cls ? 'num' : undefined}>{c.render(row)}</td>)}</tr>
+        {portions.map((row, i) => (
+          <tr key={row.property_id}>{columns.map((c) => <td key={c.num} className={c.num_cls ? 'num' : undefined}>{c.render(row, i, portions)}</td>)}</tr>
         ))}
       </tbody>
     </table>
