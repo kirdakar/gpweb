@@ -7,7 +7,7 @@ import 'leaflet/dist/leaflet.css';
 // (ऑफलाइन/LAN) पार्श्वचित्र रिकामे राहते, पण मिळकतींचे आकार व क्रमांक तसेच दिसतात.
 // items: [{ malmata_no, points: [{latitude, longitude}], property: {id, property_code, owner_name, spouse_name} | null }]
 // focusMalmata: हा मालमत्ता क्रमांक लाल रंगात ठळक करून त्यावर झूम करतो.
-export default function VillageMapView({ items, focusMalmata, height = 520, onOpenProperty }) {
+export default function VillageMapView({ items, focusMalmata, height = 520, onOpenProperty, focusMaxZoom = 20 }) {
   const elRef = useRef(null);
 
   useEffect(() => {
@@ -63,12 +63,12 @@ export default function VillageMapView({ items, focusMalmata, height = 520, onOp
       if (isFocus) focusBounds = shape.getBounds();
     }
 
-    if (focusBounds) map.fitBounds(focusBounds, { maxZoom: 20, padding: [40, 40] });
+    if (focusBounds) map.fitBounds(focusBounds, { maxZoom: focusMaxZoom, padding: [40, 40] });
     else if (all.length) map.fitBounds(all, { maxZoom: 18, padding: [30, 30] });
     else map.setView([17.9107, 74.9815], 15);
 
     return () => map.remove();
-  }, [items, focusMalmata, onOpenProperty]);
+  }, [items, focusMalmata, focusMaxZoom, onOpenProperty]);
 
   return <div ref={elRef} style={{ height, width: '100%', borderRadius: 8, border: '1px solid var(--border)', background: '#e5e7eb' }} />;
 }

@@ -18,6 +18,16 @@ const emptyLatLong = () => Array.from({ length: 4 }, () => ({ latitude: '', long
 // मिळकतीचे अक्षांश/रेखांश - ४ कोपऱ्यांचे बिंदू (मालमत्ता क्रमांकावर आधारित, latlong टेबल).
 // दशांश (17.91068081) किंवा दिशेसह (17.91068081N) दोन्ही स्वरूपात भरता येते.
 function LatLongCard({ malmataNo, points, setPoints, saved, onSave, canEdit, notice, error }) {
+  const navigate = useNavigate();
+  // नकाशावर सर्व मिळकती दिसाव्यात (सध्याची लाल/ठळक, बाकीच्या निळ्या) - सध्याच्या मिळकतीचे बिंदू ताजे (saved) वापरतो.
+  const [allItems, setAllItems] = useState([]);
+  useEffect(() => { client.get('/latlong').then(({ data }) => setAllItems(data)).catch(() => {}); }, []);
+  const mapItems = useMemo(() => {
+    const others = allItems.filter((it) => String(it.malmata_no) !== String(malmataNo));
+    const mine = allItems.find((it) => String(it.malmata_no) === String(malmataNo));
+    return [...others, { malmata_no: malmataNo, points: saved, property: mine?.property || null }];
+  }, [allItems, saved, malmataNo]);
+  const openProperty = useCallback((id) => navigate(`/properties/${id}`), [navigate]);
   const setPoint = (i, key, value) => setPoints((ps) => ps.map((p, idx) => (idx === i ? { ...p, [key]: value } : p)));
   return (
     <div className="card" style={{ marginTop: 20 }}>
@@ -42,7 +52,7 @@ function LatLongCard({ malmataNo, points, setPoints, saved, onSave, canEdit, not
       </div>
       {saved.length > 0 && malmataNo && (
         <div style={{ marginTop: 14 }}>
-          <VillageMapView items={[{ malmata_no: malmataNo, points: saved, property: null }]} focusMalmata={malmataNo} height={300} />
+          <VillageMapView items={mapItems} focusMalmata={malmataNo} focusMaxZoom={18} height={380} onOpenProperty={openProperty} />
         </div>
       )}
     </div>
