@@ -9,6 +9,9 @@ import 'leaflet/dist/leaflet.css';
 // focusMalmata: हा मालमत्ता क्रमांक लाल रंगात ठळक करून त्यावर झूम करतो.
 export default function VillageMapView({ items, focusMalmata, height = 520, onOpenProperty, focusMaxZoom = 20 }) {
   const elRef = useRef(null);
+  const insetBoxRef = useRef(null);
+  const insetTitleRef = useRef(null);
+  const insetMapRef = useRef(null);
 
   useEffect(() => {
     const map = L.map(elRef.current, { zoomControl: true, preferCanvas: false });
@@ -19,6 +22,30 @@ export default function VillageMapView({ items, focusMalmata, height = 520, onOp
       maxZoom: 21, maxNativeZoom: 18, attribution: 'Esri World Imagery',
     });
     satellite.addTo(map);
+
+    // कोपऱ्यातील स्वतंत्र (inset) झूम केलेले चित्र - मिळकतीवर क्लिक केल्यावर तीच जागा उपग्रह चित्रात
+    // जवळून (खरा आकार) दिसते; मुख्य नकाशा गावाच्या दृश्यातच राहतो. इनसेटचा नकाशा स्वतंत्र (झूम/ड्रॅग करता येतो).
+    let insetMap = null;
+    let insetLayer = null;
+    const showInset = (it, latlngs) => {
+      insetBoxRef.current.style.display = 'block';
+      insetTitleRef.current.textContent = `मालमत्ता क्र. ${it.malmata_no} — जवळून`;
+      if (!insetMap) {
+        insetMap = L.map(insetMapRef.current, { zoomControl: true, attributionControl: false });
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 21, maxNativeZoom: 18 }).addTo(insetMap);
+        insetLayer = L.layerGroup().addTo(insetMap);
+      }
+      insetLayer.clearLayers();
+      const shape = latlngs.length >= 3
+        ? L.polygon(latlngs, { color: '#dc2626', weight: 3, fillColor: '#dc2626', fillOpacity: 0.12 })
+        : L.polyline(latlngs, { color: '#dc2626', weight: 3 });
+      shape.addTo(insetLayer);
+      insetMap.invalidateSize();
+      insetMap.fitBounds(L.latLngBounds(latlngs), { maxZoom: 19, padding: [40, 40] });
+    };
+    const hideInset = () => { if (insetBoxRef.current) insetBoxRef.current.style.display = 'none'; };
+    insetBoxRef.current.querySelector('button').onclick = hideInset;
+    hideInset();
     L.control.layers({ 'उपग्रह (Satellite)': satellite, 'रस्ते (Street)': street }).addTo(map);
 
     const all = [];
@@ -87,9 +114,7 @@ export default function VillageMapView({ items, focusMalmata, height = 520, onOp
         }
       }
       shape.bindPopup(box);
-      // मिळकतीवर क्लिक केल्यावर तिथे जवळून झूम होतो - उपग्रह चित्रात घर/शेड/खुली जागा दिसावी म्हणून
-      const realBounds = L.latLngBounds(latlngs);
-      shape.on('click', () => map.flyToBounds(realBounds, { maxZoom: 19, padding: [120, 120], duration: 0.8 }));
+      shape.on('click', () => showInset(it, latlngs));
 
       all.push(...latlngs);
       if (isFocus) focusBounds = shape.getBounds();
@@ -101,8 +126,19 @@ export default function VillageMapView({ items, focusMalmata, height = 520, onOp
     rescale();
     map.on('zoomend', rescale);
 
-    return () => map.remove();
+    return () => { if (insetMap) insetMap.remove(); map.remove(); };
   }, [items, focusMalmata, focusMaxZoom, onOpenProperty]);
 
-  return <div ref={elRef} style={{ height, width: '100%', borderRadius: 8, border: '1px solid var(--border)', background: '#e5e7eb' }} />;
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <div ref={elRef} style={{ height, width: '100%', borderRadius: 8, border: '1px solid var(--border)', background: '#e5e7eb' }} />
+      <div ref={insetBoxRef} style={{ display: 'none', position: 'absolute', right: 10, bottom: 28, width: Math.min(320, 260 + Math.max(0, height - 380) / 3), maxWidth: '55%', zIndex: 1000, background: '#fff', border: '2px solid #1e3a8a', borderRadius: 8, boxShadow: '0 4px 18px rgba(0,0,0,0.35)', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1e3a8a', color: '#fff', padding: '3px 8px', fontSize: 13, fontWeight: 700 }}>
+          <span ref={insetTitleRef} />
+          <button type="button" aria-label="बंद करा" style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: 16, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+        </div>
+        <div ref={insetMapRef} style={{ height: Math.min(260, Math.max(150, height - 150)), width: '100%' }} />
+      </div>
+    </div>
+  );
 }
