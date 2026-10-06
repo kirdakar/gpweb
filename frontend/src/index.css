@@ -468,8 +468,9 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
    बाकी सर्व अहवाल डीफॉल्ट पोर्ट्रेटमध्येच छापले जातात. */
 @media print {
   .a4-page { border: none; margin: 0; width: auto; padding: 0; page: gp-register-landscape; }
-  @page gp-register-landscape { size: A4 landscape; margin: 10mm; }
-  @page { size: A4 portrait; margin: 10mm; }
+  /* फाईलिंग/पंचिंगसाठी डाव्या बाजूला जास्त जागा (पोर्ट्रेट २५mm, लँडस्केप २०mm) - सर्व अहवालांना लागू */
+  @page gp-register-landscape { size: A4 landscape; margin: 10mm 10mm 10mm 20mm; }
+  @page { size: A4 portrait; margin: 10mm 10mm 10mm 25mm; }
 }
 
 /* नमुना नं. ९ (क) - कर मागणी बिल: A4 पोर्ट्रेट, एकाच पानावर दोन प्रती
@@ -521,7 +522,8 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
   box-shadow: none;
 }
 
-/* नमुना १२ (प्रमाणक) - एका A4 पानावर बसावा म्हणून प्रिंटमध्ये फॉन्ट/ओळींतर थोडे कमी */
+/* नमुना १२ (प्रमाणक) - A4 पोर्ट्रेट एकाच पानावर बसतो (डावीकडे २५mm फाईलिंग जागा सोडून उपलब्ध रुंदी
+   १७५mm; या मापात फॉर्मची उंची पानाच्या ~८०% येते, लांब तपशील असला तरी एकाच पानावर राहतो). */
 @media print {
-  .voucher-form { font-size: 12.5px !important; line-height: 1.5 !important; box-shadow: none !important; border: none !important; max-width: none !important; }
+  .voucher-form { font-size: 14px !important; line-height: 1.9 !important; box-shadow: none !important; border: none !important; max-width: none !important; padding: 0 !important; page-break-inside: avoid; }
 }
