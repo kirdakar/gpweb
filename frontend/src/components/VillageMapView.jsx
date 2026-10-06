@@ -57,6 +57,17 @@ export default function VillageMapView({ items, focusMalmata, height = 520, onOp
       title.style.fontWeight = '700';
       title.textContent = `मालमत्ता क्र. ${it.malmata_no}`;
       box.appendChild(title);
+      if (it.portions && it.portions.length) {
+        const ul = document.createElement('div');
+        ul.style.cssText = 'margin-top:4px;font-size:12px';
+        for (const pt of it.portions) {
+          const li = document.createElement('div');
+          const kind = pt.construction_type_name || 'बांधकाम प्रकार नोंदलेला नाही';
+          li.textContent = `• ${kind}${pt.particulars ? ` — ${pt.particulars}` : ''}`;
+          ul.appendChild(li);
+        }
+        box.appendChild(ul);
+      }
       if (it.property) {
         const l1 = document.createElement('div');
         l1.textContent = `कोड ${it.property.property_code ?? '-'} - ${it.property.owner_name || ''}`;
@@ -76,6 +87,9 @@ export default function VillageMapView({ items, focusMalmata, height = 520, onOp
         }
       }
       shape.bindPopup(box);
+      // मिळकतीवर क्लिक केल्यावर तिथे जवळून झूम होतो - उपग्रह चित्रात घर/शेड/खुली जागा दिसावी म्हणून
+      const realBounds = L.latLngBounds(latlngs);
+      shape.on('click', () => map.flyToBounds(realBounds, { maxZoom: 19, padding: [120, 120], duration: 0.8 }));
 
       all.push(...latlngs);
       if (isFocus) focusBounds = shape.getBounds();

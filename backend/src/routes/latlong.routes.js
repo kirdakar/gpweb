@@ -15,21 +15,24 @@ router.get('/', async (req, res) => {
     'SELECT malmata_no, point_no, latitude, longitude FROM latlong ORDER BY malmata_no, point_no'
   );
   const [props] = await pool.query(
-    `SELECT pm.id, pm.malmata_no, pm.property_code,
+    `SELECT pm.id, pm.malmata_no, pm.property_code, pm.particulars, pt.par_name AS construction_type_name,
             COALESCE(gm.owner_name, pm.owner_name) AS owner_name,
             COALESCE(gm.spouse_name, pm.spouse_name) AS spouse_name
      FROM property_master pm
      LEFT JOIN gpmaster gm ON gm.code = pm.property_code
+     LEFT JOIN particular_master pt ON pt.par_code = pm.construction_type
      WHERE pm.malmata_no IN (SELECT DISTINCT malmata_no FROM latlong)
      ORDER BY pm.property_code, pm.id`
   );
   const byNo = new Map();
   for (const p of pts) {
-    if (!byNo.has(p.malmata_no)) byNo.set(p.malmata_no, { malmata_no: p.malmata_no, points: [], property: null });
+    if (!byNo.has(p.malmata_no)) byNo.set(p.malmata_no, { malmata_no: p.malmata_no, points: [], property: null, portions: [] });
     byNo.get(p.malmata_no).points.push({ point_no: p.point_no, latitude: Number(p.latitude), longitude: Number(p.longitude) });
   }
   for (const pr of props) {
     const g = byNo.get(pr.malmata_no);
+    // त्या मालमत्ता क्रमांकाखालील सर्व भाग (बांधकाम प्रकार: घर/शेड/खुली जागा इ.) - नकाशाच्या पॉपअपसाठी
+    if (g) g.portions.push({ construction_type_name: pr.construction_type_name, particulars: pr.particulars });
     if (g && !g.property) g.property = { id: pr.id, property_code: pr.property_code, owner_name: pr.owner_name, spouse_name: pr.spouse_name };
   }
   res.json([...byNo.values()]);
