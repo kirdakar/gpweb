@@ -508,3 +508,15 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
 
 /* डॅशबोर्ड टेबल कॉम्पॅक्ट - ओळींची उंची कमी जेणेकरून एका स्क्रीनवर पूर्ण मावेल */
 .dashboard-page th, .dashboard-page td { padding-top: 5px; padding-bottom: 5px; }
+
+/* गावाचा नकाशा - मालमत्ता क्रमांकाचे लेबल (polygon च्या मध्यभागी) */
+.village-map-label {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #1e3a8a;
+  border-radius: 4px;
+  padding: 0 4px;
+  font-weight: 700;
+  font-size: 12px;
+  color: #1e3a8a;
+  box-shadow: none;
+}

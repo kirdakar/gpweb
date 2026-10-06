@@ -1,16 +1,53 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import client from '../api/client';
 import { useYear } from '../context/YearContext';
 import { usePermissions } from '../context/PermissionsContext';
 import { round2 } from '../utils/taxCalc';
 import { fetchGpmasterList } from '../utils/gpmasterCache';
 import CloseReportButton from '../components/CloseReportButton';
+import VillageMapView from '../components/VillageMapView';
 
 const emptyMaster = {
   property_code: '', srno: '', malmata_no: '', particulars: '', construction_type: '',
   owner_name: '', spouse_name: '', bhogvatdar: '', milkat_year: '', is_government: false, narration: '',
 };
+
+const emptyLatLong = () => Array.from({ length: 4 }, () => ({ latitude: '', longitude: '' }));
+
+// मिळकतीचे अक्षांश/रेखांश - ४ कोपऱ्यांचे बिंदू (मालमत्ता क्रमांकावर आधारित, latlong टेबल).
+// दशांश (17.91068081) किंवा दिशेसह (17.91068081N) दोन्ही स्वरूपात भरता येते.
+function LatLongCard({ malmataNo, points, setPoints, saved, onSave, canEdit, notice, error }) {
+  const setPoint = (i, key, value) => setPoints((ps) => ps.map((p, idx) => (idx === i ? { ...p, [key]: value } : p)));
+  return (
+    <div className="card" style={{ marginTop: 20 }}>
+      <h2 style={{ fontSize: 14, marginTop: 0 }}>अक्षांश / रेखांश (मिळकतीचे ४ कोपरे){malmataNo ? ` — मालमत्ता क्र. ${malmataNo}` : ''}</h2>
+      {!malmataNo && <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>अक्षांश/रेखांश मालमत्ता क्रमांकावर जोडले जातात - आधी वर "मालमत्ता क्र." भरा.</p>}
+      {error && <div className="error-box">{error}</div>}
+      {notice && <div className="notice-box">{notice}</div>}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 14 }}>
+        {points.map((p, i) => (
+          <div key={i} className="field">
+            <label>बिंदू {i + 1} — अक्षांश (Latitude) / रेखांश (Longitude)</label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input style={{ flex: 1, minWidth: 0 }} placeholder="17.91068081" value={p.latitude} disabled={!canEdit || !malmataNo} onChange={(e) => setPoint(i, 'latitude', e.target.value)} />
+              <input style={{ flex: 1, minWidth: 0 }} placeholder="74.98181051" value={p.longitude} disabled={!canEdit || !malmataNo} onChange={(e) => setPoint(i, 'longitude', e.target.value)} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: 14, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        {onSave && <button className="btn" type="button" onClick={onSave} disabled={!canEdit || !malmataNo}>अक्षांश/रेखांश जतन करा</button>}
+        {saved.length > 0 && malmataNo && <Link className="btn secondary" to={`/village-map?malmata=${encodeURIComponent(malmataNo)}`}>गावाच्या नकाशावर पहा</Link>}
+      </div>
+      {saved.length > 0 && malmataNo && (
+        <div style={{ marginTop: 14 }}>
+          <VillageMapView items={[{ malmata_no: malmataNo, points: saved, property: null }]} focusMalmata={malmataNo} height={300} />
+        </div>
+      )}
+    </div>
+  );
+}
 
 const emptyAssessment = {
   new_length: '', new_width: '', area_sqft: '', area_sqm: '',
@@ -291,6 +328,41 @@ export default function PropertyDetail() {
   const [assessmentNotice, setAssessmentNotice] = useState('');
   const [loading, setLoading] = useState(!isNew);
 
+  // अक्षांश/रेखांश (latlong) - मालमत्ता क्रमांकानुसार; latlong = भरायचे ४ बिंदू, latlongSaved = जतन केलेले (नकाशासाठी)
+  const [latlong, setLatlong] = useState(emptyLatLong());
+  const [latlongSaved, setLatlongSaved] = useState([]);
+  const [latlongNotice, setLatlongNotice] = useState('');
+  const [latlongError, setLatlongError] = useState('');
+  const malmataKey = String(master.malmata_no || '').trim();
+
+  useEffect(() => {
+    setLatlongNotice('');
+    setLatlongError('');
+    if (!malmataKey) { setLatlong(emptyLatLong()); setLatlongSaved([]); return undefined; }
+    const t = setTimeout(() => {
+      client.get(`/latlong/${encodeURIComponent(malmataKey)}`).then(({ data }) => {
+        const filled = emptyLatLong();
+        data.slice(0, 4).forEach((p, i) => { filled[i] = { latitude: String(p.latitude), longitude: String(p.longitude) }; });
+        setLatlong(filled);
+        setLatlongSaved(data);
+      }).catch(() => {});
+    }, 400);
+    return () => clearTimeout(t);
+  }, [malmataKey]);
+
+  async function saveLatlong(key = malmataKey) {
+    setLatlongNotice('');
+    setLatlongError('');
+    try {
+      await client.put(`/latlong/${encodeURIComponent(key)}`, { points: latlong });
+      const { data } = await client.get(`/latlong/${encodeURIComponent(key)}`);
+      setLatlongSaved(data);
+      setLatlongNotice('अक्षांश/रेखांश जतन झाले.');
+    } catch (err) {
+      setLatlongError(err.response?.data?.error || 'अक्षांश/रेखांश जतन करताना त्रुटी आली');
+    }
+  }
+
   useEffect(() => {
     client.get('/particulars').then(({ data }) => setParticulars(data));
     fetchGpmasterList().then(setGpmasterList);
@@ -470,6 +542,9 @@ export default function PropertyDetail() {
       if (hasAssessmentData && selectedYearId) {
         await client.post('/assessments', { ...assessmentForm, property_id: data.id, financial_year_id: selectedYearId });
       }
+      if (malmataKey && latlong.some((p) => String(p.latitude).trim() || String(p.longitude).trim())) {
+        try { await client.put(`/latlong/${encodeURIComponent(malmataKey)}`, { points: latlong }); } catch { /* मिळकत जतन झाली; अक्षांश/रेखांश तपशील पानावरून पुन्हा भरता येतील */ }
+      }
       navigate(`/properties/${data.id}`, { replace: true });
     } catch (err) {
       setMasterError(err.response?.data?.error || 'जतन करताना त्रुटी आली');
@@ -558,6 +633,9 @@ export default function PropertyDetail() {
             </div>
           </div>
 
+          <LatLongCard malmataNo={malmataKey} points={latlong} setPoints={setLatlong} saved={latlongSaved}
+            canEdit={can('properties', 'add')} notice={latlongNotice} error={latlongError} />
+
           <div style={{ marginTop: 20 }}>
             <button className="btn" type="submit" disabled={!can('properties', 'add')}>मिळकत व कर तपशील जतन करा</button>
           </div>
@@ -610,6 +688,9 @@ export default function PropertyDetail() {
               </div>
             </form>
           </div>
+
+          <LatLongCard malmataNo={malmataKey} points={latlong} setPoints={setLatlong} saved={latlongSaved}
+            onSave={() => saveLatlong()} canEdit={can('properties', 'edit')} notice={latlongNotice} error={latlongError} />
         </>
       )}
     </div>

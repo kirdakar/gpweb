@@ -834,3 +834,17 @@ CREATE TABLE IF NOT EXISTS tax_adjustments (
 -- अस्तित्वात असलेल्या टेबलवर परिणाम होत नाही, त्यामुळे वेगळा ALTER आवश्यक).
 ALTER TABLE gpmaster ADD COLUMN IF NOT EXISTS spouse_name VARCHAR(255) NULL AFTER owner_name;
 ALTER TABLE property_master ADD COLUMN IF NOT EXISTS spouse_name VARCHAR(255) NULL AFTER owner_name;
+
+-- मिळकतीचे अक्षांश/रेखांश (GPS) - प्रत्येक मालमत्ता क्रमांकाचे (malmata_no) ४ कोपऱ्यांचे बिंदू
+-- (point_no १-४, क्रमाने जोडल्यास मिळकतीचा आकार/polygon) - गावाच्या नकाशावर
+-- दाखवण्यासाठी. मूळ यादी (excel) मध्ये फक्त मालमत्ता क्र. आहे, म्हणून त्यावरच जोडले;
+-- मिळकत नोंद स्क्रीनवर ते मालमत्ता क्र. वरून आपोआप दिसतात.
+CREATE TABLE IF NOT EXISTS latlong (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  malmata_no VARCHAR(50) NOT NULL,
+  point_no TINYINT NOT NULL,
+  latitude DECIMAL(10,8) NOT NULL,
+  longitude DECIMAL(11,8) NOT NULL,
+  UNIQUE KEY uq_latlong_point (malmata_no, point_no),
+  INDEX idx_latlong_malmata (malmata_no)
+) ENGINE=InnoDB;

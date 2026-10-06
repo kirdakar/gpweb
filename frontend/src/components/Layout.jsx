@@ -74,6 +74,7 @@ const MENUS = [
       { to: '/reports/tax-demand-bill', label: 'कर मागणी बिल (नमुना ९ क)', screen: 'reports_tax_demand_bill' },
       { to: '/reports/payment-receipts', label: 'जमा पावती अहवाल', screen: 'reports_payment_receipts' },
       { to: '/reports/tax-demand', label: 'कर आकारणी', screen: 'reports_tax_demand' },
+      { to: '/village-map', label: 'गावाचा नकाशा', screen: 'properties' },
       { to: '/reports/property-list', label: 'मिळकत यादी', screen: 'reports_property_list' },
       { to: '/reports/old-new', label: 'येणे बाकी अहवाल', screen: 'reports_old_new' },
       { to: '/reports/summary', label: 'सारांश', screen: 'reports_summary' },

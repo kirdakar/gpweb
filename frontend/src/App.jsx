@@ -15,6 +15,7 @@ import GpMaster from './pages/GpMaster';
 import Years from './pages/Years';
 import Properties from './pages/Properties';
 import PropertyDetail from './pages/PropertyDetail';
+import VillageMap from './pages/VillageMap';
 import PaymentEntry from './pages/PaymentEntry';
 import PaymentReceiptView from './pages/PaymentReceiptView';
 import TaxAdjustmentEntry from './pages/TaxAdjustmentEntry';
@@ -105,6 +106,7 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/properties" element={<RequireView screen="properties"><Properties /></RequireView>} />
             <Route path="/properties/:id" element={<RequireView screen="properties" action={(p) => (p.id === 'new' ? 'add' : 'view')}><PropertyDetail /></RequireView>} />
+            <Route path="/village-map" element={<RequireView screen="properties"><VillageMap /></RequireView>} />
             <Route path="/particulars" element={<RequireView screen="particulars"><Particulars /></RequireView>} />
             <Route path="/gpmaster" element={<RequireView screen="gpmaster"><GpMaster /></RequireView>} />
             <Route path="/years" element={<RequireView screen="years"><Years /></RequireView>} />

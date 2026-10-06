@@ -53,6 +53,7 @@ const stampsRoutes = require('./src/routes/stamps.routes');
 const stockRoutes = require('./src/routes/stock.routes');
 const treesRoutes = require('./src/routes/trees.routes');
 const taxAdjustmentsRoutes = require('./src/routes/taxAdjustments.routes');
+const latlongRoutes = require('./src/routes/latlong.routes');
 
 const app = express();
 app.use(cors());
@@ -100,6 +101,7 @@ app.use('/api/stamps', stampsRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/trees', treesRoutes);
 app.use('/api/tax-adjustments', taxAdjustmentsRoutes);
+app.use('/api/latlong', latlongRoutes);
 
 // पॅकेज केलेल्या (.exe) वितरणात .exe शेजारी 'public' फोल्डर (frontend build) असेल तर
 // Node स्वतःच तो सर्व्ह करतो - वेगळा Apache/XAMPP htdocs/reverse-proxy लागत नाही
