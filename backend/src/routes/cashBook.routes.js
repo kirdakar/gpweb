@@ -110,7 +110,19 @@ router.get('/:id/voucher', async (req, res) => {
   );
   if (!row) return res.status(404).json({ error: 'नोंद सापडली नाही' });
   if (row.entry_type !== 'खर्च') return res.status(400).json({ error: 'प्रमाणक (नमुना १२) फक्त खर्च नोंदीसाठी छापता येते' });
-  res.json(row);
+  // नमुना १२ वरील (१) वाटणीची रक्कम = नमुना १ मधील या शीर्षाचा मंजूर अंदाज, (२) पूर्वीचा खर्च = याच
+  // वर्षात याच शीर्षावर या नोंदीआधी झालेला खर्च (रोकड वहीवरूनच) - पुन्हा टाइप करावे लागत नाही.
+  const [[alloc]] = await pool.query(
+    'SELECT COALESCE(SUM(approved_amount), 0) AS v FROM budget_entries WHERE financial_year_id = ? AND ledger_head_id = ?',
+    [row.financial_year_id, row.ledger_head_id]
+  );
+  const [[prev]] = await pool.query(
+    `SELECT COALESCE(SUM(amount), 0) AS v FROM cash_book_entries
+     WHERE financial_year_id = ? AND ledger_head_id = ? AND entry_type = 'खर्च' AND register = ?
+       AND (entry_date < ? OR (entry_date = ? AND id < ?))`,
+    [row.financial_year_id, row.ledger_head_id, row.register, row.entry_date, row.entry_date, row.id]
+  );
+  res.json({ ...row, allocation_amount: Number(alloc.v), previous_expense: Number(prev.v) });
 });
 
 // नमुना ३२ (रकमेच्या परताव्यासाठीचा आदेश) - हाही वेगळी नोंदवही नाही,

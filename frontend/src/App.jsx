@@ -16,6 +16,7 @@ import Years from './pages/Years';
 import Properties from './pages/Properties';
 import PropertyDetail from './pages/PropertyDetail';
 import VillageMap from './pages/VillageMap';
+import CashBookDocList from './pages/gp1to33/CashBookDocList';
 import PaymentEntry from './pages/PaymentEntry';
 import PaymentReceiptView from './pages/PaymentReceiptView';
 import TaxAdjustmentEntry from './pages/TaxAdjustmentEntry';
@@ -138,6 +139,8 @@ export default function App() {
             <Route path="/gp1to33/reports/budget" element={<RequireView screen="reports_budget"><BudgetReport /></RequireView>} />
             <Route path="/gp1to33/reports/budget-revision" element={<RequireView screen="reports_budget_revision"><BudgetRevisionReport /></RequireView>} />
             <Route path="/gp1to33/reports/assets-liabilities" element={<RequireView screen="reports_assets_liabilities"><AssetsLiabilitiesReport /></RequireView>} />
+            <Route path="/gp1to33/reports/vouchers" element={<RequireView screen="reports_receipt_voucher"><CashBookDocList kind="voucher" /></RequireView>} />
+            <Route path="/gp1to33/reports/receipts" element={<RequireView screen="reports_receipt_voucher"><CashBookDocList kind="receipt" /></RequireView>} />
             <Route path="/gp1to33/reports/receipt/:id" element={<RequireView screen="reports_receipt_voucher"><ReceiptPrint /></RequireView>} />
             <Route path="/gp1to33/reports/voucher/:id" element={<RequireView screen="reports_receipt_voucher"><VoucherPrint /></RequireView>} />
             <Route path="/gp1to33/fixed-assets" element={<RequireView screen="fixed_assets"><FixedAssetsEntry /></RequireView>} />

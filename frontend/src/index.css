@@ -520,3 +520,8 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
   color: #1e3a8a;
   box-shadow: none;
 }
+
+/* नमुना १२ (प्रमाणक) - एका A4 पानावर बसावा म्हणून प्रिंटमध्ये फॉन्ट/ओळींतर थोडे कमी */
+@media print {
+  .voucher-form { font-size: 12.5px !important; line-height: 1.5 !important; box-shadow: none !important; border: none !important; max-width: none !important; }
+}
