@@ -156,6 +156,7 @@ CREATE TABLE IF NOT EXISTS property_tax_assessment (
 
   gov_status TINYINT NOT NULL DEFAULT 0,  -- 0=unset, 1=government property, 2=not government
   narration TEXT NULL,
+  construction_year VARCHAR(20) NULL,     -- बांधकाम वर्ष (उदा. 2005, 1990) - मिळकत नोंद > वर्षनिहाय कर तपशील
 
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -848,3 +849,6 @@ CREATE TABLE IF NOT EXISTS latlong (
   UNIQUE KEY uq_latlong_point (malmata_no, point_no),
   INDEX idx_latlong_malmata (malmata_no)
 ) ENGINE=InnoDB;
+
+-- बांधकाम वर्ष (वर्षनिहाय कर तपशील) - आधीच बनलेल्या DB साठी (CREATE TABLE IF NOT EXISTS मुळे अस्तित्वात असलेल्या टेबलवर परिणाम होत नाही).
+ALTER TABLE property_tax_assessment ADD COLUMN IF NOT EXISTS construction_year VARCHAR(20) NULL AFTER narration;

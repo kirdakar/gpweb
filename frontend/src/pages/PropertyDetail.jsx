@@ -62,7 +62,7 @@ function LatLongCard({ malmataNo, points, setPoints, saved, onSave, canEdit, not
 const emptyAssessment = {
   new_length: '', new_width: '', area_sqft: '', area_sqm: '',
   jamin_rate_used: '', gasara_rate: '', bharank: '', karacha_rate: '', bhandvalimula_rs: '',
-  gharpatti: '', divabatti: '', arogya: '', panipatti: '', gov_status: 0, narration: '',
+  gharpatti: '', divabatti: '', arogya: '', panipatti: '', gov_status: 0, narration: '', construction_year: '',
 };
 
 // मिळकत कोड टाकल्यावर/बाहेर क्लिक केल्यावर मिळकतदार मास्टर (GPMASTER)
@@ -312,6 +312,11 @@ function AssessmentFields({ assessmentForm, setAssessmentForm, updateAssessment,
           <option value={2}>2 - नाही</option>
         </select>
       </div>
+      <div className="field">
+        <label>बांधकाम वर्ष</label>
+        <input maxLength={20} placeholder="उदा. 2005, 1990" value={assessmentForm.construction_year ?? ''}
+          onChange={(e) => setAssessmentForm({ ...assessmentForm, construction_year: e.target.value })} />
+      </div>
     </div>
   );
 }
@@ -422,6 +427,7 @@ export default function PropertyDetail() {
         gharpatti: existing.gharpatti,
         divabatti: existing.divabatti, arogya: existing.arogya, panipatti: existing.panipatti,
         gov_status: existing.gov_status, narration: existing.narration ?? '',
+        construction_year: existing.construction_year ?? '',
       });
     } else {
       setExistingAssessmentId(null);
@@ -547,7 +553,7 @@ export default function PropertyDetail() {
     };
     try {
       const { data } = await client.post('/properties', payload);
-      const hasAssessmentData = Boolean(selectedParticular) || ['new_length', 'new_width', 'gharpatti', 'divabatti', 'arogya', 'panipatti']
+      const hasAssessmentData = Boolean(selectedParticular) || Boolean(String(assessmentForm.construction_year ?? '').trim()) || ['new_length', 'new_width', 'gharpatti', 'divabatti', 'arogya', 'panipatti']
         .some((k) => Number(assessmentForm[k]) > 0);
       if (hasAssessmentData && selectedYearId) {
         await client.post('/assessments', { ...assessmentForm, property_id: data.id, financial_year_id: selectedYearId });

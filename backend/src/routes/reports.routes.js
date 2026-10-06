@@ -48,7 +48,7 @@ router.get('/assessment-register', async (req, res) => {
             pt.par_name AS construction_type_name,
             a.new_length, a.new_width, a.area_sqft, a.area_sqm,
             a.jamin_rate_used, a.gasara_rate, a.bharank, a.bhandvalimula_rs, a.karacha_rate,
-            a.gharpatti, a.divabatti, a.arogya, a.panipatti, a.total_tax, a.narration
+            a.gharpatti, a.divabatti, a.arogya, a.panipatti, a.total_tax, a.narration, a.construction_year
      FROM property_tax_assessment a
      JOIN property_master pm ON pm.id = a.property_id
      LEFT JOIN particular_master pt ON pt.par_code = pm.construction_type

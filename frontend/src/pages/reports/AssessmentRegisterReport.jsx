@@ -42,7 +42,7 @@ const TOP_COLUMNS = [
   // प्रकार रिकामा असेल तरच दुय्यम पर्याय म्हणून दाखवतो; शेरा (narration) इथे कधीही दाखवत नाही
   // (तो स्वतंत्र २७ व्या रकान्यात आहे).
   { num: 7, label: 'मालमत्तेचे वर्णन', width: '14%', render: (r) => r.construction_type_name || r.particulars || '-' },
-  { num: 8, label: 'मिळकत बांधकामाचे वर्ष', width: '7%', render: (r) => r.milkat_year || '-' },
+  { num: 8, label: 'मिळकत बांधकामाचे वर्ष', width: '7%', render: (r) => r.construction_year || r.milkat_year || '-' },
   { num: '9अ', label: 'क्षेत्रफळ चौ.फू.', width: '6%', num_cls: true, group: 'क्षेत्रफळ', render: (r) => Number(r.area_sqft || 0).toFixed(2) },
   { num: '9ब', label: 'क्षेत्रफळ चौ.मी.', width: '6%', num_cls: true, group: 'क्षेत्रफळ', render: (r) => Number(r.area_sqm || 0).toFixed(2) },
   { num: 10, label: 'जमिन', width: '5%', num_cls: true, group: 'रेडिरेकनर दर प्रती (चौ.मी.)', render: () => '' },

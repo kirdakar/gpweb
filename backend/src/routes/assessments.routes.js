@@ -58,13 +58,13 @@ router.post('/', requirePermission('properties', 'add'), async (req, res) => {
       `INSERT INTO property_tax_assessment
          (property_id, financial_year_id, new_length, new_width, area_sqft, area_sqm,
           jamin_rate_used, gasara_rate, bharank, bhandvalimula_rs, karacha_rate,
-          gharpatti, divabatti, arogya, panipatti, total_tax, gov_status, narration)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          gharpatti, divabatti, arogya, panipatti, total_tax, gov_status, narration, construction_year)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         b.property_id, b.financial_year_id, calc.new_length, calc.new_width, calc.area_sqft, calc.area_sqm,
         calc.jamin_rate_used, calc.gasara_rate, calc.bharank, calc.bhandvalimula_rs, calc.karacha_rate,
         calc.gharpatti, calc.divabatti, calc.arogya, calc.panipatti, calc.total_tax,
-        b.gov_status || 0, b.narration || null,
+        b.gov_status || 0, b.narration || null, String(b.construction_year ?? '').trim() || null,
       ]
     );
     const [[row]] = await pool.query('SELECT * FROM property_tax_assessment WHERE id = ?', [result.insertId]);
@@ -85,12 +85,12 @@ router.put('/:id', requirePermission('properties', 'edit'), async (req, res) => 
     `UPDATE property_tax_assessment SET
        new_length=?, new_width=?, area_sqft=?, area_sqm=?, jamin_rate_used=?, gasara_rate=?, bharank=?,
        bhandvalimula_rs=?, karacha_rate=?, gharpatti=?, divabatti=?, arogya=?, panipatti=?, total_tax=?,
-       gov_status=?, narration=?
+       gov_status=?, narration=?, construction_year=?
      WHERE id=?`,
     [
       calc.new_length, calc.new_width, calc.area_sqft, calc.area_sqm, calc.jamin_rate_used, calc.gasara_rate, calc.bharank,
       calc.bhandvalimula_rs, calc.karacha_rate, calc.gharpatti, calc.divabatti, calc.arogya, calc.panipatti, calc.total_tax,
-      b.gov_status || 0, b.narration || null, req.params.id,
+      b.gov_status || 0, b.narration || null, String(b.construction_year ?? '').trim() || null, req.params.id,
     ]
   );
   if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found' });
