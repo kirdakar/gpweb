@@ -102,8 +102,18 @@ function QrCard({ type, info, canEdit, onChanged }) {
       {error && <div className="error-box">{error}</div>}
       {notice && <div className="notice-box">{notice}</div>}
       <div style={{ width: 220, height: 220, border: '1px dashed var(--border)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', marginBottom: 12 }}>
-        {shown ? <img src={shown} alt={type.label} style={{ maxWidth: '100%', maxHeight: '100%' }} /> : <span style={{ color: 'var(--text-muted)' }}>QR चित्र नोंदवलेले नाही</span>}
+        {shown ? (
+          <a href={shown} target="_blank" rel="noopener noreferrer" title="मोठे पाहण्यासाठी क्लिक करा (नवीन टॅबमध्ये उघडते)" style={{ display: 'contents' }}>
+            <img src={shown} alt={type.label} style={{ maxWidth: '100%', maxHeight: '100%', cursor: 'zoom-in' }} />
+          </a>
+        ) : <span style={{ color: 'var(--text-muted)' }}>QR चित्र नोंदवलेले नाही</span>}
       </div>
+      {shown && (
+        <p style={{ margin: '-6px 0 10px', fontSize: 12, color: preview ? 'var(--danger)' : 'var(--text-muted)' }}>
+          {preview ? 'हे नवीन निवडलेले चित्र आहे (अजून जतन केलेले नाही). ' : 'हे जतन केलेले चित्र आहे. '}
+          मोठे पाहण्यासाठी चित्रावर क्लिक करा.{info?.file_name && !preview ? ` (फाईल: ${info.file_name})` : ''}
+        </p>
+      )}
       {canEdit && (
         <>
           <div className="field" style={{ marginBottom: 10 }}>
