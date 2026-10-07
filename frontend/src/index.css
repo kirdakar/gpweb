@@ -527,3 +527,16 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
 @media print {
   .voucher-form { font-size: 14px !important; line-height: 1.9 !important; box-shadow: none !important; border: none !important; max-width: none !important; padding: 0 !important; page-break-inside: avoid; }
 }
+
+/* कर मागणी बिल (नमुना ९क) - घरपट्टी/पाणीपट्टी भरणा QR कोड: सूचनेच्या मजकुराच्या बाजूला (उजवीकडे) */
+.bill-qr-row { display: flex; align-items: flex-start; gap: 10px; margin: 6px 0; }
+.bill-qr { text-align: center; width: 27mm; flex: none; font-size: 10px; line-height: 1.25; }
+.bill-qr img { width: 25mm; height: 25mm; object-fit: contain; border: 1px solid #000; background: #fff; display: block; margin: 0 auto 2px; }
+.bill-qr-label { font-weight: 700; }
+.bill-qr-caption { word-break: break-all; font-size: 9px; }
+
+/* QR कोडसह नमुना ९क दोन प्रती एकाच A4 पानावर बसाव्यात म्हणून प्रिंटमध्ये बिलाचे आतील अंतर थोडे कमी */
+@media print {
+  .bill-copy { padding: 2mm 2mm; }
+  .bill-table th, .bill-table td { padding: 2px 6px; }
+}

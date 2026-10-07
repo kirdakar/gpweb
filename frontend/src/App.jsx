@@ -16,6 +16,7 @@ import Years from './pages/Years';
 import Properties from './pages/Properties';
 import PropertyDetail from './pages/PropertyDetail';
 import VillageMap from './pages/VillageMap';
+import PaymentQrMaster from './pages/PaymentQrMaster';
 import CashBookDocList from './pages/gp1to33/CashBookDocList';
 import PaymentEntry from './pages/PaymentEntry';
 import PaymentReceiptView from './pages/PaymentReceiptView';
@@ -110,6 +111,7 @@ export default function App() {
             <Route path="/village-map" element={<RequireView screen="properties"><VillageMap /></RequireView>} />
             <Route path="/particulars" element={<RequireView screen="particulars"><Particulars /></RequireView>} />
             <Route path="/gpmaster" element={<RequireView screen="gpmaster"><GpMaster /></RequireView>} />
+            <Route path="/payment-qr" element={<RequireView screen="payment_qr"><PaymentQrMaster /></RequireView>} />
             <Route path="/years" element={<RequireView screen="years"><Years /></RequireView>} />
             <Route path="/payments" element={<RequireView screen="payments"><PaymentEntry /></RequireView>} />
             <Route path="/payments/receipt/:id" element={<RequireView screen="payments"><PaymentReceiptView /></RequireView>} />

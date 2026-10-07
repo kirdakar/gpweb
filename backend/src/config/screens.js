@@ -12,6 +12,7 @@ const SCREENS = [
   { code: 'properties', label: 'मिळकत नोंदी', actions: ['view', 'add', 'edit', 'delete'] },
   { code: 'particulars', label: 'दर मास्टर', actions: ['view', 'add', 'edit', 'delete'] },
   { code: 'gpmaster', label: 'मिळकतदार मास्टर (GPMASTER)', actions: ['view', 'add', 'edit', 'delete'] },
+  { code: 'payment_qr', label: 'QR कोड मास्टर (घरपट्टी/पाणीपट्टी भरणा)', actions: ['view', 'edit'] },
   { code: 'years', label: 'आर्थिक वर्ष', actions: ['view', 'add', 'delete'] },
   { code: 'payments', label: 'कर जमा भरणे', actions: ['view', 'add', 'delete', 'print'] },
   { code: 'tax_adjustments', label: 'घरपट्टी सूट / दंड नोंदणी', actions: ['view', 'add', 'edit', 'delete'] },

@@ -852,3 +852,15 @@ CREATE TABLE IF NOT EXISTS latlong (
 
 -- बांधकाम वर्ष (वर्षनिहाय कर तपशील) - आधीच बनलेल्या DB साठी (CREATE TABLE IF NOT EXISTS मुळे अस्तित्वात असलेल्या टेबलवर परिणाम होत नाही).
 ALTER TABLE property_tax_assessment ADD COLUMN IF NOT EXISTS construction_year VARCHAR(20) NULL AFTER narration;
+
+-- QR कोड मास्टर: घरपट्टी व पाणीपट्टी भरण्यासाठीचे QR कोड चित्र (प्रत्येक प्रकाराचे एकच) - कर मागणी बिल
+-- (नमुना ९क) वर छापले जाते, जेणेकरून मालमत्ताधारक स्कॅन करून कर भरू शकतील.
+CREATE TABLE IF NOT EXISTS payment_qr (
+  qr_type ENUM('gharpatti','panipatti') NOT NULL PRIMARY KEY,
+  image LONGBLOB NOT NULL,
+  mime_type VARCHAR(50) NOT NULL,
+  file_name VARCHAR(200) NULL,
+  caption VARCHAR(200) NULL,
+  updated_by INT NULL,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;

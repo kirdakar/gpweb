@@ -54,12 +54,15 @@ const stockRoutes = require('./src/routes/stock.routes');
 const treesRoutes = require('./src/routes/trees.routes');
 const taxAdjustmentsRoutes = require('./src/routes/taxAdjustments.routes');
 const latlongRoutes = require('./src/routes/latlong.routes');
+const paymentQrRoutes = require('./src/routes/paymentQr.routes');
 
 const app = express();
 app.use(cors());
 // gpmaster/मिळकत यादी सारखे मोठे JSON प्रतिसाद (शेकडो KB) दाबून पाठवतो -
 // संथ इंटरनेट/Cloudflare Tunnel वरून वापरताना पानांचा वेग लक्षणीय वाढतो.
 app.use(compression());
+// QR चित्र अपलोड (base64) मोठे असू शकते - या एकाच मार्गासाठी वेगळी (मोठी) JSON मर्यादा, आधी (सामान्य 100KB मर्यादेच्या) नोंदवली.
+app.use('/api/payment-qr', express.json({ limit: '4mb' }), paymentQrRoutes);
 app.use(express.json());
 // All data here is live tax/assessment data (and changes during active
 // development too) - never let the browser cache API GET responses.

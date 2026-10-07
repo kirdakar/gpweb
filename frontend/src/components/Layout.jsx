@@ -21,6 +21,7 @@ const MENUS = [
     label: 'मास्टर',
     items: [
       { to: '/gpmaster', label: 'मिळकतदार मास्टर', screen: 'gpmaster' },
+      { to: '/payment-qr', label: 'QR कोड मास्टर (घरपट्टी/पाणीपट्टी)', screen: 'payment_qr' },
       { to: '/particulars', label: 'दर मास्टर', screen: 'particulars' },
       { to: '/years', label: 'आर्थिक वर्ष', screen: 'years' },
       { to: '/users', label: 'युजर मास्टर', adminOnly: true },

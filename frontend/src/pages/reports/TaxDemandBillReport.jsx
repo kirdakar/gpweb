@@ -17,7 +17,7 @@ const COMPONENTS = [
   { key: 'panipatti', label: 'पाणीपट्टी कर' },
 ];
 
-function BillCopy({ summary, settings, periodText, billNo, billDate }) {
+function BillCopy({ summary, settings, periodText, billNo, billDate, qr = [] }) {
   if (!summary) return null;
   const { property, balance_by_component: bal } = summary;
   const rows = COMPONENTS.map((c) => ({
@@ -94,10 +94,20 @@ function BillCopy({ summary, settings, periodText, billNo, billDate }) {
       </table>
       {hasAdjustment && <p className="bill-line" style={{ fontSize: 11 }}>* वरील थकबाकी/चालू रकमांमध्ये सूट वजा करून व दंड समाविष्ट करून निव्वळ देय रक्कम दाखवली आहे.</p>}
 
-      <p className="bill-line">
-        हे बिल आपणास प्राप्त झाल्यापासुन देय रक्कमांचा भरणा १५ दिवसांचे आत करावा अन्यथा
-        ग्रामपंचायत अधिनियमाच्या कलम क्रं. १२९(२) अन्वये आपल्यावर मागणी बजावण्यास येईल.
-      </p>
+      <div className="bill-qr-row">
+        <p className="bill-line" style={{ flex: 1, margin: 0 }}>
+          हे बिल आपणास प्राप्त झाल्यापासुन देय रक्कमांचा भरणा १५ दिवसांचे आत करावा अन्यथा
+          ग्रामपंचायत अधिनियमाच्या कलम क्रं. १२९(२) अन्वये आपल्यावर मागणी बजावण्यास येईल.
+          {qr.length > 0 && <><br /><strong>कर ऑनलाईन भरण्यासाठी बाजूचा QR कोड स्कॅन करा.</strong></>}
+        </p>
+        {qr.map((q) => (
+          <div className="bill-qr" key={q.key}>
+            <img src={q.url} alt={q.label} />
+            <div className="bill-qr-label">{q.label}</div>
+            {q.caption && <div className="bill-qr-caption">{q.caption}</div>}
+          </div>
+        ))}
+      </div>
 
       <div className="bill-sign-row">
         <div>बील मिळालेबद्दल सही</div>
@@ -142,6 +152,30 @@ export default function TaxDemandBillReport() {
 
   useEffect(() => {
     client.get('/settings').then(({ data }) => setSettings(data));
+  }, []);
+
+  // QR कोड मास्टरमधील घरपट्टी/पाणीपट्टी QR चित्रे एकदाच आणतो (blob -> object URL) - प्रत्येक बिलावर वापरली जातात.
+  const [qrList, setQrList] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+    const urls = [];
+    (async () => {
+      try {
+        const { data: info } = await client.get('/payment-qr');
+        const labels = { gharpatti: 'घरपट्टी भरणा', panipatti: 'पाणीपट्टी भरणा' };
+        const out = [];
+        for (const key of ['gharpatti', 'panipatti']) {
+          const row = info.find((x) => x.qr_type === key);
+          if (!row) continue;
+          const { data } = await client.get(`/payment-qr/${key}/image`, { responseType: 'blob' });
+          const url = URL.createObjectURL(data);
+          urls.push(url);
+          out.push({ key, label: labels[key], caption: row.caption, url });
+        }
+        if (!cancelled) setQrList(out);
+      } catch { /* QR नसला तरी बिल नेहमीप्रमाणे छापते */ }
+    })();
+    return () => { cancelled = true; urls.forEach((u) => URL.revokeObjectURL(u)); };
   }, []);
 
   useEffect(() => {
@@ -365,9 +399,9 @@ export default function TaxDemandBillReport() {
 
       {filteredSummaries.map((s) => (
         <div key={s.property.property_code} className="a4-page bill-page">
-          <BillCopy summary={s} settings={settings} periodText={periodText} billNo={billNoByCode.get(s.property.property_code)} billDate={billDate} />
+          <BillCopy summary={s} settings={settings} periodText={periodText} billNo={billNoByCode.get(s.property.property_code)} billDate={billDate} qr={qrList} />
           <div className="bill-cut-line" />
-          <BillCopy summary={s} settings={settings} periodText={periodText} billNo={billNoByCode.get(s.property.property_code)} billDate={billDate} />
+          <BillCopy summary={s} settings={settings} periodText={periodText} billNo={billNoByCode.get(s.property.property_code)} billDate={billDate} qr={qrList} />
         </div>
       ))}
     </div>
