@@ -530,8 +530,8 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
 
 /* कर मागणी बिल (नमुना ९क) - घरपट्टी/पाणीपट्टी भरणा QR कोड: सूचनेच्या मजकुराच्या बाजूला (उजवीकडे) */
 .bill-qr-row { display: flex; align-items: flex-start; gap: 10px; margin: 6px 0; }
-.bill-qr { text-align: center; width: 27mm; flex: none; font-size: 10px; line-height: 1.25; }
-.bill-qr img { width: 25mm; height: 25mm; object-fit: contain; border: 1px solid #000; background: #fff; display: block; margin: 0 auto 2px; }
+.bill-qr { text-align: center; width: 32mm; flex: none; font-size: 10px; line-height: 1.25; }
+.bill-qr img { width: 30mm; height: 30mm; object-fit: contain; border: 1px solid #000; background: #fff; display: block; margin: 0 auto 2px; }
 .bill-qr-label { font-weight: 700; }
 .bill-qr-caption { word-break: break-all; font-size: 9px; }
 
@@ -539,6 +539,11 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
 @media print {
   .bill-copy { padding: 2mm 2mm; }
   .bill-table th, .bill-table td { padding: 2px 6px; }
+  .bill-sign-row { margin-top: 8px; }
+  .bill-footnote { margin-top: 4px; }
 }
-/* QR चित्र नोंदवलेले नसल्यास त्याच आकाराचा (२५mm) रिकामा चौकोन छापतो */
-.bill-qr-empty { width: 25mm; height: 25mm; border: 1px solid #000; margin: 0 auto 2px; }
+/* QR चित्र नोंदवलेले नसल्यास त्याच आकाराचा (३०mm) रिकामा चौकोन छापतो */
+.bill-qr-empty { width: 30mm; height: 30mm; border: 1px solid #000; margin: 0 auto 2px; }
+
+/* सूचनेचा मजकूर अरुंद (उभा) स्तंभ - रुंदी QR ला मिळावी */
+.bill-notice { flex: 0 0 56mm; margin: 0; }

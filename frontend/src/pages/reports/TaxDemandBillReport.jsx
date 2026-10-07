@@ -92,14 +92,14 @@ function BillCopy({ summary, settings, periodText, billNo, billDate, qr = [] }) 
           </tr>
         </tbody>
       </table>
-      {hasAdjustment && <p className="bill-line" style={{ fontSize: 11 }}>* वरील थकबाकी/चालू रकमांमध्ये सूट वजा करून व दंड समाविष्ट करून निव्वळ देय रक्कम दाखवली आहे.</p>}
-
+      {/* सूचनेचा मजकूर अरुंद (उभा) स्तंभात डावीकडे, QR उजवीकडे मोठे; सूट/दंडाची टीप व सह्यांची ओळ त्याखाली */}
       <div className="bill-qr-row">
-        <p className="bill-line" style={{ flex: 1, margin: 0 }}>
+        <p className="bill-line bill-notice">
           हे बिल आपणास प्राप्त झाल्यापासुन देय रक्कमांचा भरणा १५ दिवसांचे आत करावा अन्यथा
           ग्रामपंचायत अधिनियमाच्या कलम क्रं. १२९(२) अन्वये आपल्यावर मागणी बजावण्यास येईल.
           {qr.some((q) => q.url) && <><br /><strong>कर ऑनलाईन भरण्यासाठी बाजूचा QR कोड स्कॅन करा.</strong></>}
         </p>
+        <div style={{ flex: 1 }} />
         {qr.map((q) => (
           <div className="bill-qr" key={q.key}>
             {q.url ? <img src={q.url} alt={q.label} /> : <div className="bill-qr-empty" />}
@@ -108,6 +108,8 @@ function BillCopy({ summary, settings, periodText, billNo, billDate, qr = [] }) 
           </div>
         ))}
       </div>
+
+      {hasAdjustment && <p className="bill-line" style={{ fontSize: 11 }}>* वरील थकबाकी/चालू रकमांमध्ये सूट वजा करून व दंड समाविष्ट करून निव्वळ देय रक्कम दाखवली आहे.</p>}
 
       <div className="bill-sign-row">
         <div>बील मिळालेबद्दल सही</div>
