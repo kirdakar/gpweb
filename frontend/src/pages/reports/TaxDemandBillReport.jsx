@@ -98,11 +98,11 @@ function BillCopy({ summary, settings, periodText, billNo, billDate, qr = [] }) 
         <p className="bill-line" style={{ flex: 1, margin: 0 }}>
           हे बिल आपणास प्राप्त झाल्यापासुन देय रक्कमांचा भरणा १५ दिवसांचे आत करावा अन्यथा
           ग्रामपंचायत अधिनियमाच्या कलम क्रं. १२९(२) अन्वये आपल्यावर मागणी बजावण्यास येईल.
-          {qr.length > 0 && <><br /><strong>कर ऑनलाईन भरण्यासाठी बाजूचा QR कोड स्कॅन करा.</strong></>}
+          {qr.some((q) => q.url) && <><br /><strong>कर ऑनलाईन भरण्यासाठी बाजूचा QR कोड स्कॅन करा.</strong></>}
         </p>
         {qr.map((q) => (
           <div className="bill-qr" key={q.key}>
-            <img src={q.url} alt={q.label} />
+            {q.url ? <img src={q.url} alt={q.label} /> : <div className="bill-qr-empty" />}
             <div className="bill-qr-label">{q.label}</div>
             {q.caption && <div className="bill-qr-caption">{q.caption}</div>}
           </div>
@@ -155,22 +155,25 @@ export default function TaxDemandBillReport() {
   }, []);
 
   // QR कोड मास्टरमधील घरपट्टी/पाणीपट्टी QR चित्रे एकदाच आणतो (blob -> object URL) - प्रत्येक बिलावर वापरली जातात.
-  const [qrList, setQrList] = useState([]);
+  // QR चित्र नोंदवलेले नसले तरी बिलावर QR च्या आकाराचा रिकामा चौकोन छापतो (तिथे QR चिकटवता येतो).
+  const QR_LABELS = { gharpatti: 'घरपट्टी भरणा', panipatti: 'पाणीपट्टी भरणा' };
+  const [qrList, setQrList] = useState(() => Object.keys(QR_LABELS).map((key) => ({ key, label: QR_LABELS[key], caption: null, url: null })));
   useEffect(() => {
     let cancelled = false;
     const urls = [];
     (async () => {
       try {
         const { data: info } = await client.get('/payment-qr');
-        const labels = { gharpatti: 'घरपट्टी भरणा', panipatti: 'पाणीपट्टी भरणा' };
         const out = [];
         for (const key of ['gharpatti', 'panipatti']) {
           const row = info.find((x) => x.qr_type === key);
-          if (!row) continue;
-          const { data } = await client.get(`/payment-qr/${key}/image`, { responseType: 'blob' });
-          const url = URL.createObjectURL(data);
-          urls.push(url);
-          out.push({ key, label: labels[key], caption: row.caption, url });
+          let url = null;
+          if (row) {
+            const { data } = await client.get(`/payment-qr/${key}/image`, { responseType: 'blob' });
+            url = URL.createObjectURL(data);
+            urls.push(url);
+          }
+          out.push({ key, label: QR_LABELS[key], caption: row?.caption || null, url });
         }
         if (!cancelled) setQrList(out);
       } catch { /* QR नसला तरी बिल नेहमीप्रमाणे छापते */ }

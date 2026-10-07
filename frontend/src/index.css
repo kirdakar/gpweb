@@ -540,3 +540,5 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
   .bill-copy { padding: 2mm 2mm; }
   .bill-table th, .bill-table td { padding: 2px 6px; }
 }
+/* QR चित्र नोंदवलेले नसल्यास त्याच आकाराचा (२५mm) रिकामा चौकोन छापतो */
+.bill-qr-empty { width: 25mm; height: 25mm; border: 1px solid #000; margin: 0 auto 2px; }
