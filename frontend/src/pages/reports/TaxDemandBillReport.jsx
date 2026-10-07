@@ -242,16 +242,27 @@ export default function TaxDemandBillReport() {
     );
   }, [visibleSummaries, resultFilterTerm]);
 
-  // एकदम अनेक बिले तयार करताना प्रत्येकाला वेगळा, वाढत जाणारा बिल नंबर हवा
-  // (१, २, ३...) - "नंबर" इनपुट फक्त सुरुवातीचा आकडा ठरवतो. नंबर मूळ
-  // (अनफिल्टर्ड) यादीतल्या क्रमानुसार ठरतो, त्यामुळे शोध फिल्टर लावला तरी
-  // एकाच कोडचा नंबर स्थिर राहतो.
-  const billNoByCode = useMemo(() => {
-    const start = parseInt(billNo, 10) || 1;
-    const map = new Map();
-    visibleSummaries.forEach((s, i) => map.set(s.property.property_code, start + i));
-    return map;
-  }, [visibleSummaries, billNo]);
+  // बिल नंबर (१ ते ९९९९९९) डेटाबेसमध्ये कायमचे साठवलेले - प्रत्येक आर्थिक वर्षात प्रत्येक कोडला एकदाच दिले
+  // जातात (backend /tax-demand-bills/assign), म्हणून बिल पुन्हा पाहिले/एकेकटे छापले तरी तोच नंबर दिसतो.
+  // बिले दिसू लागली की त्या कोडांचे नंबर मागवतो (ज्यांना नाही त्यांना पुढचे नंबर मिळतात). "सुरुवातीचा नंबर"
+  // इनपुट फक्त त्या वर्षाचा पहिलाच नंबर देताना वापरला जातो.
+  const [billNoByCode, setBillNoByCode] = useState(() => new Map());
+  const [billNoError, setBillNoError] = useState('');
+  useEffect(() => { setBillNoByCode(new Map()); }, [yearId]);
+  useEffect(() => {
+    if (!yearId) return;
+    const codes = visibleSummaries.map((s) => s.property.property_code).filter((c) => c != null && !billNoByCode.has(Number(c)));
+    if (codes.length === 0) return;
+    setBillNoError('');
+    client.post('/tax-demand-bills/assign', { financialYearId: yearId, codes, startAt: parseInt(billNo, 10) || 1 })
+      .then(({ data }) => setBillNoByCode((old) => {
+        const next = new Map(old);
+        for (const [c, n] of Object.entries(data.numbers)) next.set(Number(c), n);
+        return next;
+      }))
+      .catch((err) => setBillNoError(err.response?.data?.error || 'बिल नंबर मिळवता आले नाहीत'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleSummaries, yearId]);
 
   // यादीतून एक कोड निवडला की त्या कोडखालील सर्व मालमत्तांची (portions)
   // बिले एकदम तयार होतात (आधीच अस्तित्वात असलेल्या कोड-टप्पा यंत्रणेचाच
@@ -360,7 +371,7 @@ export default function TaxDemandBillReport() {
               </div>
               <button className="btn secondary" type="button" onClick={clearSearch} disabled={!search}>शोध क्लिअर करा</button>
               <input style={{ width: 100, padding: 8, border: '1px solid var(--border)', borderRadius: 6 }}
-                value={billNo} onChange={(e) => setBillNo(e.target.value)} placeholder="सुरुवातीचा नंबर" title="अनेक बिले तयार करताना प्रत्येक बिलाला हा आकडा सुरुवात धरून १, २, ३... असा वाढत जाणारा नंबर दिला जातो" />
+                value={billNo} onChange={(e) => setBillNo(e.target.value)} placeholder="पहिला नंबर" title="या वर्षाचे पहिले बिल कोणत्या नंबरपासून सुरू करायचे (१ ते ९९९९९९). एकदा बिले तयार झाल्यावर प्रत्येक कोडचा नंबर कायमचा साठवला जातो, तो बदलत नाही; नवीन कोडला पुढचा नंबर मिळतो." />
               <input style={{ width: 120, padding: 8, border: '1px solid var(--border)', borderRadius: 6 }}
                 value={billDate} onChange={(e) => setBillDate(e.target.value)} placeholder="दिनांक" />
               <input style={{ width: 160, padding: 8, border: '1px solid var(--border)', borderRadius: 6 }}
@@ -378,6 +389,7 @@ export default function TaxDemandBillReport() {
           </>
         )}
         {generating && <p>बिले तयार होत आहेत, कृपया थांबा...</p>}
+        {billNoError && <div className="error-box">{billNoError}</div>}
         {rangeMode && !generating && (
           <>
             <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
@@ -404,9 +416,9 @@ export default function TaxDemandBillReport() {
 
       {filteredSummaries.map((s) => (
         <div key={s.property.property_code} className="a4-page bill-page">
-          <BillCopy summary={s} settings={settings} periodText={periodText} billNo={billNoByCode.get(s.property.property_code)} billDate={billDate} qr={qrList} />
+          <BillCopy summary={s} settings={settings} periodText={periodText} billNo={billNoByCode.get(Number(s.property.property_code)) ?? '-'} billDate={billDate} qr={qrList} />
           <div className="bill-cut-line" />
-          <BillCopy summary={s} settings={settings} periodText={periodText} billNo={billNoByCode.get(s.property.property_code)} billDate={billDate} qr={qrList} />
+          <BillCopy summary={s} settings={settings} periodText={periodText} billNo={billNoByCode.get(Number(s.property.property_code)) ?? '-'} billDate={billDate} qr={qrList} />
         </div>
       ))}
     </div>

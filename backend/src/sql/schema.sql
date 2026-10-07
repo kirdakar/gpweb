@@ -864,3 +864,16 @@ CREATE TABLE IF NOT EXISTS payment_qr (
   updated_by INT NULL,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
+
+-- कर मागणी बिल (नमुना ९क) चा बिल नंबर - प्रत्येक आर्थिक वर्षात प्रत्येक कोडला (मालकाला) एकदा दिलेला कायमचा नंबर
+-- (१ ते ९९९९९९), त्यामुळे बिल पुन्हा पाहिले/छापले तरी तोच नंबर दिसतो; नवीन कोडला पुढचा नंबर मिळतो.
+CREATE TABLE IF NOT EXISTS tax_demand_bills (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  financial_year_id INT NOT NULL,
+  property_code INT NOT NULL,
+  bill_no INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_bill_year_code (financial_year_id, property_code),
+  UNIQUE KEY uq_bill_year_no (financial_year_id, bill_no),
+  CONSTRAINT fk_bill_year FOREIGN KEY (financial_year_id) REFERENCES financial_years(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
