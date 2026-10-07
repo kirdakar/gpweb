@@ -97,7 +97,7 @@ function QrCard({ type, info, canEdit, onChanged }) {
 
   const shown = preview || savedUrl;
   return (
-    <div className="card" style={{ flex: '1 1 320px', maxWidth: 420 }}>
+    <div className="card" style={{ flex: '1 1 min(320px, 100%)', maxWidth: 420, minWidth: 0 }}>
       <h2 style={{ fontSize: 15, marginTop: 0 }}>{type.label}</h2>
       {error && <div className="error-box">{error}</div>}
       {notice && <div className="notice-box">{notice}</div>}

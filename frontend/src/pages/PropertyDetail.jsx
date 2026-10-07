@@ -35,7 +35,7 @@ function LatLongCard({ malmataNo, points, setPoints, saved, onSave, canEdit, not
       {!malmataNo && <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>अक्षांश/रेखांश मालमत्ता क्रमांकावर जोडले जातात - आधी वर "मालमत्ता क्र." भरा.</p>}
       {error && <div className="error-box">{error}</div>}
       {notice && <div className="notice-box">{notice}</div>}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(380px, 100%), 1fr))', gap: 14 }}>
         {points.map((p, i) => (
           <div key={i} className="field">
             <label>बिंदू {i + 1} — अक्षांश (Latitude) / रेखांश (Longitude)</label>

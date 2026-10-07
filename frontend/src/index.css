@@ -547,3 +547,78 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
 
 /* सूचनेचा मजकूर अरुंद (उभा) स्तंभ - रुंदी QR ला मिळावी */
 .bill-notice { flex: 0 0 56mm; margin: 0; }
+
+/* ===== मोबाईल/लहान स्क्रीन (फोन, ≤ ८२०px) - टप्पा १: मेनू (☰) व सामान्य नियम =====
+   संगणकावर काहीही बदलत नाही (हे सर्व फक्त लहान स्क्रीनसाठी). */
+.menu-toggle { display: none; }
+
+@media screen and (max-width: 820px) { /* "screen" - नाहीतर A4 पोर्ट्रेट प्रिंट (रुंदी ~६६०px) वरही हे नियम लागू झाले असते */
+  html, body { overflow-x: hidden; }
+
+  /* वरची पट्टी: ☰ + नाव + वर्ष निवड; मेनू संपूर्ण रुंदीचा उभा पॅनेल (☰ दाबल्यावर) */
+  .topbar { padding: 0 10px; height: 52px; gap: 8px; position: sticky; top: 0; z-index: 300; }
+  .topbar .brand { font-size: 14px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar .right { gap: 6px; flex: none; }
+  .topbar .right span { display: none; }
+  .topbar select { max-width: 130px; font-size: 13px; }
+  .menu-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; flex: none;
+    background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 8px;
+    font-size: 22px; line-height: 1; cursor: pointer;
+  }
+  .menubar {
+    display: none;
+    position: fixed; top: 52px; left: 0; right: 0; bottom: 0;
+    flex-direction: column; gap: 4px;
+    background: #0f172a; padding: 8px 10px 24px;
+    overflow-y: auto; z-index: 250;
+  }
+  .menubar.mobile-open { display: flex; }
+  .menubar-item { width: 100%; }
+  .menubar-btn { width: 100%; text-align: left; padding: 12px 14px; background: #1e293b; color: #fff; }
+  .menubar-dropdown {
+    position: static; min-width: 0; box-shadow: none; margin: 4px 0 8px; padding: 4px;
+  }
+  .menubar-dropdown a, .menubar-sub-trigger { white-space: normal; padding: 12px; }
+  .menubar-submenu {
+    position: static; min-width: 0; box-shadow: none; margin: 2px 0 6px 10px;
+    border-left: 3px solid var(--primary);
+  }
+
+  /* पाने व कार्ड्स: कमी आतील अंतर */
+  .page { padding: 12px; }
+  .card { padding: 14px; }
+  .page-header h1 { font-size: 17px; }
+  .page-header { gap: 8px; }
+  .main-content { min-height: calc(100vh - 52px); overflow-x: hidden; }
+
+  /* फॉर्म: रकाने एकाखाली एक, पूर्ण रुंदी; iOS वर आपोआप झूम होऊ नये म्हणून १६px */
+  .form-grid { grid-template-columns: 1fr !important; }
+  .form-grid > * { grid-column: auto !important; } /* inline "span 2" वाले रकाने फोनवर एकाच स्तंभात */
+  .form-grid { min-width: 0; }
+  .form-grid > * { min-width: 0; }
+  .property-detail-page .narrow-field { max-width: none; justify-self: stretch; }
+  .property-detail-page .narrow-field input,
+  .property-detail-page .narrow-field .combo-wrap { width: 100%; }
+  .property-detail-page .wide-field { grid-column: auto; }
+  input, select, textarea, .field input, .field select, .field textarea { font-size: 16px; }
+  .field input, .field select, .field textarea { min-height: 42px; }
+  .btn { min-height: 40px; }
+
+  /* शोध-पट्टी: रकाने/बटणे ओळीबाहेर जाऊ नयेत, आवश्यक तेवढी खाली गुंडाळली जावीत */
+  .search-bar { flex-wrap: wrap; }
+  .search-bar input, .combo-wrap { max-width: none !important; width: 100%; flex: 1 1 100%; }
+
+  /* तक्ते आडवे स्क्रोल (.table-wrap आधीच) - मोठा अंगठा-स्क्रोल सुकर */
+  .table-wrap { -webkit-overflow-scrolling: touch; }
+  .modal-box { max-width: 100%; }
+
+  /* पानाच्या शीर्षकाजवळील बटणे/निवडी ओळीबाहेर जाऊ नयेत - गुंडाळल्या जाव्यात */
+  .page-header > div, .page-header > form { flex-wrap: wrap; max-width: 100%; }
+  /* सर्व तक्ते (दोन बाजूंचे जमा/खर्च, वृक्ष इ. सह) स्क्रीनबाहेर न जाता आडवे स्क्रोल होतात */
+  .main-content table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .a4-page, .bill-page { overflow-x: auto; max-width: 100%; }
+  /* दोन बाजू-बाजूचे गट (जमा | खर्च इ., inline grid 1fr 1fr) फोनवर एकाखाली एक */
+  .main-content [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: minmax(0, 1fr) !important; }
+}

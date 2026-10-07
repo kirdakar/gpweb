@@ -130,6 +130,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const [openMenu, setOpenMenu] = useState(null);
   const [openSubmenu, setOpenSubmenu] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false); // फोनवर ☰ बटणाने उघडणारा संपूर्ण-रुंदीचा मेनू
   const menubarRef = useRef(null);
 
   useEffect(() => {
@@ -146,6 +147,7 @@ export default function Layout() {
   function closeAll() {
     setOpenMenu(null);
     setOpenSubmenu(null);
+    setMobileOpen(false);
   }
 
   // submenu आयटम पुनरावृत्तीने (recursively) फिल्टर करतो; रिकामा झालेला
@@ -165,8 +167,10 @@ export default function Layout() {
   return (
     <div className="app-shell">
       <div className="topbar no-print">
-        <div className="brand" onClick={() => navigate('/')}>ग्रामपंचायत मिळकत कर</div>
-        <nav className="menubar" ref={menubarRef}>
+        <button type="button" className="menu-toggle" aria-label="मेनू" aria-expanded={mobileOpen}
+          onClick={() => setMobileOpen((v) => !v)}>{mobileOpen ? '✕' : '☰'}</button>
+        <div className="brand" onClick={() => { closeAll(); navigate('/'); }}>ग्रामपंचायत मिळकत कर</div>
+        <nav className={`menubar${mobileOpen ? ' mobile-open' : ''}`} ref={menubarRef}>
           {MENUS.map((menu) => {
             const items = visibleItems(menu.items);
             if (items.length === 0) return null;
