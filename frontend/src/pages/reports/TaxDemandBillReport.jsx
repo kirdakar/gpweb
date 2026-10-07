@@ -248,21 +248,32 @@ export default function TaxDemandBillReport() {
   // इनपुट फक्त त्या वर्षाचा पहिलाच नंबर देताना वापरला जातो.
   const [billNoByCode, setBillNoByCode] = useState(() => new Map());
   const [billNoError, setBillNoError] = useState('');
-  useEffect(() => { setBillNoByCode(new Map()); }, [yearId]);
-  useEffect(() => {
-    if (!yearId) return;
-    const codes = visibleSummaries.map((s) => s.property.property_code).filter((c) => c != null && !billNoByCode.has(Number(c)));
-    if (codes.length === 0) return;
+  const [billNoInfo, setBillNoInfo] = useState(null); // { total, max } - या वर्षाचे साठवलेले बिल नंबर
+  useEffect(() => { setBillNoByCode(new Map()); setBillNoInfo(null); }, [yearId]);
+
+  // सर्व बिलांचे (बिल असलेल्या सर्व कोडांचे, कोड वाढत्या क्रमाने) नंबर एकदमच तयार करून साठवतो - त्यामुळे एकच बिल
+  // छापा किंवा सर्व बिले, प्रत्येक कोडचा नंबर नेहमी तोच (सर्व बिले एकदम तयार केल्यावर जे येतात तेच). आधी दिलेले
+  // नंबर बदलत नाहीत; नंतर आलेल्या नवीन कोडला फक्त पुढचा नंबर मिळतो.
+  function assignAllBillNos(summaries) {
+    const codes = summaries.map((s) => s.property.property_code).filter((c) => c != null);
+    if (!yearId || codes.length === 0) return Promise.resolve();
     setBillNoError('');
-    client.post('/tax-demand-bills/assign', { financialYearId: yearId, codes, startAt: parseInt(billNo, 10) || 1 })
-      .then(({ data }) => setBillNoByCode((old) => {
-        const next = new Map(old);
-        for (const [c, n] of Object.entries(data.numbers)) next.set(Number(c), n);
-        return next;
-      }))
+    return client.post('/tax-demand-bills/assign', { financialYearId: yearId, codes, startAt: parseInt(billNo, 10) || 1 })
+      .then(({ data }) => {
+        setBillNoByCode(() => new Map(Object.entries(data.numbers).map(([c, n]) => [Number(c), n])));
+        setBillNoInfo({ total: data.total, max: data.max });
+      })
       .catch((err) => setBillNoError(err.response?.data?.error || 'बिल नंबर मिळवता आले नाहीत'));
+  }
+  useEffect(() => {
+    if (bulkSummaries) assignAllBillNos(bulkSummaries);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleSummaries, yearId]);
+  }, [bulkSummaries, yearId]);
+
+  function handleAssignAll() {
+    setGenerating(true);
+    ensureBulkSummaries().then((s) => assignAllBillNos(s)).finally(() => setGenerating(false));
+  }
 
   // यादीतून एक कोड निवडला की त्या कोडखालील सर्व मालमत्तांची (portions)
   // बिले एकदम तयार होतात (आधीच अस्तित्वात असलेल्या कोड-टप्पा यंत्रणेचाच
@@ -385,7 +396,16 @@ export default function TaxDemandBillReport() {
                 style={{ width: 110, padding: 8, border: '1px solid var(--border)', borderRadius: 6 }} />
               <button className="btn secondary" type="submit" disabled={generating}>टप्पा तयार करा</button>
               <button className="btn secondary" type="button" onClick={handleShowAllBills} disabled={generating}>सर्व बिले तयार करा</button>
+              <button className="btn secondary" type="button" onClick={handleAssignAll} disabled={generating}
+                title="सर्व कोडांचे बिल नंबर आधीच (कोड वाढत्या क्रमाने) तयार करून साठवते - पुढे एकच बिल छापा किंवा सर्व, नंबर तोच राहतो">
+                सर्व बिल नंबर तयार करा
+              </button>
             </form>
+            <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text-muted)' }}>
+              {billNoInfo
+                ? `या वर्षाचे ${billNoInfo.total} बिल नंबर साठवलेले आहेत (१ ते ${billNoInfo.max}) - बिले एकेकटी किंवा सर्व छापली तरी हेच नंबर बिलावर येतात.`
+                : 'बिल नंबर अजून तयार केलेले नाहीत - "सर्व बिल नंबर तयार करा" दाबा (किंवा कोणतेही बिल उघडले की आपोआप सर्वांचे तयार होतात).'}
+            </p>
           </>
         )}
         {generating && <p>बिले तयार होत आहेत, कृपया थांबा...</p>}

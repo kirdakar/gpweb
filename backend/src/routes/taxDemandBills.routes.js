@@ -43,15 +43,18 @@ router.post('/assign', requirePermission('reports_tax_demand_bill', 'view'), asy
         await conn.rollback();
         return res.status(400).json({ error: `बिल नंबर ${MAX_BILL_NO} पेक्षा जास्त होतील - सुरुवातीचा नंबर कमी करा किंवा कमी बिले निवडा` });
       }
+      const values = [];
       for (const c of missing) {
-        await conn.query('INSERT INTO tax_demand_bills (financial_year_id, property_code, bill_no) VALUES (?, ?, ?)', [yearId, c, next]);
+        values.push([yearId, c, next]);
         numbers[c] = next;
         next += 1;
         assigned += 1;
       }
+      await conn.query('INSERT INTO tax_demand_bills (financial_year_id, property_code, bill_no) VALUES ?', [values]);
     }
+    const [[stat]] = await conn.query('SELECT COUNT(*) AS total, MAX(bill_no) AS max_no FROM tax_demand_bills WHERE financial_year_id = ?', [yearId]);
     await conn.commit();
-    res.json({ numbers, assigned });
+    res.json({ numbers, assigned, total: stat.total, max: stat.max_no });
   } catch (err) {
     await conn.rollback();
     throw err;
