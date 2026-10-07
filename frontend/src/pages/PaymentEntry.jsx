@@ -251,59 +251,7 @@ export default function PaymentEntry() {
               ))}
             </div>
 
-            <div className="table-wrap" style={{ marginBottom: 14 }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th></th>
-                    {components.map((c) => <th key={c.key} className="num">{c.label}</th>)}
-                    <th className="num">एकूण</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>मागील बाकी (देय) <button type="button" className="detail-btn" onClick={() => openDetail('previous')}>तपशील</button></td>
-                    {components.map((c) => <td key={c.key} className="num">{Number(summary.property[`previous_${c.key}`] || 0).toFixed(2)}</td>)}
-                    <td className="num">{components.reduce((s, c) => s + Number(summary.property[`previous_${c.key}`] || 0), 0).toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>चालू वर्ष (देय) <button type="button" className="detail-btn" onClick={() => openDetail('current')}>तपशील</button></td>
-                    {components.map((c) => <td key={c.key} className="num">{Number(summary.property[`current_${c.key}`] || 0).toFixed(2)}</td>)}
-                    <td className="num">{components.reduce((s, c) => s + Number(summary.property[`current_${c.key}`] || 0), 0).toFixed(2)}</td>
-                  </tr>
-                  {['discount', 'penalty'].map((kind) => {
-                    const perComp = components.map((c) => Number(summary.property[`${kind}_previous_${c.key}`] || 0) + Number(summary.property[`${kind}_current_${c.key}`] || 0));
-                    const sum = perComp.reduce((a, b) => a + b, 0);
-                    if (sum <= 0) return null;
-                    return (
-                      <tr key={kind} style={{ fontStyle: 'italic', color: kind === 'discount' ? 'var(--success)' : 'var(--danger)' }}>
-                        <td>{kind === 'discount' ? 'यात सूट (वजा केलेली)' : 'यात दंड (समाविष्ट)'}</td>
-                        {perComp.map((v, i) => <td key={components[i].key} className="num">{v.toFixed(2)}</td>)}
-                        <td className="num">{sum.toFixed(2)}</td>
-                      </tr>
-                    );
-                  })}
-                  <tr style={{ color: 'var(--success)' }}>
-                    <td>आजवर जमा (वसूल) <button type="button" className="detail-btn" onClick={() => openDetail('paid')}>तपशील</button></td>
-                    {components.map((c) => (
-                      <td key={c.key} className="num">
-                        {(Number(summary.paid_by_component[`previous_${c.key}`] || 0) + Number(summary.paid_by_component[`current_${c.key}`] || 0)).toFixed(2)}
-                      </td>
-                    ))}
-                    <td className="num">{summary.total_paid.toFixed(2)}</td>
-                  </tr>
-                  <tr className="total-row">
-                    <td>उर्वरित बाकी</td>
-                    {components.map((c) => (
-                      <td key={c.key} className="num">
-                        {(Number(summary.balance_by_component[`previous_${c.key}`] || 0) + Number(summary.balance_by_component[`current_${c.key}`] || 0)).toFixed(2)}
-                      </td>
-                    ))}
-                    <td className="num">{summary.balance_due.toFixed(2)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <DueSummary summary={summary} components={components} openDetail={openDetail} />
             {summary.unallocated_advance > 0 && (
               <div className="notice-box">
                 {RECEIPT_LABELS[receiptType]}पोटी सर्व देय रक्कम भरून झाली असून ₹{summary.unallocated_advance.toFixed(2)} जास्त (आगाऊ) जमा आहे.
@@ -373,30 +321,7 @@ export default function PaymentEntry() {
 
           <div className="card no-print">
             <h2 style={{ fontSize: 15, marginTop: 0 }}>{RECEIPT_LABELS[receiptType]} इतिहास</h2>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>पावती क्र.</th><th>दिनांक</th><th>वर्ष</th><th className="num">रक्कम</th><th>शेरा</th><th></th></tr></thead>
-                <tbody>
-                  {summary.history.map((h) => (
-                    <tr key={h.id}>
-                      <td>{h.receipt_no}</td>
-                      <td>{fmtDate(h.payment_date)}</td>
-                      <td>{h.year_label}</td>
-                      <td className="num">
-                        {(Number(h.amount) + Number(h.khuli_jaga_amount || 0) + Number(h.notice_fee_amount || 0)
-                          + Number(h.warrant_fee_amount || 0) + Number(h.other_amount || 0)).toFixed(2)}
-                      </td>
-                      <td>{h.narration || '-'}</td>
-                      <td>
-                        <a className="btn secondary small" href={`/payments/receipt/${h.id}`} target="_blank" rel="noopener noreferrer">पावती पहा</a>{' '}
-                        {can('payments', 'delete') && <button className="btn danger small" onClick={() => handleVoid(h.id)}>रद्द करा</button>}
-                      </td>
-                    </tr>
-                  ))}
-                  {summary.history.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center' }}>अद्याप जमा नोंद नाही</td></tr>}
-                </tbody>
-              </table>
-            </div>
+            <ReceiptHistory history={summary.history} can={can} handleVoid={handleVoid} />
           </div>
 
           {detailModal && (
@@ -444,3 +369,126 @@ function DueDetailModal({ modal, components, onClose }) {
   );
 }
 
+
+// देय/जमा/उर्वरित सारांश - संगणकावर तक्ता (हेड स्तंभ), फोनवर प्रत्येक हेडचे स्वतंत्र कार्ड (CSS ने एकच दिसते).
+// दोन्ही एकाच dueRows यादीतून तयार होतात, त्यामुळे आकडे नेहमी जुळतात.
+function buildDueRows(summary, components) {
+  const num = (v) => Number(v || 0);
+  const prop = summary.property;
+  const rows = [
+    { key: 'previous', label: 'मागील बाकी (देय)', detail: 'previous', vals: components.map((c) => num(prop[`previous_${c.key}`])) },
+    { key: 'current', label: 'चालू वर्ष (देय)', detail: 'current', vals: components.map((c) => num(prop[`current_${c.key}`])) },
+  ];
+  for (const kind of ['discount', 'penalty']) {
+    const vals = components.map((c) => num(prop[`${kind}_previous_${c.key}`]) + num(prop[`${kind}_current_${c.key}`]));
+    if (vals.reduce((a, b) => a + b, 0) <= 0) continue;
+    rows.push({ key: kind, label: kind === 'discount' ? 'यात सूट (वजा केलेली)' : 'यात दंड (समाविष्ट)', tone: kind, italic: true, vals });
+  }
+  rows.push({
+    key: 'paid', label: 'आजवर जमा (वसूल)', detail: 'paid', tone: 'success', total: num(summary.total_paid),
+    vals: components.map((c) => num(summary.paid_by_component[`previous_${c.key}`]) + num(summary.paid_by_component[`current_${c.key}`])),
+  });
+  rows.push({
+    key: 'balance', label: 'उर्वरित बाकी', isTotal: true, total: num(summary.balance_due),
+    vals: components.map((c) => num(summary.balance_by_component[`previous_${c.key}`]) + num(summary.balance_by_component[`current_${c.key}`])),
+  });
+  for (const r of rows) if (r.total === undefined) r.total = r.vals.reduce((a, b) => a + b, 0);
+  return rows;
+}
+
+const toneColor = (tone) => (tone === 'discount' || tone === 'success' ? 'var(--success)' : tone === 'penalty' ? 'var(--danger)' : undefined);
+
+function DueSummary({ summary, components, openDetail }) {
+  const rows = buildDueRows(summary, components);
+  const detailBtn = (r) => r.detail && (
+    <>{' '}<button type="button" className="detail-btn" onClick={() => openDetail(r.detail)}>तपशील</button></>
+  );
+  const cards = [...components.map((c, i) => ({ title: c.label, idx: i })), { title: 'एकूण', idx: -1 }];
+  return (
+    <>
+      <div className="table-wrap due-table" style={{ marginBottom: 14 }}>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              {components.map((c) => <th key={c.key} className="num">{c.label}</th>)}
+              <th className="num">एकूण</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.key} className={r.isTotal ? 'total-row' : undefined}
+                style={{ color: toneColor(r.tone), fontStyle: r.italic ? 'italic' : undefined }}>
+                <td>{r.label}{detailBtn(r)}</td>
+                {r.vals.map((v, i) => <td key={components[i].key} className="num">{v.toFixed(2)}</td>)}
+                <td className="num">{r.total.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="due-cards">
+        {cards.map((card) => (
+          <div key={card.title} className={`due-card${card.idx === -1 ? ' due-card-total' : ''}`}>
+            <div className="due-card-title">{card.title}</div>
+            {rows.map((r) => (
+              <div key={r.key} className={`due-card-row${r.isTotal ? ' due-card-balance' : ''}`}
+                style={{ color: toneColor(r.tone), fontStyle: r.italic ? 'italic' : undefined }}>
+                <span>{r.label}{card.idx === -1 && detailBtn(r)}</span>
+                <strong>{(card.idx === -1 ? r.total : r.vals[card.idx]).toFixed(2)}</strong>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// पावती इतिहास - संगणकावर तक्ता, फोनवर प्रत्येक पावतीचे कार्ड.
+function ReceiptHistory({ history, can, handleVoid }) {
+  const amountOf = (h) => (Number(h.amount) + Number(h.khuli_jaga_amount || 0) + Number(h.notice_fee_amount || 0)
+    + Number(h.warrant_fee_amount || 0) + Number(h.other_amount || 0)).toFixed(2);
+  const actions = (h) => (
+    <>
+      <a className="btn secondary small" href={`/payments/receipt/${h.id}`} target="_blank" rel="noopener noreferrer">पावती पहा</a>{' '}
+      {can('payments', 'delete') && <button className="btn danger small" onClick={() => handleVoid(h.id)}>रद्द करा</button>}
+    </>
+  );
+  return (
+    <>
+      <div className="table-wrap history-table">
+        <table>
+          <thead><tr><th>पावती क्र.</th><th>दिनांक</th><th>वर्ष</th><th className="num">रक्कम</th><th>शेरा</th><th></th></tr></thead>
+          <tbody>
+            {history.map((h) => (
+              <tr key={h.id}>
+                <td>{h.receipt_no}</td>
+                <td>{fmtDate(h.payment_date)}</td>
+                <td>{h.year_label}</td>
+                <td className="num">{amountOf(h)}</td>
+                <td>{h.narration || '-'}</td>
+                <td>{actions(h)}</td>
+              </tr>
+            ))}
+            {history.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center' }}>अद्याप जमा नोंद नाही</td></tr>}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="history-cards">
+        {history.map((h) => (
+          <div key={h.id} className="due-card">
+            <div className="due-card-title">पावती क्र. {h.receipt_no} <span style={{ fontWeight: 400 }}>— {fmtDate(h.payment_date)}</span></div>
+            <div className="due-card-row"><span>रक्कम</span><strong>{amountOf(h)}</strong></div>
+            <div className="due-card-row"><span>वर्ष</span><span>{h.year_label}</span></div>
+            {h.narration && <div className="due-card-row"><span>शेरा</span><span>{h.narration}</span></div>}
+            <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>{actions(h)}</div>
+          </div>
+        ))}
+        {history.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>अद्याप जमा नोंद नाही</p>}
+      </div>
+    </>
+  );
+}
