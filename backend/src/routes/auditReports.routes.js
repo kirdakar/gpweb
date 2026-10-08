@@ -65,6 +65,9 @@ router.get('/monthly', async (req, res) => {
       complied_in_month: inMonth.reduce((s, l) => s + l.complied_count, 0),
       ps_accepted_in_month: inMonth.reduce((s, l) => s + l.ps_accepted_count, 0),
       auditor_accepted_in_month: inMonth.reduce((s, l) => s + l.auditor_accepted_count, 0),
+      // नमुना २७ रकाना (६): महिन्याअखेरपर्यंत लेखा परीक्षकाने पूर्तता मान्य केलेल्या आक्षेपांची एकूण संख्या; info_only = केवळ माहितीसाठी
+      auditor_accepted_total: auditorTotal,
+      info_only_count: r.info_only_count,
       pending_count: Math.max(r.total_objections - r.info_only_count - auditorTotal, 0),
       pending_reason: lastReason,
       remark: r.remark,
