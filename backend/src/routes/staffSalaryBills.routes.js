@@ -14,11 +14,14 @@ router.use(requireAuth);
 const SALARY_LEDGER_HEAD_CODE = 'K1.4'; // कर्मचारी वेतन
 
 function computeBill(b) {
+  const r2 = (n) => Math.round(n * 100) / 100;
+  // नमुना २१: (८) = वेतन+रजा वेतन+स्थानापन्न वेतन+भत्ते; (११) = (८) - (९ पुढील अधिदानासाठी ठेवलेली रक्कम) - (१० वसुली व दंड);
+  // (१४) = भ.नि.नि. + इतर वजाती; (१५) निव्वळ = (११) - (१४).
   const gross = Number(b.basic_pay || 0) + Number(b.leave_pay || 0) + Number(b.suspension_pay || 0) + Number(b.allowances || 0);
-  const afterRecovery = gross - Number(b.recovery_fine || 0);
+  const balance = gross - Number(b.reserved_amount || 0) - Number(b.recovery_fine || 0);
   const totalDeductions = Number(b.pf_deduction || 0) + Number(b.other_deductions || 0);
-  const net = afterRecovery - totalDeductions;
-  return { grossTotal: Math.round(gross * 100) / 100, totalDeductions: Math.round(totalDeductions * 100) / 100, netPayable: Math.round(net * 100) / 100 };
+  const net = balance - totalDeductions;
+  return { grossTotal: r2(gross), balanceAfterReserve: r2(balance), totalDeductions: r2(totalDeductions), netPayable: r2(net) };
 }
 
 router.get('/', async (req, res) => {
@@ -46,6 +49,8 @@ router.get('/', async (req, res) => {
       leave_pay: Number(bill.leave_pay || 0),
       suspension_pay: Number(bill.suspension_pay || 0),
       allowances: Number(bill.allowances || 0),
+      reserved_amount: Number(bill.reserved_amount || 0),
+      remark: bill.remark || '',
       recovery_fine: Number(bill.recovery_fine || 0),
       pf_deduction: Number(bill.pf_deduction || 0),
       other_deductions: Number(bill.other_deductions || 0),
@@ -73,15 +78,16 @@ router.put('/', requirePermission('staff_salary_bills', 'edit'), async (req, res
       await conn.query(
         `INSERT INTO staff_salary_bills
            (staff_id, financial_year_id, year, month, basic_pay, leave_pay, suspension_pay, allowances,
-            recovery_fine, pf_deduction, other_deductions, remark)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            recovery_fine, pf_deduction, other_deductions, remark, reserved_amount)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
            basic_pay = VALUES(basic_pay), leave_pay = VALUES(leave_pay), suspension_pay = VALUES(suspension_pay),
            allowances = VALUES(allowances), recovery_fine = VALUES(recovery_fine), pf_deduction = VALUES(pf_deduction),
-           other_deductions = VALUES(other_deductions), remark = VALUES(remark)`,
+           other_deductions = VALUES(other_deductions), remark = VALUES(remark), reserved_amount = VALUES(reserved_amount)`,
         [staffId, financial_year_id, year, month,
           Number(e.basic_pay) || 0, Number(e.leave_pay) || 0, Number(e.suspension_pay) || 0, Number(e.allowances) || 0,
-          Number(e.recovery_fine) || 0, Number(e.pf_deduction) || 0, Number(e.other_deductions) || 0, e.remark || null]
+          Number(e.recovery_fine) || 0, Number(e.pf_deduction) || 0, Number(e.other_deductions) || 0, e.remark || null,
+          Number(e.reserved_amount) || 0]
       );
     }
     await conn.commit();

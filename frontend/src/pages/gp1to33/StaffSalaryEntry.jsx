@@ -12,8 +12,9 @@ const MONTHS = [
 const FIELDS = [
   { key: 'basic_pay', label: 'वेतन' },
   { key: 'leave_pay', label: 'रजा वेतन' },
-  { key: 'suspension_pay', label: 'स्थानपन वेतन' },
+  { key: 'suspension_pay', label: 'स्थानापन्न वेतन' },
   { key: 'allowances', label: 'भत्ते' },
+  { key: 'reserved_amount', label: 'पुढील अधिदानासाठी ठेवलेली रक्कम' },
   { key: 'recovery_fine', label: 'वसुली व दंड' },
   { key: 'pf_deduction', label: 'भ.नि.नि. अंशदान' },
   { key: 'other_deductions', label: 'इतर वजाती' },
@@ -63,7 +64,7 @@ export default function StaffSalaryEntry() {
         const e = edits[r.staff_id] || {};
         const merged = {};
         for (const f of FIELDS) merged[f.key] = Number(e[f.key] !== undefined ? e[f.key] : r[f.key]) || 0;
-        return { staff_id: r.staff_id, ...merged };
+        return { staff_id: r.staff_id, ...merged, remark: e.remark !== undefined ? e.remark : (r.remark || '') };
       });
       await client.put('/staff-salary-bills', { financial_year_id: yearId, year, month, entries });
       load();
@@ -91,7 +92,7 @@ export default function StaffSalaryEntry() {
     const e = {};
     for (const f of FIELDS) e[f.key] = Number(fieldValue(row, f.key)) || 0;
     const gross = e.basic_pay + e.leave_pay + e.suspension_pay + e.allowances;
-    const afterRecovery = gross - e.recovery_fine;
+    const afterRecovery = gross - e.reserved_amount - e.recovery_fine;
     const totalDeductions = e.pf_deduction + e.other_deductions;
     const net = afterRecovery - totalDeductions;
     return { gross, net };
@@ -129,6 +130,7 @@ export default function StaffSalaryEntry() {
               <tr>
                 <th>पद / कर्मचारी</th>
                 {FIELDS.map((f) => <th key={f.key} className="num">{f.label}</th>)}
+                <th>शेरा</th>
                 <th className="num">एकूण वेतन</th>
                 <th className="num">निव्वळ देय</th>
                 <th></th>
@@ -149,6 +151,13 @@ export default function StaffSalaryEntry() {
                         ) : Number(fieldValue(row, f.key)).toFixed(2)}
                       </td>
                     ))}
+                    <td>
+                      {canEdit ? (
+                        <input value={edits[row.staff_id]?.remark !== undefined ? edits[row.staff_id].remark : (row.remark || '')}
+                          onChange={(e) => onEdit(row.staff_id, 'remark', e.target.value)}
+                          style={{ width: 120, padding: 4, border: '1px solid var(--border)', borderRadius: 4 }} />
+                      ) : (row.remark || '')}
+                    </td>
                     <td className="num">{gross.toFixed(2)}</td>
                     <td className="num" style={{ fontWeight: 700 }}>{net.toFixed(2)}</td>
                     <td>
@@ -163,7 +172,7 @@ export default function StaffSalaryEntry() {
                   </tr>
                 );
               })}
-              {rows.length === 0 && <tr><td colSpan={FIELDS.length + 4} style={{ textAlign: 'center' }}>सक्रिय कर्मचारी नाही (नमुना १३ मध्ये नोंदवा)</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={FIELDS.length + 5} style={{ textAlign: 'center' }}>सक्रिय कर्मचारी नाही (नमुना १३ मध्ये नोंदवा)</td></tr>}
             </tbody>
           </table>
         </div>

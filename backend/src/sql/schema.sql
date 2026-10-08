@@ -904,3 +904,6 @@ ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS cheque_no VARCHAR(50) NULL;
 ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS cheque_date DATE NULL;
 ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS receipt_date DATE NULL;
 ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS cash_paid_amount DECIMAL(14,2) NULL;
+
+-- नमुना २१ रकाना (९) - पुढील अधिदानासाठी ठेवलेली रक्कम (निव्वळ देयातून वजा होते).
+ALTER TABLE staff_salary_bills ADD COLUMN IF NOT EXISTS reserved_amount DECIMAL(12,2) NOT NULL DEFAULT 0;
