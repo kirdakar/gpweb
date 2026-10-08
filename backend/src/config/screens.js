@@ -28,6 +28,7 @@ const SCREENS = [
   { code: 'ledger_heads', label: 'लेखाशीर्ष मास्टर', actions: ['view', 'edit'] },
   { code: 'cash_book', label: 'दैनिक रोकड वही (नमुना ५)', actions: ['view', 'add', 'delete', 'print'] },
   { code: 'reports_cash_book', label: 'रोकड वही अहवाल (नमुना ५)', actions: ['view', 'print'] },
+  { code: 'reports_daily_cash', label: 'दैनिक रोकड वही अहवाल (नमुना ५-क)', actions: ['view', 'print'] },
   { code: 'reports_ledger_classified', label: 'वर्गीकृत नोंदवही (नमुना ६)', actions: ['view', 'print'] },
   { code: 'assets_liabilities', label: 'भत्ते व दायित्वे नोंदणी (नमुना ४)', actions: ['view', 'add', 'edit'] },
   { code: 'reports_assets_liabilities', label: 'भत्ते व दायित्वे अहवाल (नमुना ४)', actions: ['view', 'print'] },

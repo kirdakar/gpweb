@@ -88,6 +88,7 @@ const MENUS = [
           { to: '/gp1to33/reports/annual-summary', label: 'वार्षिक जमा-खर्च (नमुना ३)', screen: 'reports_annual_summary' },
           { to: '/gp1to33/reports/assets-liabilities', label: 'भत्ते व दायित्वे अहवाल (नमुना ४)', screen: 'reports_assets_liabilities' },
           { to: '/gp1to33/reports/cash-book', label: 'रोकड वही अहवाल (नमुना ५/१८)', screen: 'reports_cash_book' },
+          { to: '/gp1to33/reports/daily-cash', label: 'दैनिक रोकड वही अहवाल (नमुना ५-क)', screen: 'reports_daily_cash' },
           { to: '/gp1to33/reports/ledger-classified', label: 'वर्गीकृत नोंदवही (नमुना ६)', screen: 'reports_ledger_classified' },
           { to: '/gp1to33/reports/receipts', label: 'सामान्य पावती (नमुना ७)', screen: 'reports_receipt_voucher' },
           { to: '/gp1to33/reports/misc-demands', label: 'किरकोळ मागणी अहवाल (नमुना ११)', screen: 'reports_misc_demands' },

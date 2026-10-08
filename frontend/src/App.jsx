@@ -36,6 +36,7 @@ import RestorePage from './pages/maintenance/RestorePage';
 import LedgerHeadMaster from './pages/gp1to33/LedgerHeadMaster';
 import CashBookEntry from './pages/gp1to33/CashBookEntry';
 import CashBookReport from './pages/gp1to33/CashBookReport';
+import DailyCashReport from './pages/gp1to33/DailyCashReport';
 import ClassifiedLedgerReport from './pages/gp1to33/ClassifiedLedgerReport';
 import AssetsLiabilities from './pages/gp1to33/AssetsLiabilities';
 import BudgetEntry from './pages/gp1to33/BudgetEntry';
@@ -131,6 +132,7 @@ export default function App() {
             <Route path="/gp1to33/ledger-heads" element={<RequireView screen="ledger_heads"><LedgerHeadMaster /></RequireView>} />
             <Route path="/gp1to33/cash-book" element={<RequireView screen="cash_book"><CashBookEntry /></RequireView>} />
             <Route path="/gp1to33/reports/cash-book" element={<RequireView screen="reports_cash_book"><CashBookReport /></RequireView>} />
+            <Route path="/gp1to33/reports/daily-cash" element={<RequireView screen="reports_daily_cash"><DailyCashReport /></RequireView>} />
             <Route path="/gp1to33/reports/ledger-classified" element={<RequireView screen="reports_ledger_classified"><ClassifiedLedgerReport /></RequireView>} />
             <Route path="/gp1to33/assets-liabilities" element={<RequireView screen="assets_liabilities"><AssetsLiabilities /></RequireView>} />
             <Route path="/gp1to33/budget-entry" element={<RequireView screen="budget_entries"><BudgetEntry /></RequireView>} />
