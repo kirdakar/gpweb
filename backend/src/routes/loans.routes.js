@@ -27,6 +27,15 @@ router.get('/', async (req, res) => {
      FROM loan_repayments GROUP BY loan_id`
   );
   const repayByLoan = new Map(repayRows.map((r) => [r.loan_id, r]));
+  // नमुना २९ च्या "प्रदानाचा तपशील" साठी प्रत्येक हप्त्याची नोंद (तारीख, मुद्दल, व्याज)
+  const [repayList] = await pool.query(
+    'SELECT id, loan_id, repayment_date, principal_amount, interest_amount FROM loan_repayments ORDER BY repayment_date, id'
+  );
+  const repaymentsByLoan = new Map();
+  for (const x of repayList) {
+    if (!repaymentsByLoan.has(x.loan_id)) repaymentsByLoan.set(x.loan_id, []);
+    repaymentsByLoan.get(x.loan_id).push({ id: x.id, repayment_date: x.repayment_date, principal_amount: Number(x.principal_amount), interest_amount: Number(x.interest_amount) });
+  }
 
   res.json(rows.map((l) => {
     const repay = repayByLoan.get(l.id) || { principal_paid: 0, interest_paid: 0 };
@@ -35,6 +44,7 @@ router.get('/', async (req, res) => {
       principal_paid: Number(repay.principal_paid),
       interest_paid: Number(repay.interest_paid),
       balance: Number(l.loan_amount) - Number(repay.principal_paid),
+      repayments: repaymentsByLoan.get(l.id) || [],
     };
   }));
 });
@@ -45,7 +55,8 @@ router.get('/:id/repayments', async (req, res) => {
 });
 
 router.post('/', requirePermission('loans', 'add'), async (req, res) => {
-  const { financial_year_id, source, sanction_order_no, sanction_date, purpose, loan_amount, interest_rate, received_date, ledger_head_id, remark } = req.body || {};
+  const { financial_year_id, source, sanction_order_no, sanction_date, purpose, loan_amount, interest_rate, received_date, ledger_head_id, remark,
+    installment_count, installment_dates, installment_principal, installment_interest } = req.body || {};
   if (!financial_year_id || !received_date || !ledger_head_id) return res.status(400).json({ error: 'वर्ष, कर्ज मिळाल्याची तारीख व लेखाशीर्ष आवश्यक आहेत' });
   if (!source || !source.trim()) return res.status(400).json({ error: 'कर्जाची उभारणीचे साधन आवश्यक आहे' });
   const amt = Number(loan_amount);
@@ -67,10 +78,14 @@ router.post('/', requirePermission('loans', 'add'), async (req, res) => {
     );
     const [result] = await conn.query(
       `INSERT INTO loans
-         (financial_year_id, source, sanction_order_no, sanction_date, purpose, loan_amount, interest_rate, received_date, ledger_head_id, cash_book_entry_id, remark)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (financial_year_id, source, sanction_order_no, sanction_date, purpose, loan_amount, interest_rate, received_date, ledger_head_id, cash_book_entry_id, remark,
+          installment_count, installment_dates, installment_principal, installment_interest)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [financial_year_id, source.trim(), sanction_order_no || null, sanction_date || null, purpose || null, amt,
-        interest_rate ? Number(interest_rate) : null, received_date, ledger_head_id, cashResult.insertId, remark || null]
+        interest_rate ? Number(interest_rate) : null, received_date, ledger_head_id, cashResult.insertId, remark || null,
+        installment_count ? Number(installment_count) : null, installment_dates || null,
+        installment_principal === '' || installment_principal == null ? null : Number(installment_principal),
+        installment_interest === '' || installment_interest == null ? null : Number(installment_interest)]
     );
     await conn.commit();
     const [[row]] = await pool.query(
@@ -129,6 +144,22 @@ router.post('/:id/repay', requirePermission('loans', 'edit'), async (req, res) =
   } finally {
     conn.release();
   }
+});
+
+// नमुना २९ चे वर्णनात्मक रकाने - हप्त्यांची संख्या, नियत तारखा, प्रत्येक हप्त्यातील मुद्दल व व्याज - कर्ज नोंदल्यानंतरही
+// भरता/बदलता येतात; कर्जाची रक्कम/रोकड वही बदलत नाही.
+router.put('/:id/details', requirePermission('loans', 'edit'), async (req, res) => {
+  const b = req.body || {};
+  const [[loan]] = await pool.query('SELECT id FROM loans WHERE id = ?', [req.params.id]);
+  if (!loan) return res.status(404).json({ error: 'कर्ज सापडले नाही' });
+  const numOrNull = (v) => (v === '' || v == null ? null : Number(v));
+  const cnt = numOrNull(b.installment_count);
+  const pr = numOrNull(b.installment_principal);
+  const ir = numOrNull(b.installment_interest);
+  if ([cnt, pr, ir].some((x) => x !== null && !(x >= 0))) return res.status(400).json({ error: 'हप्त्याचे आकडे योग्य नाहीत' });
+  await pool.query('UPDATE loans SET installment_count = ?, installment_dates = ?, installment_principal = ?, installment_interest = ? WHERE id = ?',
+    [cnt, b.installment_dates ? String(b.installment_dates).trim() || null : null, pr, ir, req.params.id]);
+  res.json({ ok: true });
 });
 
 module.exports = router;

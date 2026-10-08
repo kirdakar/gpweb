@@ -949,3 +949,9 @@ ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS disposal_resolution VARCHAR(15
 -- नमुना २५ (गुंतवणूक नोंदवही) रकाने (४) दर्शनी मूल्य व (८) उपार्जित व्याजाची तारीख.
 ALTER TABLE investments ADD COLUMN IF NOT EXISTS face_value DECIMAL(14,2) NULL;
 ALTER TABLE investments ADD COLUMN IF NOT EXISTS interest_date DATE NULL;
+
+-- नमुना २९ (कर्जाची नोंदवही) रकाने (८) हप्त्यांची संख्या व नियत तारखा आणि (९) प्रत्येक हप्त्यातील मुद्दल/व्याज रक्कम.
+ALTER TABLE loans ADD COLUMN IF NOT EXISTS installment_count INT NULL;
+ALTER TABLE loans ADD COLUMN IF NOT EXISTS installment_dates VARCHAR(255) NULL;
+ALTER TABLE loans ADD COLUMN IF NOT EXISTS installment_principal DECIMAL(14,2) NULL;
+ALTER TABLE loans ADD COLUMN IF NOT EXISTS installment_interest DECIMAL(14,2) NULL;

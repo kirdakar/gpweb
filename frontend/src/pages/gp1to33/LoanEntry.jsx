@@ -3,6 +3,7 @@ import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
+import { fmtDate } from '../../utils/formatDate';
 
 // नमुना २९ - कर्जाची नोंदणी. नोंद करताच रोकड वहीत (नमुना ५) जमा नोंदते
 // (कर्ज मिळाले); प्रत्येक हप्ता भरताना "हप्ता भरा" कृतीने खर्च नोंदते -
@@ -23,6 +24,13 @@ export default function LoanEntry() {
   const [headDropdownOpen, setHeadDropdownOpen] = useState(false);
   const [selectedHeadId, setSelectedHeadId] = useState('');
   const [remark, setRemark] = useState('');
+  const [instCount, setInstCount] = useState('');
+  const [instDates, setInstDates] = useState('');
+  const [instPrincipal, setInstPrincipal] = useState('');
+  const [instInterest, setInstInterest] = useState('');
+  // नमुना २९ चे हप्त्यांचे रकाने नंतर पूर्ण करण्यासाठी (निवडलेले कर्ज)
+  const [detailId, setDetailId] = useState('');
+  const [detail, setDetail] = useState({ installment_count: '', installment_dates: '', installment_principal: '', installment_interest: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -55,6 +63,7 @@ export default function LoanEntry() {
   function resetForm() {
     setSource(''); setSanctionOrderNo(''); setSanctionDate(''); setPurpose(''); setLoanAmount(''); setInterestRate('');
     setRemark(''); setSelectedHeadId(''); setHeadSearch('');
+    setInstCount(''); setInstDates(''); setInstPrincipal(''); setInstInterest('');
   }
 
   async function handleSubmit(e) {
@@ -70,6 +79,7 @@ export default function LoanEntry() {
         financial_year_id: yearId, source, sanction_order_no: sanctionOrderNo, sanction_date: sanctionDate || null,
         purpose, loan_amount: amt, interest_rate: interestRate || null, received_date: receivedDate,
         ledger_head_id: selectedHeadId, remark,
+        installment_count: instCount || null, installment_dates: instDates, installment_principal: instPrincipal, installment_interest: instInterest,
       });
       resetForm();
       load();
@@ -97,6 +107,28 @@ export default function LoanEntry() {
       load();
     } catch (err) {
       setError(err.response?.data?.error || 'हप्ता भरताना त्रुटी आली');
+    }
+  }
+
+  // निवडलेल्या कर्जाचे हप्त्यांचे रकाने फॉर्ममध्ये भरतो; यादी बदलली तर पहिले निवडतो
+  useEffect(() => {
+    if (rows.length === 0) { setDetailId(''); return; }
+    if (!rows.some((r) => String(r.id) === String(detailId))) setDetailId(String(rows[0].id));
+  }, [rows]);
+  useEffect(() => {
+    const r = rows.find((x) => String(x.id) === String(detailId));
+    setDetail(r
+      ? { installment_count: r.installment_count ?? '', installment_dates: r.installment_dates || '', installment_principal: r.installment_principal ?? '', installment_interest: r.installment_interest ?? '' }
+      : { installment_count: '', installment_dates: '', installment_principal: '', installment_interest: '' });
+  }, [detailId, rows]);
+  async function saveDetail(e) {
+    e.preventDefault();
+    setError('');
+    try {
+      await client.put(`/loans/${detailId}/details`, detail);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'जतन करताना त्रुटी आली');
     }
   }
 
@@ -143,6 +175,10 @@ export default function LoanEntry() {
                   )}
                 </div>
               </div>
+              <div className="field"><label>परतफेडीच्या हप्त्यांची संख्या</label><input type="number" min="0" value={instCount} onChange={(e) => setInstCount(e.target.value)} /></div>
+              <div className="field"><label>हप्त्यांच्या नियत तारखा</label><input value={instDates} onChange={(e) => setInstDates(e.target.value)} placeholder="उदा. दर वर्षी १ एप्रिल" /></div>
+              <div className="field"><label>प्रत्येक हप्त्यातील मुद्दल (रु.)</label><input type="number" step="0.01" min="0" value={instPrincipal} onChange={(e) => setInstPrincipal(e.target.value)} /></div>
+              <div className="field"><label>प्रत्येक हप्त्यातील व्याज (रु.)</label><input type="number" step="0.01" min="0" value={instInterest} onChange={(e) => setInstInterest(e.target.value)} /></div>
               <div className="field" style={{ gridColumn: 'span 2' }}><label>शेरा</label><input value={remark} onChange={(e) => setRemark(e.target.value)} /></div>
             </div>
             <div style={{ marginTop: 14 }}>
@@ -197,6 +233,28 @@ export default function LoanEntry() {
           </div>
         )}
       </div>
+
+      {canEdit && rows.length > 0 && (
+        <div className="card no-print" style={{ marginTop: 20 }}>
+          <form onSubmit={saveDetail}>
+            <h2 style={{ fontSize: 15, marginTop: 0 }}>हप्त्यांचे तपशील पूर्ण करा (नमुना २९)</h2>
+            <div className="form-grid">
+              <div className="field" style={{ gridColumn: 'span 2' }}>
+                <label>कोणते कर्ज</label>
+                <select value={detailId} onChange={(e) => setDetailId(e.target.value)}>
+                  {rows.map((r) => <option key={r.id} value={r.id}>{r.source} - {fmtDate(r.received_date)}</option>)}
+                </select>
+              </div>
+              <div className="field"><label>परतफेडीच्या हप्त्यांची संख्या</label><input type="number" min="0" value={detail.installment_count} onChange={(e) => setDetail({ ...detail, installment_count: e.target.value })} /></div>
+              <div className="field"><label>हप्त्यांच्या नियत तारखा</label><input value={detail.installment_dates} onChange={(e) => setDetail({ ...detail, installment_dates: e.target.value })} /></div>
+              <div className="field"><label>प्रत्येक हप्त्यातील मुद्दल (रु.)</label><input type="number" step="0.01" min="0" value={detail.installment_principal} onChange={(e) => setDetail({ ...detail, installment_principal: e.target.value })} /></div>
+              <div className="field"><label>प्रत्येक हप्त्यातील व्याज (रु.)</label><input type="number" step="0.01" min="0" value={detail.installment_interest} onChange={(e) => setDetail({ ...detail, installment_interest: e.target.value })} /></div>
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>प्रदानाचा तपशील (तारीख, मुद्दल, व्याज, शिल्लक) "हप्ता भरा" कृतीवरून आपोआप रिपोर्टमध्ये येतो; सह्या कागदावर हाताने.</div>
+            <div style={{ marginTop: 10 }}><button className="btn secondary" type="submit">तपशील जतन करा</button></div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
