@@ -6,130 +6,165 @@ import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
 
 const MONTHS = [
-  '१ जानेवारी', '२ फेब्रुवारी', '३ मार्च', '४ एप्रिल', '५ मे', '६ जून',
-  '७ जुलै', '८ ऑगस्ट', '९ सप्टेंबर', '१० ऑक्टोबर', '११ नोव्हेंबर', '१२ डिसेंबर',
+  'जानेवारी', 'फेब्रुवारी', 'मार्च', 'एप्रिल', 'मे', 'जून',
+  'जुलै', 'ऑगस्ट', 'सप्टेंबर', 'ऑक्टोबर', 'नोव्हेंबर', 'डिसेंबर',
 ];
+const MR = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+const mnum = (n) => String(n).split('').map((d) => MR[Number(d)]).join('');
+const fmt = (n) => Number(n || 0).toFixed(2);
+const cell = (n) => (Number(n) ? Number(n).toFixed(2) : '');
+const PER_PAGE = 6;
+const DAYS_A = Array.from({ length: 15 }, (_, i) => i + 1);
+const DAYS_B = Array.from({ length: 16 }, (_, i) => i + 16);
 
-// नमुना ६ - लेखाशीर्षनिहाय मासिक वर्गीकृत नोंदवही. निवडलेल्या शीर्षाच्या
-// निवडलेल्या महिन्यातील प्रत्येक दिवसाची बेरीज (नमुना ५ वरून काढलेली),
-// अधिक मागील महिन्यांपर्यंतची चढती बेरीज.
+// नमुना ६ - लेखाशीर्षनिहाय मासिक वर्गीकृत नोंदवही, कागदी नमुन्याप्रमाणे A4 आडव्या पानावर: वरचा तक्ता = लेखा शीर्ष,
+// अर्थसंकल्पीय अनुदान व तारखा १-१५; खालचा तक्ता = तारखा १६-३१, महिन्याची एकूण, आधीच्या महिन्या अखेरपर्यंतची एकूण
+// व चढती बेरीज (दोन्ही तक्त्यांत ओळी एकाच शीर्षाच्या). सर्व रकमा नमुना ५ (रोकड वही) वरून आपोआप - हाताने भरायचे नाही.
 export default function ClassifiedLedgerReport() {
-  const { yearId, currentYear } = useYear();
+  const { yearId } = useYear();
   const { can } = usePermissions();
-  const { gpLine } = useGpSettings();
-
-  const [heads, setHeads] = useState([]);
-  const [entryType, setEntryType] = useState('जमा');
-  const [search, setSearch] = useState('');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [selectedHeadId, setSelectedHeadId] = useState('');
+  const { settings } = useGpSettings();
+  const gpName = (settings?.gp_name || '').replace(/^ग्रामपंचायत\s*/, '');
 
   const now = new Date();
+  const [entryType, setEntryType] = useState('जमा');
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
-  const [data, setData] = useState(null);
+  const [search, setSearch] = useState('');
+  const [showEmpty, setShowEmpty] = useState(false);
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { client.get('/ledger-heads').then(({ data }) => setHeads(data)); }, []);
-
-  const leafHeads = useMemo(() => heads.filter((h) => h.is_leaf && h.group_type === entryType), [heads, entryType]);
-  const searchTerm = search.trim().toLowerCase();
-  const results = useMemo(() => {
-    if (!searchTerm) return leafHeads;
-    return leafHeads.filter((h) => h.name.toLowerCase().includes(searchTerm) || h.code.toLowerCase().includes(searchTerm));
-  }, [leafHeads, searchTerm]);
-
-  function selectHead(h) {
-    setSelectedHeadId(h.id);
-    setSearch(`${h.code} - ${h.name}`);
-    setDropdownOpen(false);
-  }
-
   function load() {
-    if (!selectedHeadId || !yearId) return;
+    if (!yearId) return;
     setLoading(true);
-    client.get('/reports/ledger-classified', { params: { financialYearId: yearId, ledgerHeadId: selectedHeadId, year, month } })
-      .then(({ data: d }) => setData(d))
+    client.get('/reports/ledger-classified-all', { params: { financialYearId: yearId, year, month, entryType } })
+      .then(({ data }) => setRows(data))
       .finally(() => setLoading(false));
   }
+  useEffect(() => { load(); }, [yearId, entryType, year, month]);
 
+  const shown = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return rows.filter((h) => {
+      if (term && !(h.name.toLowerCase().includes(term) || h.code.toLowerCase().includes(term))) return false;
+      return showEmpty || h.monthTotal !== 0 || h.priorTotal !== 0;
+    });
+  }, [rows, search, showEmpty]);
+
+  const pages = useMemo(() => {
+    const out = [];
+    for (let i = 0; i < shown.length; i += PER_PAGE) out.push(shown.slice(i, i + PER_PAGE));
+    return out;
+  }, [shown]);
+
+  const sum = (key) => shown.reduce((s, h) => s + Number(h[key] || 0), 0);
   const daysInMonth = new Date(year, month, 0).getDate();
+  const what = entryType === 'जमा' ? 'जमा' : 'दिलेल्या';
 
   return (
     <div className="page">
       <div className="page-header no-print">
         <h1>वर्गीकृत नोंदवही (नमुना ६)</h1>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn secondary" onClick={() => window.print()} disabled={!data || !can('reports_ledger_classified', 'print')}>प्रिंट</button>
+          <button className="btn secondary" onClick={() => window.print()} disabled={shown.length === 0 || !can('reports_ledger_classified', 'print')}>प्रिंट</button>
           <CloseReportButton />
         </div>
       </div>
 
       <div className="card no-print" style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-          <button type="button" className={`btn ${entryType === 'जमा' ? '' : 'secondary'}`} onClick={() => { setEntryType('जमा'); setSelectedHeadId(''); setSearch(''); }}>जमा</button>
-          <button type="button" className={`btn ${entryType === 'खर्च' ? '' : 'secondary'}`} onClick={() => { setEntryType('खर्च'); setSelectedHeadId(''); setSearch(''); }}>खर्च</button>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          <button type="button" className={`btn ${entryType === 'जमा' ? '' : 'secondary'}`} onClick={() => setEntryType('जमा')}>जमा</button>
+          <button type="button" className={`btn ${entryType === 'खर्च' ? '' : 'secondary'}`} onClick={() => setEntryType('खर्च')}>खर्च</button>
         </div>
-        <div className="search-bar" style={{ alignItems: 'flex-start' }}>
-          <div className="combo-wrap">
-            <input
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setSelectedHeadId(''); setDropdownOpen(true); }}
-              onFocus={() => setDropdownOpen(true)}
-              placeholder="लेखाशीर्ष टाइप करा - क्लिक केल्यावर संपूर्ण यादी दिसेल"
-              style={{ width: '100%', padding: '8px 30px 8px 8px', border: '1px solid var(--border)', borderRadius: 6 }}
-            />
-            {search && (
-              <button type="button" className="combo-clear-btn" title="शोध पुसा"
-                onMouseDown={(e) => { e.preventDefault(); setSearch(''); setSelectedHeadId(''); setDropdownOpen(true); }}>×</button>
-            )}
-            {dropdownOpen && (
-              <div className="combo-dropdown">
-                {results.length === 0 && <div className="combo-empty">जुळणारे शीर्ष सापडले नाही</div>}
-                {results.map((h) => <div key={h.id} className="combo-option" onMouseDown={() => selectHead(h)}>{h.code} - {h.name}</div>)}
-              </div>
-            )}
-          </div>
+        <div className="search-bar" style={{ alignItems: 'center' }}>
           <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
             {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
           <select value={month} onChange={(e) => setMonth(Number(e.target.value))}>
             {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
           </select>
-          <button className="btn secondary" type="button" onClick={load} disabled={!selectedHeadId}>दाखवा</button>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="लेखाशीर्ष शोधा (नाव/कोड) - रिकामे = सर्व" style={{ flex: 1, minWidth: 200, padding: 8, border: '1px solid var(--border)', borderRadius: 6 }} />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <input type="checkbox" checked={showEmpty} onChange={(e) => setShowEmpty(e.target.checked)} /> नोंद नसलेली शीर्षेही
+          </label>
         </div>
       </div>
 
       {loading && <p>लोड होत आहे...</p>}
+      {!loading && shown.length === 0 && <p>या महिन्यात नोंद असलेले लेखाशीर्ष नाही.</p>}
 
-      {data && (
-        <div className="card">
-          <div className="print-header">
-            <h2>{gpLine}</h2>
-            <p style={{ fontWeight: 700 }}>लेखाशीर्षनिहाय मासिक वर्गीकृत नोंदवही (नमुना ६)</p>
-            <p>आर्थिक वर्ष: {currentYear?.year_label || ''} | लेखाशीर्ष: {data.head.code} - {data.head.name} | महिना: {MONTHS[data.month - 1]} {data.year}</p>
+      {!loading && pages.map((list, pi) => (
+        <div key={pi} className="a4-page cl-page">
+          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: 16 }}>नमुना ६</div>
+          <div style={{ textAlign: 'center', fontSize: 11 }}>(नियम १९(७), २५(१), (२) व (३), ३२(५), ३३(२)(३) व (४) (च), ३४, ३५, ३६(२), ३८(२), ४२(४)(ख), ६३, ६६(२) आणि (४) पाहा)</div>
+          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: 14, margin: '2px 0' }}>
+            सन <strong>{year}</strong> च्या <strong>{MONTHS[month - 1]}</strong> महिन्याबद्दल {what} रकमांची वर्गीकृत नोंदवही
           </div>
+          <div style={{ fontSize: 12, margin: '2px 0 6px' }}>ग्रामपंचायत : {gpName ? <strong>{gpName}</strong> : '.........................'}</div>
 
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>तारीख</th><th className="num">रक्कम</th></tr></thead>
-              <tbody>
-                {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((d) => (
-                  <tr key={d}>
-                    <td>{d}</td>
-                    <td className="num">{Number(data.days[d] || 0).toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="total-row"><td>महिन्याची एकूण रक्कम</td><td className="num">{data.monthTotal.toFixed(2)}</td></tr>
-                <tr><td>मागील महिन्यापर्यंतची एकूण रक्कम</td><td className="num">{data.priorTotal.toFixed(2)}</td></tr>
-                <tr className="total-row"><td>चढती बेरीज</td><td className="num">{data.runningTotal.toFixed(2)}</td></tr>
-              </tfoot>
-            </table>
-          </div>
+          <table className="cl-table">
+            <colgroup>
+              <col style={{ width: '17%' }} /><col style={{ width: '10%' }} />
+              {DAYS_A.map((d) => <col key={d} style={{ width: `${73 / 15}%` }} />)}
+            </colgroup>
+            <thead>
+              <tr>
+                <th rowSpan={2}>लेखा शीर्ष (अर्थसंकल्पात निर्दिष्ट केल्याप्रमाणे नाव)</th>
+                <th rowSpan={2}>अर्थसंकल्पीय अनुदान</th>
+                <th colSpan={15}>तारखा</th>
+              </tr>
+              <tr className="cl-numrow">{DAYS_A.map((d) => <th key={d}>({mnum(d)})</th>)}</tr>
+            </thead>
+            <tbody>
+              {list.map((h) => (
+                <tr key={h.id}>
+                  <td className="cl-name">{h.code} {h.name}</td>
+                  <td className="num">{cell(h.approved_amount)}</td>
+                  {DAYS_A.map((d) => <td key={d} className="num cl-day">{cell(h.days[d])}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <table className="cl-table" style={{ marginTop: 10 }}>
+            <colgroup>
+              <col style={{ width: '6%' }} />
+              {DAYS_B.map((d) => <col key={d} style={{ width: `${70 / 16}%` }} />)}
+              <col style={{ width: '8%' }} /><col style={{ width: '8%' }} /><col style={{ width: '8%' }} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th rowSpan={2}>शीर्ष</th>
+                <th colSpan={16}>तारखा</th>
+                <th rowSpan={2}>महिन्याची एकूण रक्कम</th>
+                <th rowSpan={2}>आधीच्या महिन्या अखेर पर्यंतची एकूण रक्कम</th>
+                <th rowSpan={2}>चढती बेरीज</th>
+              </tr>
+              <tr className="cl-numrow">{DAYS_B.map((d) => <th key={d} style={d > daysInMonth ? { opacity: 0.35 } : undefined}>({mnum(d)})</th>)}</tr>
+            </thead>
+            <tbody>
+              {list.map((h) => (
+                <tr key={h.id}>
+                  <td className="cl-name">{h.code}</td>
+                  {DAYS_B.map((d) => <td key={d} className="num cl-day">{cell(h.days[d])}</td>)}
+                  <td className="num">{fmt(h.monthTotal)}</td>
+                  <td className="num">{fmt(h.priorTotal)}</td>
+                  <td className="num"><strong>{fmt(h.runningTotal)}</strong></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {pi === pages.length - 1 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginTop: 8, fontSize: 12 }}>
+              <span>मागील महिन्याच्या अखेरपर्यंतची एकूण रक्कम <strong>{fmt(sum('priorTotal'))}</strong></span>
+              <span>महिन्याची एकूण रक्कम <strong>{fmt(sum('monthTotal'))}</strong></span>
+              <span>चढती बेरीज <strong>{fmt(sum('runningTotal'))}</strong></span>
+            </div>
+          )}
         </div>
-      )}
+      ))}
     </div>
   );
 }

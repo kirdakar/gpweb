@@ -413,6 +413,75 @@ router.get('/ledger-classified', async (req, res) => {
   res.json({ head, year: y, month: m, days, monthTotal, priorTotal, runningTotal: round2(priorTotal + monthTotal) });
 });
 
+// नमुना ६ (कागदी रूप) - एका महिन्यासाठी सर्व leaf लेखाशीर्षे एकाच वेळी: प्रत्येकासाठी अर्थसंकल्पीय अनुदान
+// (budget_entries.approved_amount), दिवसनिहाय रक्कम (१-३१), महिन्याची एकूण, मागील महिन्यापर्यंतची एकूण
+// व चढती बेरीज - सर्व cash_book_entries (register='मुख्य') वरूनच, वेगळा साठा नाही.
+router.get('/ledger-classified-all', async (req, res) => {
+  const { financialYearId, year, month, entryType } = req.query;
+  if (!financialYearId || !year || !month || !['जमा', 'खर्च'].includes(entryType)) {
+    return res.status(400).json({ error: 'financialYearId, year, month आणि entryType (जमा/खर्च) आवश्यक आहेत' });
+  }
+  const y = Number(year);
+  const m = Number(month);
+  const firstOfMonth = `${y}-${String(m).padStart(2, '0')}-01`;
+
+  // sort_order फक्त सख्ख्या भावंडांमध्ये अर्थपूर्ण आहे - म्हणून वृक्ष (गट > उपगट > शीर्ष) चढून leaf शीर्षे नमुना १ च्या क्रमाने.
+  const [allHeads] = await pool.query(
+    'SELECT id, code, name, parent_id, sort_order, is_leaf FROM ledger_heads WHERE group_type = ? ORDER BY sort_order, id',
+    [entryType]
+  );
+  const kids = new Map();
+  for (const h of allHeads) {
+    const k = h.parent_id ?? 'root';
+    if (!kids.has(k)) kids.set(k, []);
+    kids.get(k).push(h);
+  }
+  const heads = [];
+  const walk = (parentKey) => {
+    for (const h of kids.get(parentKey) || []) {
+      if (h.is_leaf) heads.push(h);
+      walk(h.id);
+    }
+  };
+  walk('root');
+  const [budgetRows] = await pool.query(
+    'SELECT ledger_head_id, approved_amount FROM budget_entries WHERE financial_year_id = ?',
+    [financialYearId]
+  );
+  const budgetByHead = new Map(budgetRows.map((r) => [r.ledger_head_id, Number(r.approved_amount)]));
+
+  const [dayRows] = await pool.query(
+    `SELECT ledger_head_id, DAY(entry_date) AS d, SUM(amount) AS total
+     FROM cash_book_entries
+     WHERE financial_year_id = ? AND entry_type = ? AND register = 'मुख्य'
+       AND YEAR(entry_date) = ? AND MONTH(entry_date) = ?
+     GROUP BY ledger_head_id, DAY(entry_date)`,
+    [financialYearId, entryType, y, m]
+  );
+  const daysByHead = new Map();
+  for (const r of dayRows) {
+    if (!daysByHead.has(r.ledger_head_id)) daysByHead.set(r.ledger_head_id, {});
+    daysByHead.get(r.ledger_head_id)[r.d] = Number(r.total);
+  }
+  const [priorRows] = await pool.query(
+    `SELECT ledger_head_id, SUM(amount) AS total FROM cash_book_entries
+     WHERE financial_year_id = ? AND entry_type = ? AND register = 'मुख्य' AND entry_date < ? GROUP BY ledger_head_id`,
+    [financialYearId, entryType, firstOfMonth]
+  );
+  const priorByHead = new Map(priorRows.map((r) => [r.ledger_head_id, Number(r.total)]));
+
+  res.json(heads.map((h) => {
+    const days = daysByHead.get(h.id) || {};
+    const monthTotal = round2(Object.values(days).reduce((s, v) => s + v, 0));
+    const priorTotal = round2(priorByHead.get(h.id) || 0);
+    return {
+      id: h.id, code: h.code, name: h.name,
+      approved_amount: budgetByHead.get(h.id) || 0,
+      days, monthTotal, priorTotal, runningTotal: round2(priorTotal + monthTotal),
+    };
+  }));
+});
+
 // नमुना ३ - सन ___ चा जमा व खर्च (वार्षिक actuals). संपूर्ण ledger_heads
 // वृक्ष + प्रत्येक leaf साठी त्या आर्थिक वर्षातील cash_book_entries ची
 // बेरीज - वेगळा साठा नाही (नमुना ६ प्रमाणेच, फक्त संपूर्ण वर्ष + संपूर्ण

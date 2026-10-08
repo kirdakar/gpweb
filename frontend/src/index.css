@@ -691,3 +691,15 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
   .cb-table { min-width: 0; }
   .cb-table th { font-size: 9px; }
 }
+/* नमुना ६ - वर्गीकृत नोंदवही (A4 आडवे, दोन तक्ते: तारखा १-१५ / १६-३१ + एकूण) */
+.cl-page { font-size: 11px; }
+.cl-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.cl-table th, .cl-table td { border: 1px solid #000; padding: 4px 3px; vertical-align: top; background: none; color: #000; white-space: normal; overflow-wrap: anywhere; }
+.cl-table th { font-weight: 700; text-align: center; font-size: 10px; }
+.cl-table .cl-numrow th { font-weight: 600; padding: 2px 1px; font-size: 9px; }
+.cl-table td { height: 34px; }
+.cl-table td.num { white-space: normal; text-align: right; }
+.cl-table td.cl-day { font-size: 9px; padding: 4px 2px; }
+.cl-table .cl-name { text-align: left; }
+.cl-table tr { page-break-inside: avoid; }
+@media print { .cl-page { font-size: 10px; } }
