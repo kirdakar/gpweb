@@ -643,3 +643,20 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
   .modal-box { padding: 12px; }
   .modal-box th, .modal-box td { padding: 6px 6px; font-size: 12px; white-space: normal; }
 }
+
+/* नमुना २ (पुनर्विनियोजन विवरणपत्र) - A4 आडवे पान: जमा (१-४) | खर्च (५-८) | शेरा (९) */
+.budget-revision-form { font-size: 13px; line-height: 1.5; }
+.budget-revision-form .br-title { text-align: center; margin: 6px 0 2px; font-weight: 600; }
+.br-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 6px; font-size: 13px; }
+.br-table th, .br-table td { border: 1px solid #000; padding: 7px 6px; white-space: normal; word-break: break-word; vertical-align: top; }
+.br-table th { text-align: center; background: #fff; font-weight: 700; }
+.br-table .br-numrow th { font-weight: 600; padding: 1px 4px; }
+.br-table td.num { text-align: right; white-space: nowrap; }
+.br-table .br-name { font-weight: 600; }
+.br-table .br-total td { font-weight: 800; border-top: 2px solid #000; }
+.br-memo { margin-top: 12px; font-size: 13px; }
+.br-sign { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px; gap: 20px; }
+@media print {
+  .budget-revision-form { font-size: 13px; }
+  .budget-revision-form .br-table { page-break-inside: avoid; }
+}

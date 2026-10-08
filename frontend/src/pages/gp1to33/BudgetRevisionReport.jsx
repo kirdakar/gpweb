@@ -5,9 +5,13 @@ import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
 
-// नमुना २ - पुनर्विनियोजन विवरणपत्र अहवाल (ज्ञापन प्रिंट). डाटाएंट्री
-// BudgetRevision.jsx (दैनिक व्यवहार) वर; हे फक्त वाचनीय + पंचायत समितीला
-// पाठवायचे ज्ञापन स्वरूप.
+const fmt = (n) => Number(n || 0).toFixed(2);
+const fmtDiff = (n) => `${n > 0 ? '+' : ''}${Number(n || 0).toFixed(2)}`;
+const dots = (n) => '.'.repeat(n);
+
+// नमुना २ (नियम २१ पाहा) - पुनर्विनियोजन व नियतवाटप विवरणपत्र. कागदी नमुन्याप्रमाणे A4 आडव्या (landscape) पानावर
+// जमा (१-४) व खर्च (५-८) एकाच पानावर बाजू-बाजूला + शेरा (९). डाटा एंट्री BudgetRevision.jsx (दैनिक व्यवहार) वर;
+// इथे फक्त छापील रूप. जमा/खर्चाचे मुख्य गट ओळीनुसार जोडीने (दोन्हीकडे सारख्याच ओळी, कमी असेल तिथे रिकामे).
 export default function BudgetRevisionReport() {
   const { yearId, currentYear } = useYear();
   const { can } = usePermissions();
@@ -16,78 +20,110 @@ export default function BudgetRevisionReport() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  function load() {
+  useEffect(() => {
     if (!yearId) return;
     setLoading(true);
     client.get('/budget-revisions', { params: { financialYearId: yearId } })
       .then(({ data }) => setRows(data))
       .finally(() => setLoading(false));
-  }
-  useEffect(() => { load(); }, [yearId]);
+  }, [yearId]);
 
-  const jamaRows = useMemo(() => rows.filter((r) => r.group_type === 'जमा').sort((a, b) => a.sort_order - b.sort_order), [rows]);
-  const kharchRows = useMemo(() => rows.filter((r) => r.group_type === 'खर्च').sort((a, b) => a.sort_order - b.sort_order), [rows]);
+  const jama = useMemo(() => rows.filter((r) => r.group_type === 'जमा').sort((a, b) => a.sort_order - b.sort_order), [rows]);
+  const kharch = useMemo(() => rows.filter((r) => r.group_type === 'खर्च').sort((a, b) => a.sort_order - b.sort_order), [rows]);
+  const lines = Math.max(jama.length, kharch.length);
+  const pairs = Array.from({ length: lines }, (_, i) => ({ j: jama[i] || null, k: kharch[i] || null }));
 
-  function GroupTable({ title, list }) {
-    return (
-      <div style={{ marginBottom: 24 }}>
-        <h3>{title}</h3>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr><th>शीर्ष</th><th className="num">मंजूर अर्थसंकल्प</th><th className="num">सुधारित अंदाज</th><th className="num">अधिक(+) किंवा कमी(-)</th></tr>
-            </thead>
-            <tbody>
-              {list.map((row) => {
-                const diff = Number(row.revised_amount) - Number(row.approved_amount);
-                return (
-                  <tr key={row.id}>
-                    <td>{row.name}</td>
-                    <td className="num">{Number(row.approved_amount).toFixed(2)}</td>
-                    <td className="num">{Number(row.revised_amount).toFixed(2)}</td>
-                    <td className="num" style={{ color: diff > 0 ? 'var(--success)' : diff < 0 ? 'var(--danger)' : undefined }}>
-                      {diff > 0 ? '+' : ''}{diff.toFixed(2)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  }
+  const sum = (list, key) => list.reduce((s, r) => s + Number(r[key] || 0), 0);
+  const jamaTotal = { approved: sum(jama, 'approved_amount'), revised: sum(jama, 'revised_amount') };
+  const kharchTotal = { approved: sum(kharch, 'approved_amount'), revised: sum(kharch, 'revised_amount') };
+
+  const year = currentYear?.year_label || '';
+  const gpName = (settings?.gp_name || '').replace(/^ग्रामपंचायत\s*/, '');
+
+  const amountCells = (r) => {
+    if (!r) return [<td key="a" />, <td key="b" />, <td key="c" />];
+    const diff = Number(r.revised_amount) - Number(r.approved_amount);
+    return [
+      <td key="a" className="num">{fmt(r.approved_amount)}</td>,
+      <td key="b" className="num">{fmt(r.revised_amount)}</td>,
+      <td key="c" className="num">{diff === 0 ? '' : fmtDiff(diff)}</td>,
+    ];
+  };
 
   return (
     <div className="page">
       <div className="page-header no-print">
-        <h1>पुनर्विनियोजन अहवाल (नमुना २) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
+        <h1>पुनर्विनियोजन अहवाल (नमुना २) {year ? `— ${year}` : ''}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn secondary" onClick={() => window.print()} disabled={rows.length === 0 || !can('reports_budget_revision', 'print')}>प्रिंट</button>
           <CloseReportButton />
         </div>
       </div>
 
-      <div className="print-header">
-        <h2>{gpLine}</h2>
-        <p style={{ fontWeight: 700 }}>पुनर्विनियोजन विवरणपत्र (नमुना २)</p>
-        <p>आर्थिक वर्ष: {currentYear?.year_label || ''} या वर्षासाठी मान्य केलेले पुनर्विनियोजन व नियतवाटप यांचे विवरणपत्र आहे.</p>
-      </div>
-
       {loading ? <p>लोड होत आहे...</p> : (
-        <>
-          <GroupTable title="जमा शीर्ष" list={jamaRows} />
-          <GroupTable title="खर्च शीर्ष" list={kharchRows} />
-          <div style={{ marginTop: 24 }}>
-            <p>ज्ञापन :</p>
-            <p>दिनांक ....................... रोजी झालेल्या ग्रामपंचायत ठराव क्रमांक ....................... अन्वये मान्य केलेले पुनर्विनियोजन व नियतवाटप यांचे विवरणपत्र खाली सही करणारी व्यक्ती माहे ....................... सन ....................... करिता पाठवीत आहे.</p>
-            <div style={{ marginTop: 40, display: 'flex', justifyContent: 'space-between' }}>
-              <span>सचिवांची सही</span>
-              <span>सरपंच{settings?.gp_name ? `, ${settings.gp_name}` : ''}</span>
+        <div className="a4-page budget-revision-form">
+          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: 17 }}>नमुना - २</div>
+          <div style={{ textAlign: 'center', fontSize: 13 }}>(नियम २१ पाहा)</div>
+          <p className="br-title">
+            ग्रामपंचायतीने सन <strong>{year || dots(8)}</strong> च्या {dots(14)} महिन्यात ठराव क्रमांक {dots(12)} दिनांक {dots(14)}
+            अन्वये मान्य केलेले पुनर्विनियोजन व नियतवाटप यांचे विवरणपत्र
+          </p>
+          <div style={{ textAlign: 'center', fontSize: 12 }}>{gpLine}</div>
+
+          <table className="br-table">
+            <colgroup>
+              <col style={{ width: '19%' }} /><col style={{ width: '9%' }} /><col style={{ width: '9%' }} /><col style={{ width: '8%' }} />
+              <col style={{ width: '19%' }} /><col style={{ width: '9%' }} /><col style={{ width: '9%' }} /><col style={{ width: '8%' }} />
+              <col style={{ width: '10%' }} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>जमा रकमांचे मुख्य शीर्षक</th><th>मंजूर अर्थसंकल्प</th><th>सुधारित अंदाज</th><th>अधिक (+) किंवा कमी (−)</th>
+                <th>खर्चाचे प्रमुख शीर्ष</th><th>मंजूर रक्कम</th><th>खर्चाचा सुधारित अंदाज</th><th>अधिक (+) किंवा कमी (−)</th>
+                <th>शेरा</th>
+              </tr>
+              <tr className="br-numrow">
+                {['(१)', '(२)', '(३)', '(४)', '(५)', '(६)', '(७)', '(८)', '(९)'].map((n) => <th key={n}>{n}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {pairs.map((p, i) => (
+                <tr key={i}>
+                  <td className="br-name">{p.j ? p.j.name : ''}</td>
+                  {amountCells(p.j)}
+                  <td className="br-name">{p.k ? p.k.name : ''}</td>
+                  {amountCells(p.k)}
+                  {i === 0 && <td rowSpan={lines + 1} />}
+                </tr>
+              ))}
+              <tr className="br-total">
+                <td>एकूण</td>
+                <td className="num">{fmt(jamaTotal.approved)}</td>
+                <td className="num">{fmt(jamaTotal.revised)}</td>
+                <td className="num">{fmtDiff(jamaTotal.revised - jamaTotal.approved)}</td>
+                <td>एकूण</td>
+                <td className="num">{fmt(kharchTotal.approved)}</td>
+                <td className="num">{fmt(kharchTotal.revised)}</td>
+                <td className="num">{fmtDiff(kharchTotal.revised - kharchTotal.approved)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="br-memo">
+            <div><strong>ज्ञापन :</strong></div>
+            <div>दिनांक {dots(14)} २०{dots(6)}</div>
+            <div>ग्रामपंचायतीचा {gpName ? <strong>{gpName}</strong> : dots(14)} क्रमांक {dots(10)} २०{dots(6)} चा</div>
+            <div>खाली सही करणारी व्यक्ती माहे {dots(14)} २०{dots(6)} चे पुनर्विनियोजन व नियतवाटप यांचे विवरणपत्र पाठवीत आहे.</div>
+            <div className="br-sign">
+              <div>
+                सभापती,<br />पंचायत समिती {dots(14)} गट,<br />जिल्हा {settings?.district || dots(14)}<br />यांस
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <br /><br />सरपंच<br />ग्रामपंचायत {gpName || dots(14)}
+              </div>
             </div>
-            <p style={{ marginTop: 24 }}>प्रति, मे. गटविकास अधिकारी पंचायत समिती ....................... जिल्हा {settings?.district || '.......................'} यांस सादर</p>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
