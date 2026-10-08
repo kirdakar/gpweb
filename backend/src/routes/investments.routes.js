@@ -17,8 +17,10 @@ router.get('/', async (req, res) => {
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
   const [rows] = await pool.query(
-    `SELECT i.*, lh.code AS head_code, lh.name AS head_name
+    `SELECT i.*, lh.code AS head_code, lh.name AS head_name,
+            mc.entry_date AS matured_on, mc.amount AS matured_cash_amount
      FROM investments i JOIN ledger_heads lh ON lh.id = i.ledger_head_id
+     LEFT JOIN cash_book_entries mc ON mc.id = i.matured_cash_book_entry_id
      ${whereSql} ORDER BY i.investment_date DESC, i.id DESC`,
     params
   );
@@ -26,7 +28,7 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', requirePermission('investments', 'add'), async (req, res) => {
-  const { financial_year_id, investment_date, description, purchase_price, maturity_date, matured_amount, ledger_head_id, remark } = req.body || {};
+  const { financial_year_id, investment_date, description, purchase_price, maturity_date, matured_amount, ledger_head_id, remark, face_value, interest_date } = req.body || {};
   if (!financial_year_id || !investment_date || !ledger_head_id) return res.status(400).json({ error: 'वर्ष, दिनांक व लेखाशीर्ष आवश्यक आहेत' });
   if (!description || !description.trim()) return res.status(400).json({ error: 'गुंतवणुकीचा तपशील आवश्यक आहे' });
   const price = Number(purchase_price);
@@ -48,10 +50,12 @@ router.post('/', requirePermission('investments', 'add'), async (req, res) => {
     );
     const [result] = await conn.query(
       `INSERT INTO investments
-         (financial_year_id, investment_date, description, purchase_price, maturity_date, matured_amount, ledger_head_id, cash_book_entry_id, remark)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (financial_year_id, investment_date, description, purchase_price, maturity_date, matured_amount, ledger_head_id, cash_book_entry_id, remark,
+          face_value, interest_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [financial_year_id, investment_date, description.trim(), price, maturity_date || null, matured_amount ? Number(matured_amount) : null,
-        ledger_head_id, cashResult.insertId, remark || null]
+        ledger_head_id, cashResult.insertId, remark || null,
+        face_value === '' || face_value == null ? null : Number(face_value) || 0, interest_date || null]
     );
     await conn.commit();
     const [[row]] = await pool.query(
@@ -105,6 +109,19 @@ router.post('/:id/mature', requirePermission('investments', 'edit'), async (req,
   } finally {
     conn.release();
   }
+});
+
+// नमुना २५ चे वर्णनात्मक रकाने (दर्शनी मूल्य, उपार्जित व्याजाची तारीख, प्रक्रांतीचा तपशील = शेरा) - गुंतवणूक नोंदल्यानंतरही
+// भरता/बदलता येतात; रकमेचे/रोकड वहीचे आकडे बदलत नाहीत.
+router.put('/:id/details', requirePermission('investments', 'edit'), async (req, res) => {
+  const b = req.body || {};
+  const [[inv]] = await pool.query('SELECT id FROM investments WHERE id = ?', [req.params.id]);
+  if (!inv) return res.status(404).json({ error: 'नोंद सापडली नाही' });
+  const fv = b.face_value === '' || b.face_value == null ? null : Number(b.face_value);
+  if (fv !== null && !(fv >= 0)) return res.status(400).json({ error: 'दर्शनी मूल्य योग्य नाही' });
+  await pool.query('UPDATE investments SET face_value = ?, interest_date = ?, remark = ? WHERE id = ?',
+    [fv, b.interest_date || null, b.remark ? String(b.remark).trim() || null : null, req.params.id]);
+  res.json({ ok: true });
 });
 
 module.exports = router;

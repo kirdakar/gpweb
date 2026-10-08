@@ -945,3 +945,7 @@ ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS land_boundary VARCHAR(500) NUL
 ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS buildings_info VARCHAR(500) NULL;
 ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS disposal_voucher VARCHAR(150) NULL;
 ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS disposal_resolution VARCHAR(150) NULL;
+
+-- नमुना २५ (गुंतवणूक नोंदवही) रकाने (४) दर्शनी मूल्य व (८) उपार्जित व्याजाची तारीख.
+ALTER TABLE investments ADD COLUMN IF NOT EXISTS face_value DECIMAL(14,2) NULL;
+ALTER TABLE investments ADD COLUMN IF NOT EXISTS interest_date DATE NULL;

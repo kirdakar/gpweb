@@ -3,7 +3,7 @@ import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
-import { fmtDate } from '../../utils/formatDate';
+import { fmtDate, toDateInput } from '../../utils/formatDate';
 
 // नमुना २५ - गुंतवणूक नोंदणी (मुदत ठेव/राष्ट्रीय बचत/सरकारी रोखे). नोंद
 // करताच रोकड वहीत (नमुना ५) खर्च नोंदते; परिपक्व/भरणा झाल्यावर "परिपक्व
@@ -21,6 +21,11 @@ export default function InvestmentEntry() {
   const [purchasePrice, setPurchasePrice] = useState('');
   const [maturityDate, setMaturityDate] = useState('');
   const [maturedAmount, setMaturedAmount] = useState('');
+  const [faceValue, setFaceValue] = useState('');
+  const [interestDate, setInterestDate] = useState('');
+  // नमुना २५ चे वर्णनात्मक रकाने नंतर पूर्ण करण्यासाठी (निवडलेली गुंतवणूक)
+  const [detailId, setDetailId] = useState('');
+  const [detail, setDetail] = useState({ face_value: '', interest_date: '', remark: '' });
   const [remark, setRemark] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -51,7 +56,7 @@ export default function InvestmentEntry() {
 
   function selectHead(h) { setSelectedHeadId(h.id); setHeadSearch(`${h.code} - ${h.name}`); setHeadDropdownOpen(false); }
   function resetForm() {
-    setDescription(''); setPurchasePrice(''); setMaturityDate(''); setMaturedAmount(''); setRemark('');
+    setDescription(''); setPurchasePrice(''); setMaturityDate(''); setMaturedAmount(''); setRemark(''); setFaceValue(''); setInterestDate('');
     setSelectedHeadId(''); setHeadSearch('');
   }
 
@@ -67,7 +72,7 @@ export default function InvestmentEntry() {
       await client.post('/investments', {
         financial_year_id: yearId, investment_date: investmentDate, description,
         purchase_price: price, maturity_date: maturityDate || null, matured_amount: maturedAmount || null,
-        ledger_head_id: selectedHeadId, remark,
+        ledger_head_id: selectedHeadId, remark, face_value: faceValue, interest_date: interestDate || null,
       });
       resetForm();
       load();
@@ -92,6 +97,26 @@ export default function InvestmentEntry() {
       load();
     } catch (err) {
       setError(err.response?.data?.error || 'परिपक्व करताना त्रुटी आली');
+    }
+  }
+
+  // निवडलेल्या गुंतवणुकीचे वर्णनात्मक रकाने फॉर्ममध्ये भरतो; यादी बदलली तर पहिली निवडतो
+  useEffect(() => {
+    if (rows.length === 0) { setDetailId(''); return; }
+    if (!rows.some((r) => String(r.id) === String(detailId))) setDetailId(String(rows[0].id));
+  }, [rows]);
+  useEffect(() => {
+    const r = rows.find((x) => String(x.id) === String(detailId));
+    setDetail(r ? { face_value: r.face_value ?? '', interest_date: toDateInput(r.interest_date), remark: r.remark || '' } : { face_value: '', interest_date: '', remark: '' });
+  }, [detailId, rows]);
+  async function saveDetail(e) {
+    e.preventDefault();
+    setError('');
+    try {
+      await client.put(`/investments/${detailId}/details`, detail);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'जतन करताना त्रुटी आली');
     }
   }
 
@@ -133,9 +158,11 @@ export default function InvestmentEntry() {
                   )}
                 </div>
               </div>
+              <div className="field"><label>दर्शनी मूल्य</label><input type="number" step="0.01" min="0" value={faceValue} onChange={(e) => setFaceValue(e.target.value)} /></div>
               <div className="field"><label>खरेदी किंमत</label><input type="number" step="0.01" min="0" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} required /></div>
               <div className="field"><label>मुदत दिनांक (अपेक्षित)</label><input type="date" value={maturityDate} onChange={(e) => setMaturityDate(e.target.value)} /></div>
-              <div className="field"><label>अपेक्षित परिणत रक्कम</label><input type="number" step="0.01" value={maturedAmount} onChange={(e) => setMaturedAmount(e.target.value)} /></div>
+              <div className="field"><label>उपार्जित व्याजाची तारीख</label><input type="date" value={interestDate} onChange={(e) => setInterestDate(e.target.value)} /></div>
+              <div className="field"><label>अपेक्षित परिणत (निव्वळ देय) रक्कम</label><input type="number" step="0.01" value={maturedAmount} onChange={(e) => setMaturedAmount(e.target.value)} /></div>
               <div className="field" style={{ gridColumn: 'span 2' }}><label>शेरा</label><input value={remark} onChange={(e) => setRemark(e.target.value)} /></div>
             </div>
             <div style={{ marginTop: 14 }}>
@@ -189,6 +216,27 @@ export default function InvestmentEntry() {
           </div>
         )}
       </div>
+
+      {canEdit && rows.length > 0 && (
+        <div className="card no-print" style={{ marginTop: 20 }}>
+          <form onSubmit={saveDetail}>
+            <h2 style={{ fontSize: 15, marginTop: 0 }}>गुंतवणुकीचे तपशील पूर्ण करा (नमुना २५)</h2>
+            <div className="form-grid">
+              <div className="field" style={{ gridColumn: 'span 2' }}>
+                <label>कोणती गुंतवणूक</label>
+                <select value={detailId} onChange={(e) => setDetailId(e.target.value)}>
+                  {rows.map((r) => <option key={r.id} value={r.id}>{r.description} - {fmtDate(r.investment_date)}</option>)}
+                </select>
+              </div>
+              <div className="field"><label>दर्शनी मूल्य</label><input type="number" step="0.01" min="0" value={detail.face_value} onChange={(e) => setDetail({ ...detail, face_value: e.target.value })} /></div>
+              <div className="field"><label>उपार्जित व्याजाची तारीख</label><input type="date" value={detail.interest_date} onChange={(e) => setDetail({ ...detail, interest_date: e.target.value })} /></div>
+              <div className="field" style={{ gridColumn: 'span 2' }}><label>प्रक्रांतीचा तपशील / शेरा</label><input value={detail.remark} onChange={(e) => setDetail({ ...detail, remark: e.target.value })} /></div>
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>परिपक्वतेची तारीख व रोकड वहीतील जमा रक्कम "परिपक्व करा" कृतीवरूनच आपोआप रिपोर्टमध्ये येते; सह्या कागदावर हाताने.</div>
+            <div style={{ marginTop: 10 }}><button className="btn secondary" type="submit">तपशील जतन करा</button></div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
