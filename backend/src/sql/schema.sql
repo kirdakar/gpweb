@@ -936,3 +936,12 @@ ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS road_type VARCHAR(50) NULL;
 ALTER TABLE fixed_asset_expenses ADD COLUMN IF NOT EXISTS current_nature VARCHAR(255) NULL;
 ALTER TABLE fixed_asset_expenses ADD COLUMN IF NOT EXISTS special_nature VARCHAR(255) NULL;
 ALTER TABLE fixed_asset_expenses ADD COLUMN IF NOT EXISTS original_nature VARCHAR(255) NULL;
+
+-- नमुना २४ (जमिनीची नोंदवही) कागदी नमुन्याचे अतिरिक्त रकाने: कोणाकडून, आकारणी, जमिनीची सीमा, जमिनीसह संपादित इमारती,
+-- विक्रीचा प्रमाणक क्रमांक/दिनांक, विल्हेवाटीचा पंचायत ठराव क्रमांक/तारीख.
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS acquired_from VARCHAR(150) NULL;
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS land_assessment VARCHAR(150) NULL;
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS land_boundary VARCHAR(500) NULL;
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS buildings_info VARCHAR(500) NULL;
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS disposal_voucher VARCHAR(150) NULL;
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS disposal_resolution VARCHAR(150) NULL;

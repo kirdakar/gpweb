@@ -56,6 +56,8 @@ import ImmovableAssetEntry from './pages/gp1to33/ImmovableAssetEntry';
 import ImmovableAssetsReport from './pages/gp1to33/ImmovableAssetsReport';
 import RoadAssetEntry from './pages/gp1to33/RoadAssetEntry';
 import RoadAssetsReport from './pages/gp1to33/RoadAssetsReport';
+import LandAssetEntry from './pages/gp1to33/LandAssetEntry';
+import LandAssetsReport from './pages/gp1to33/LandAssetsReport';
 import FixedAssetsReport from './pages/gp1to33/FixedAssetsReport';
 import StaffMaster from './pages/gp1to33/StaffMaster';
 import StaffRosterReport from './pages/gp1to33/StaffRosterReport';
@@ -158,10 +160,10 @@ export default function App() {
             <Route path="/gp1to33/reports/movable-assets" element={<RequireView screen="reports_fixed_assets"><MovableAssetsReport /></RequireView>} />
             <Route path="/gp1to33/immovable-assets" element={<RequireView screen="fixed_assets"><ImmovableAssetEntry /></RequireView>} />
             <Route path="/gp1to33/roads" element={<RequireView screen="fixed_assets"><RoadAssetEntry /></RequireView>} />
-            <Route path="/gp1to33/lands" element={<RequireView screen="fixed_assets"><FixedAssetsEntry category="जमीन" title="जमिनींची नोंदणी (नमुना २४)" /></RequireView>} />
+            <Route path="/gp1to33/lands" element={<RequireView screen="fixed_assets"><LandAssetEntry /></RequireView>} />
             <Route path="/gp1to33/reports/immovable-assets" element={<RequireView screen="reports_fixed_assets"><ImmovableAssetsReport /></RequireView>} />
             <Route path="/gp1to33/reports/roads" element={<RequireView screen="reports_fixed_assets"><RoadAssetsReport /></RequireView>} />
-            <Route path="/gp1to33/reports/lands" element={<RequireView screen="reports_fixed_assets"><FixedAssetsReport category="जमीन" title="जमिनींची नोंदवही (नमुना २४)" /></RequireView>} />
+            <Route path="/gp1to33/reports/lands" element={<RequireView screen="reports_fixed_assets"><LandAssetsReport /></RequireView>} />
             <Route path="/gp1to33/staff" element={<RequireView screen="staff_master"><StaffMaster /></RequireView>} />
             <Route path="/gp1to33/reports/staff" element={<RequireView screen="reports_staff_master"><StaffRosterReport /></RequireView>} />
             <Route path="/gp1to33/staff-salary" element={<RequireView screen="staff_salary_bills"><StaffSalaryEntry /></RequireView>} />

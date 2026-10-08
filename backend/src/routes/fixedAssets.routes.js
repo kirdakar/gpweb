@@ -10,6 +10,17 @@ const router = express.Router();
 router.use(requireAuth);
 
 const CATEGORIES = ['जंगम', 'स्थावर', 'रस्ते', 'जमीन'];
+// नमुना २४ (जमिनी) चे अतिरिक्त मजकूर रकाने - POST/PUT नंतर वेगळ्या UPDATE ने (फक्त पाठवलेले) जतन होतात, म्हणून इतर
+// नमुन्यांचे फॉर्म ते पुसत नाहीत.
+const LAND_FIELDS = ['acquired_from', 'land_assessment', 'land_boundary', 'buildings_info', 'disposal_voucher', 'disposal_resolution'];
+async function saveLandFields(id, body) {
+  const sets = [];
+  const params = [];
+  for (const f of LAND_FIELDS) {
+    if (body[f] !== undefined) { sets.push(`${f} = ?`); params.push(body[f] ? String(body[f]).trim() || null : null); }
+  }
+  if (sets.length) await pool.query(`UPDATE fixed_assets SET ${sets.join(', ')} WHERE id = ?`, [...params, id]);
+}
 const numOrNull = (v) => (v === '' || v === null || v === undefined ? null : (Number.isFinite(Number(v)) ? Number(v) : null));
 
 router.get('/', async (req, res) => {
@@ -73,6 +84,7 @@ router.post('/', requirePermission('fixed_assets', 'add'), async (req, res) => {
       survey_no || null, purpose || null, [1, 2, 3, 4].includes(Number(asset_class)) ? Number(asset_class) : null,
       from_place || null, to_place || null, numOrNull(length_km), numOrNull(width_km), road_type || null]
   );
+  await saveLandFields(result.insertId, req.body || {});
   const [[row]] = await pool.query('SELECT * FROM fixed_assets WHERE id = ?', [result.insertId]);
   res.status(201).json(row);
 });
@@ -109,6 +121,7 @@ router.put('/:id', requirePermission('fixed_assets', 'edit'), async (req, res) =
       Number(cost_amount) || 0, disposal_date || null, disposal_details || null, remark || null, ...extraParams, req.params.id]
   );
   if (result.affectedRows === 0) return res.status(404).json({ error: 'सापडले नाही' });
+  await saveLandFields(req.params.id, req.body || {});
   const [[row]] = await pool.query('SELECT * FROM fixed_assets WHERE id = ?', [req.params.id]);
   res.json(row);
 });
