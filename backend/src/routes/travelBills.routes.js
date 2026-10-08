@@ -11,6 +11,23 @@ const { round2 } = require('../utils/dueAllocation');
 const router = express.Router();
 router.use(requireAuth);
 
+// नमुना ३१ च्या कागदी रकान्यांचे वर्णनात्मक फील्ड (कार्यालयाचे ठिकाण, निर्गमन वेळ, आगमन तारीख/वेळ, प्रवासाचे साधन, वर्ग, तिकिटे,
+// रेल्वे/बोटीचे नाव, प्रमाणके, शेरा) - रकमेवर परिणाम नाही; नोंद करताना किंवा नंतर "तपशील पूर्ण करा" ने भरता/बदलता येतात.
+const EXTRA_TEXT = ['office_place', 'depart_time', 'arrival_time', 'transport_mode', 'travel_class', 'vehicle_name', 'enclosures', 'remark'];
+async function saveExtras(id, body) {
+  const sets = [];
+  const params = [];
+  for (const f of EXTRA_TEXT) {
+    if (body[f] !== undefined) { sets.push(`${f} = ?`); params.push(body[f] ? String(body[f]).trim() || null : null); }
+  }
+  if (body.arrival_date !== undefined) { sets.push('arrival_date = ?'); params.push(body.arrival_date || null); }
+  if (body.ticket_count !== undefined) {
+    const tc = body.ticket_count === '' || body.ticket_count == null ? null : Number(body.ticket_count);
+    sets.push('ticket_count = ?'); params.push(tc !== null && tc >= 0 ? tc : null);
+  }
+  if (sets.length) await pool.query(`UPDATE travel_bills SET ${sets.join(', ')} WHERE id = ?`, [...params, id]);
+}
+
 function computeTotal(b) {
   const fare = Number(b.fare_amount || 0);
   const mileage = Number(b.mileage_km || 0) * Number(b.mileage_rate || 0);
@@ -74,6 +91,7 @@ router.post('/', requirePermission('travel_bills', 'add'), async (req, res) => {
         Number(daily_allowance_days) || 0, Number(daily_allowance_rate) || 0, ledger_head_id, cashResult.insertId, remark || null]
     );
     await conn.commit();
+    await saveExtras(result.insertId, req.body || {});
     const [[row]] = await pool.query(
       `SELECT t.*, lh.code AS head_code, lh.name AS head_name FROM travel_bills t
        JOIN ledger_heads lh ON lh.id = t.ledger_head_id WHERE t.id = ?`,
@@ -87,6 +105,13 @@ router.post('/', requirePermission('travel_bills', 'add'), async (req, res) => {
   } finally {
     conn.release();
   }
+});
+
+router.put('/:id/details', requirePermission('travel_bills', 'edit'), async (req, res) => {
+  const [[bill]] = await pool.query('SELECT id FROM travel_bills WHERE id = ?', [req.params.id]);
+  if (!bill) return res.status(404).json({ error: 'देयक सापडले नाही' });
+  await saveExtras(req.params.id, req.body || {});
+  res.json({ ok: true });
 });
 
 module.exports = router;

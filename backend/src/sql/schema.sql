@@ -955,3 +955,15 @@ ALTER TABLE loans ADD COLUMN IF NOT EXISTS installment_count INT NULL;
 ALTER TABLE loans ADD COLUMN IF NOT EXISTS installment_dates VARCHAR(255) NULL;
 ALTER TABLE loans ADD COLUMN IF NOT EXISTS installment_principal DECIMAL(14,2) NULL;
 ALTER TABLE loans ADD COLUMN IF NOT EXISTS installment_interest DECIMAL(14,2) NULL;
+
+-- नमुना ३१ (प्रवास भत्ता देयक) कागदी नमुन्याचे अतिरिक्त रकाने: कार्यालयाचे ठिकाण, निर्गमन वेळ, आगमन तारीख/वेळ, प्रवासाचे साधन, वर्ग,
+-- तिकिटांची संख्या, रेल्वे/बोटीचे नाव, प्रमाणके.
+ALTER TABLE travel_bills ADD COLUMN IF NOT EXISTS office_place VARCHAR(150) NULL;
+ALTER TABLE travel_bills ADD COLUMN IF NOT EXISTS depart_time VARCHAR(20) NULL;
+ALTER TABLE travel_bills ADD COLUMN IF NOT EXISTS arrival_date DATE NULL;
+ALTER TABLE travel_bills ADD COLUMN IF NOT EXISTS arrival_time VARCHAR(20) NULL;
+ALTER TABLE travel_bills ADD COLUMN IF NOT EXISTS transport_mode VARCHAR(100) NULL;
+ALTER TABLE travel_bills ADD COLUMN IF NOT EXISTS travel_class VARCHAR(50) NULL;
+ALTER TABLE travel_bills ADD COLUMN IF NOT EXISTS ticket_count INT NULL;
+ALTER TABLE travel_bills ADD COLUMN IF NOT EXISTS vehicle_name VARCHAR(100) NULL;
+ALTER TABLE travel_bills ADD COLUMN IF NOT EXISTS enclosures VARCHAR(255) NULL;

@@ -3,12 +3,14 @@ import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
-import { fmtDate } from '../../utils/formatDate';
+import { fmtDate, toDateInput } from '../../utils/formatDate';
 
 const emptyForm = {
   traveller_name: '', travel_date: '', from_place: '', to_place: '', purpose: '',
   fare_amount: '', mileage_km: '', mileage_rate: '', daily_allowance_days: '', daily_allowance_rate: '', remark: '',
+  office_place: '', depart_time: '', arrival_date: '', arrival_time: '', transport_mode: '', travel_class: '', ticket_count: '', vehicle_name: '', enclosures: '',
 };
+const EXTRA_KEYS = ['office_place', 'depart_time', 'arrival_date', 'arrival_time', 'transport_mode', 'travel_class', 'ticket_count', 'vehicle_name', 'enclosures', 'remark'];
 
 // नमुना ३१ - प्रवास भत्ता देयक. भाडे + मैल भत्ता + दैनिक भत्ता यांची बेरीज
 // नोंद करताच रोकड वहीत (नमुना ५) खर्च नोंदते - रक्कम दुसऱ्यांदा टाईप करायची
@@ -24,6 +26,9 @@ export default function TravelBillEntry() {
   const [selectedHeadId, setSelectedHeadId] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // नमुना ३१ चे कागदी रकाने नंतर पूर्ण करण्यासाठी (निवडलेले देयक)
+  const [detailId, setDetailId] = useState('');
+  const [detail, setDetail] = useState(Object.fromEntries(EXTRA_KEYS.map((k) => [k, ''])));
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -72,7 +77,29 @@ export default function TravelBillEntry() {
     }
   }
 
+  // निवडलेल्या देयकाचे कागदी रकाने फॉर्ममध्ये भरतो; यादी बदलली तर पहिले निवडतो
+  useEffect(() => {
+    if (rows.length === 0) { setDetailId(''); return; }
+    if (!rows.some((r) => String(r.id) === String(detailId))) setDetailId(String(rows[0].id));
+  }, [rows]);
+  useEffect(() => {
+    const r = rows.find((x) => String(x.id) === String(detailId));
+    setDetail(Object.fromEntries(EXTRA_KEYS.map((k) => [k, r ? (k === 'arrival_date' ? toDateInput(r[k]) : (r[k] ?? '')) : ''])));
+  }, [detailId, rows]);
+  async function saveDetail(e) {
+    e.preventDefault();
+    setError('');
+    try {
+      await client.put(`/travel-bills/${detailId}/details`, detail);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'जतन करताना त्रुटी आली');
+    }
+  }
+  const setD = (k) => (e) => setDetail({ ...detail, [k]: e.target.value });
+
   const canAdd = can('travel_bills', 'add');
+  const canEditBill = can('travel_bills', 'edit');
 
   return (
     <div className="page data-entry-page">
@@ -91,6 +118,16 @@ export default function TravelBillEntry() {
               <div className="field"><label>कोठून</label><input value={form.from_place} onChange={(e) => setForm({ ...form, from_place: e.target.value })} /></div>
               <div className="field"><label>कोठे</label><input value={form.to_place} onChange={(e) => setForm({ ...form, to_place: e.target.value })} /></div>
               <div className="field" style={{ gridColumn: 'span 2' }}><label>प्रवासाचे कारण</label><input value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} /></div>
+              <div className="field"><label>कार्यालयाचे ठिकाण</label><input value={form.office_place} onChange={(e) => setForm({ ...form, office_place: e.target.value })} /></div>
+              <div className="field"><label>निर्गमन वेळ</label><input value={form.depart_time} onChange={(e) => setForm({ ...form, depart_time: e.target.value })} placeholder="उदा. सकाळी ९:००" /></div>
+              <div className="field"><label>आगमन दिनांक</label><input type="date" value={form.arrival_date} onChange={(e) => setForm({ ...form, arrival_date: e.target.value })} /></div>
+              <div className="field"><label>आगमन वेळ</label><input value={form.arrival_time} onChange={(e) => setForm({ ...form, arrival_time: e.target.value })} /></div>
+              <div className="field"><label>प्रवासाचे साधन (रेल्वे मेल/पॅसेंजर, बोट, रस्ता, ट्रॉली)</label><input value={form.transport_mode} onChange={(e) => setForm({ ...form, transport_mode: e.target.value })} /></div>
+              <div className="field"><label>रेल्वे/बोटीचे नाव</label><input value={form.vehicle_name} onChange={(e) => setForm({ ...form, vehicle_name: e.target.value })} /></div>
+              <div className="field"><label>वर्ग</label><input value={form.travel_class} onChange={(e) => setForm({ ...form, travel_class: e.target.value })} /></div>
+              <div className="field"><label>तिकिटांची संख्या</label><input type="number" min="0" value={form.ticket_count} onChange={(e) => setForm({ ...form, ticket_count: e.target.value })} /></div>
+              <div className="field" style={{ gridColumn: 'span 2' }}><label>प्रमाणके (जोडलेली कागदपत्रे)</label><input value={form.enclosures} onChange={(e) => setForm({ ...form, enclosures: e.target.value })} /></div>
+              <div className="field" style={{ gridColumn: 'span 2' }}><label>शेरा</label><input value={form.remark} onChange={(e) => setForm({ ...form, remark: e.target.value })} /></div>
 
               <div className="field"><label>रेल्वे/बस/बोट भाडे</label><input type="number" step="0.01" min="0" value={form.fare_amount} onChange={(e) => setForm({ ...form, fare_amount: e.target.value })} /></div>
               <div className="field"><label>अंतर (कि.मी.)</label><input type="number" step="0.01" min="0" value={form.mileage_km} onChange={(e) => setForm({ ...form, mileage_km: e.target.value })} /></div>
@@ -161,6 +198,34 @@ export default function TravelBillEntry() {
           </div>
         )}
       </div>
+
+      {canEditBill && rows.length > 0 && (
+        <div className="card no-print" style={{ marginTop: 20 }}>
+          <form onSubmit={saveDetail}>
+            <h2 style={{ fontSize: 15, marginTop: 0 }}>प्रवासाचे तपशील पूर्ण करा (नमुना ३१)</h2>
+            <div className="form-grid">
+              <div className="field" style={{ gridColumn: 'span 2' }}>
+                <label>कोणते देयक</label>
+                <select value={detailId} onChange={(e) => setDetailId(e.target.value)}>
+                  {rows.map((r) => <option key={r.id} value={r.id}>{r.traveller_name} - {fmtDate(r.travel_date)}</option>)}
+                </select>
+              </div>
+              <div className="field"><label>कार्यालयाचे ठिकाण</label><input value={detail.office_place} onChange={setD('office_place')} /></div>
+              <div className="field"><label>निर्गमन वेळ</label><input value={detail.depart_time} onChange={setD('depart_time')} /></div>
+              <div className="field"><label>आगमन दिनांक</label><input type="date" value={detail.arrival_date} onChange={setD('arrival_date')} /></div>
+              <div className="field"><label>आगमन वेळ</label><input value={detail.arrival_time} onChange={setD('arrival_time')} /></div>
+              <div className="field"><label>प्रवासाचे साधन</label><input value={detail.transport_mode} onChange={setD('transport_mode')} /></div>
+              <div className="field"><label>रेल्वे/बोटीचे नाव</label><input value={detail.vehicle_name} onChange={setD('vehicle_name')} /></div>
+              <div className="field"><label>वर्ग</label><input value={detail.travel_class} onChange={setD('travel_class')} /></div>
+              <div className="field"><label>तिकिटांची संख्या</label><input type="number" min="0" value={detail.ticket_count} onChange={setD('ticket_count')} /></div>
+              <div className="field" style={{ gridColumn: 'span 2' }}><label>प्रमाणके (जोडलेली कागदपत्रे)</label><input value={detail.enclosures} onChange={setD('enclosures')} /></div>
+              <div className="field" style={{ gridColumn: 'span 2' }}><label>शेरा</label><input value={detail.remark} onChange={setD('remark')} /></div>
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>रकमा (भाडे, मैल/दैनिक भत्ता) बदलत नाहीत; सह्या कागदावर हाताने.</div>
+            <div style={{ marginTop: 10 }}><button className="btn secondary" type="submit">तपशील जतन करा</button></div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
