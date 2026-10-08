@@ -925,3 +925,14 @@ CREATE TABLE IF NOT EXISTS fixed_asset_expenses (
   INDEX idx_fa_exp_asset (asset_id),
   CONSTRAINT fk_fa_exp_asset FOREIGN KEY (asset_id) REFERENCES fixed_assets(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- नमुना २३ (ताब्यातील रस्ते) कागदी नमुन्याचे अतिरिक्त रकाने: गावापासून/पर्यंत, लांबी/रुंदी (किलोमीटर - नमुन्याप्रमाणे), रस्त्याचा प्रकार;
+-- व दुरुस्ती खर्चाच्या नोंदीत चालू/विशेष/मूळ बांधकामाचे स्वतंत्र "स्वरूप".
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS from_place VARCHAR(150) NULL;
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS to_place VARCHAR(150) NULL;
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS length_km DECIMAL(10,3) NULL;
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS width_km DECIMAL(10,4) NULL;
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS road_type VARCHAR(50) NULL;
+ALTER TABLE fixed_asset_expenses ADD COLUMN IF NOT EXISTS current_nature VARCHAR(255) NULL;
+ALTER TABLE fixed_asset_expenses ADD COLUMN IF NOT EXISTS special_nature VARCHAR(255) NULL;
+ALTER TABLE fixed_asset_expenses ADD COLUMN IF NOT EXISTS original_nature VARCHAR(255) NULL;

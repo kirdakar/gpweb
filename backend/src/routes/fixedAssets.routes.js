@@ -10,6 +10,7 @@ const router = express.Router();
 router.use(requireAuth);
 
 const CATEGORIES = ['जंगम', 'स्थावर', 'रस्ते', 'जमीन'];
+const numOrNull = (v) => (v === '' || v === null || v === undefined ? null : (Number.isFinite(Number(v)) ? Number(v) : null));
 
 router.get('/', async (req, res) => {
   const { category } = req.query;
@@ -27,7 +28,8 @@ router.get('/', async (req, res) => {
   );
   // नमुना २२ (स्थावर): प्रत्येक मालमत्तेवरील दुरुस्ती/फेरफार खर्चाच्या नोंदी (तारखा 'YYYY-MM-DD' मजकूर - dateStrings)
   const [exp] = await pool.query(
-    `SELECT id, asset_id, expense_date, current_repairs, special_repairs, original_construction, work_nature
+    `SELECT id, asset_id, expense_date, current_repairs, special_repairs, original_construction, work_nature,
+            current_nature, special_nature, original_nature
      FROM fixed_asset_expenses ORDER BY expense_date, id`
   );
   const byAsset = new Map();
@@ -53,7 +55,7 @@ router.post('/', requirePermission('fixed_assets', 'add'), async (req, res) => {
     category, description, acquired_date, acquired_mode, quantity_or_measure,
     cost_amount, disposal_date, disposal_details, remark,
     disposal_quantity, disposal_authority, recovered_amount, recovered_deposit_date,
-    survey_no, purpose, asset_class,
+    survey_no, purpose, asset_class, from_place, to_place, length_km, width_km, road_type,
   } = req.body || {};
   if (!CATEGORIES.includes(category)) return res.status(400).json({ error: 'अवैध category' });
   if (!description || !description.trim()) return res.status(400).json({ error: 'वस्तूचे/मालमत्तेचे वर्णन आवश्यक आहे' });
@@ -61,13 +63,15 @@ router.post('/', requirePermission('fixed_assets', 'add'), async (req, res) => {
   const [result] = await pool.query(
     `INSERT INTO fixed_assets
        (category, description, acquired_date, acquired_mode, quantity_or_measure, cost_amount, disposal_date, disposal_details, remark,
-        disposal_quantity, disposal_authority, recovered_amount, recovered_deposit_date, survey_no, purpose, asset_class)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        disposal_quantity, disposal_authority, recovered_amount, recovered_deposit_date, survey_no, purpose, asset_class,
+        from_place, to_place, length_km, width_km, road_type)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [category, description.trim(), acquired_date || null, acquired_mode || null, quantity_or_measure || null,
       Number(cost_amount) || 0, disposal_date || null, disposal_details || null, remark || null,
       disposal_quantity || null, disposal_authority || null,
       recovered_amount === '' || recovered_amount == null ? null : Number(recovered_amount) || 0, recovered_deposit_date || null,
-      survey_no || null, purpose || null, [1, 2, 3, 4].includes(Number(asset_class)) ? Number(asset_class) : null]
+      survey_no || null, purpose || null, [1, 2, 3, 4].includes(Number(asset_class)) ? Number(asset_class) : null,
+      from_place || null, to_place || null, numOrNull(length_km), numOrNull(width_km), road_type || null]
   );
   const [[row]] = await pool.query('SELECT * FROM fixed_assets WHERE id = ?', [result.insertId]);
   res.status(201).json(row);
@@ -78,7 +82,7 @@ router.put('/:id', requirePermission('fixed_assets', 'edit'), async (req, res) =
     description, acquired_date, acquired_mode, quantity_or_measure,
     cost_amount, disposal_date, disposal_details, remark,
     disposal_quantity, disposal_authority, recovered_amount, recovered_deposit_date,
-    survey_no, purpose, asset_class,
+    survey_no, purpose, asset_class, from_place, to_place, length_km, width_km, road_type,
   } = req.body || {};
   if (!description || !description.trim()) return res.status(400).json({ error: 'वस्तूचे/मालमत्तेचे वर्णन आवश्यक आहे' });
 
@@ -91,6 +95,11 @@ router.put('/:id', requirePermission('fixed_assets', 'edit'), async (req, res) =
   if (recovered_deposit_date !== undefined) { extraSets.push('recovered_deposit_date = ?'); extraParams.push(recovered_deposit_date || null); }
   if (survey_no !== undefined) { extraSets.push('survey_no = ?'); extraParams.push(survey_no || null); }
   if (purpose !== undefined) { extraSets.push('purpose = ?'); extraParams.push(purpose || null); }
+  if (from_place !== undefined) { extraSets.push('from_place = ?'); extraParams.push(from_place || null); }
+  if (to_place !== undefined) { extraSets.push('to_place = ?'); extraParams.push(to_place || null); }
+  if (length_km !== undefined) { extraSets.push('length_km = ?'); extraParams.push(numOrNull(length_km)); }
+  if (width_km !== undefined) { extraSets.push('width_km = ?'); extraParams.push(numOrNull(width_km)); }
+  if (road_type !== undefined) { extraSets.push('road_type = ?'); extraParams.push(road_type || null); }
   if (asset_class !== undefined) { extraSets.push('asset_class = ?'); extraParams.push([1, 2, 3, 4].includes(Number(asset_class)) ? Number(asset_class) : null); }
 
   const [result] = await pool.query(
@@ -122,9 +131,11 @@ router.post('/:id/expenses', requirePermission('fixed_assets', 'edit'), async (r
   if (cur < 0 || spe < 0 || orig < 0) return res.status(400).json({ error: 'रक्कम ऋण असू शकत नाही' });
   if (cur + spe + orig <= 0) return res.status(400).json({ error: 'किमान एक रक्कम भरा' });
   await pool.query(
-    `INSERT INTO fixed_asset_expenses (asset_id, expense_date, current_repairs, special_repairs, original_construction, work_nature)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [req.params.id, b.expense_date, cur, spe, orig, b.work_nature || null]
+    `INSERT INTO fixed_asset_expenses (asset_id, expense_date, current_repairs, special_repairs, original_construction, work_nature,
+       current_nature, special_nature, original_nature)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [req.params.id, b.expense_date, cur, spe, orig, b.work_nature || null,
+      b.current_nature || null, b.special_nature || null, b.original_nature || null]
   );
   res.status(201).json({ ok: true });
 });
