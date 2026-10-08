@@ -51,7 +51,7 @@ export default function MusterReport() {
     return out;
   }, [roll]);
 
-  const dayCell = (w, d) => (d <= daysInMonth && w.attendance[d - 1] === 'P' ? 'ह' : '');
+  const dayCell = (w, d) => (d <= daysInMonth && w.attendance[d - 1] === 'P' ? 'P' : '');
   const dayHead = (d) => <th key={d} style={d > daysInMonth ? { opacity: 0.35 } : undefined}>({mnum(d)})</th>;
 
   return (
