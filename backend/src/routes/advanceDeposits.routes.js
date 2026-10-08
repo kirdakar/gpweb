@@ -21,19 +21,28 @@ router.get('/', async (req, res) => {
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
   const [rows] = await pool.query(
-    `SELECT e.*, lh.code AS head_code, lh.name AS head_name
+    `SELECT e.*, lh.code AS head_code, lh.name AS head_name, cb.reference_no AS voucher_no
      FROM advance_deposit_entries e JOIN ledger_heads lh ON lh.id = e.ledger_head_id
+     LEFT JOIN cash_book_entries cb ON cb.id = e.cash_book_entry_id
      ${whereSql} ORDER BY e.entry_date DESC, e.id DESC`,
     params
   );
-  const [settleRows] = await pool.query(
-    `SELECT entry_id, COALESCE(SUM(amount), 0) AS settled FROM advance_deposit_settlements GROUP BY entry_id`
+  // नमुना १७ च्या मासिक परतफेड रकान्यांसाठी प्रत्येक नोंदीचे परतफेड/समायोजन (दिनांक, रक्कम, टीप); तारखा 'YYYY-MM-DD' मजकूर
+  // म्हणून (mysql2 Date च्या टाईमझोन बदलामुळे महिना चुकू नये).
+  const [settleAll] = await pool.query(
+    `SELECT entry_id, DATE_FORMAT(settlement_date, '%Y-%m-%d') AS settlement_date, amount, note
+     FROM advance_deposit_settlements ORDER BY settlement_date, id`
   );
-  const settledByEntry = new Map(settleRows.map((r) => [r.entry_id, Number(r.settled)]));
+  const settlementsByEntry = new Map();
+  for (const x of settleAll) {
+    if (!settlementsByEntry.has(x.entry_id)) settlementsByEntry.set(x.entry_id, []);
+    settlementsByEntry.get(x.entry_id).push({ settlement_date: x.settlement_date, amount: Number(x.amount), note: x.note });
+  }
+  const settledByEntry = new Map([...settlementsByEntry].map(([id, list]) => [id, list.reduce((s, y) => s + y.amount, 0)]));
 
   res.json(rows.map((r) => {
     const settled = settledByEntry.get(r.id) || 0;
-    return { ...r, settled_amount: settled, balance: Number(r.amount) - settled, is_settled: settled >= Number(r.amount) };
+    return { ...r, settled_amount: settled, balance: Number(r.amount) - settled, is_settled: settled >= Number(r.amount), settlements: settlementsByEntry.get(r.id) || [] };
   }));
 });
 
