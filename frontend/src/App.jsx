@@ -184,6 +184,7 @@ export default function App() {
             <Route path="/gp1to33/reports/work-estimate" element={<RequireView screen="reports_work_estimate"><WorkReport view="estimate" /></RequireView>} />
             <Route path="/gp1to33/reports/work-measurement" element={<RequireView screen="reports_work_measurement"><WorkReport view="measurement" /></RequireView>} />
             <Route path="/gp1to33/reports/work-bills" element={<RequireView screen="reports_work_bills"><WorkReport view="bills" /></RequireView>} />
+            <Route path="/gp1to33/reports/work-bill-detail" element={<RequireView screen="reports_work_bills"><WorkReport view="billdetail" /></RequireView>} />
             <Route path="/gp1to33/misc-demands" element={<RequireView screen="misc_demands"><MiscDemandEntry /></RequireView>} />
             <Route path="/gp1to33/reports/misc-demands" element={<RequireView screen="reports_misc_demands"><MiscDemandReport /></RequireView>} />
             <Route path="/gp1to33/stamps" element={<RequireView screen="stamps"><StampEntry /></RequireView>} />

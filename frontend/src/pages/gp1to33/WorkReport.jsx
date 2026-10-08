@@ -17,6 +17,7 @@ const VIEWS = {
   estimate: { screen: 'reports_work_estimate', title: 'कामाच्या अंदाजाची नोंदवही (नमुना २०)' },
   measurement: { screen: 'reports_work_measurement', title: 'मोजमाप वही (नमुना २०क)' },
   bills: { screen: 'reports_work_bills', title: 'कामाचे देयक (नमुना २०ख)' },
+  billdetail: { screen: 'reports_work_bills', title: 'कामाचे देयक - आतील बाजू (नमुना २०ख(१))' },
 };
 
 // नमुना २०, २०(क), २०(ख) चे कागदी नमुन्याप्रमाणे प्रिंट अहवाल - एकाच डेटावरून (works API), डाटाएंट्री WorkEntry.jsx वर.
@@ -53,6 +54,31 @@ export default function WorkReport({ view }) {
       running[m.estimate_item_id] = total;
       return { ...m, n: i + 1, prev, total, upto: total * Number(m.rate) };
     });
+  }, [work]);
+
+  // नमुना २०(ख)(१): प्रत्येक देयकात समाविष्ट बाबी - मोजमापे (तारीख, क्रमाने) चढत्या रकमेने मांडून, ज्यांची रक्कम
+  // "आधीच्या देयकांची रक्कम" ते "आजपर्यंतचे मोजमाप" या टप्प्यात येते तीच या देयकाची; बाबीनुसार परिमाण/रक्कम एकत्र.
+  const billItems = useMemo(() => {
+    if (!work) return {};
+    const sorted = [...work.measurements].sort((a, b) => (String(a.measured_on) < String(b.measured_on) ? -1 : String(a.measured_on) > String(b.measured_on) ? 1 : a.id - b.id));
+    const withCum = [];
+    let cum = 0;
+    for (const m of sorted) { const before = cum; cum += Number(m.amount); withCum.push({ ...m, before, after: cum }); }
+    const out = {};
+    for (const b of work.bills) {
+      const lo = Number(b.previous_bills_total) - 0.005;
+      const hi = Number(b.gross_to_date) + 0.005;
+      const byItem = new Map();
+      for (const m of withCum) {
+        if (m.before >= lo && m.after <= hi) {
+          const cur = byItem.get(m.estimate_item_id) || { description: m.description, unit: m.unit, rate: Number(m.rate), quantity: 0, amount: 0 };
+          cur.quantity += Number(m.quantity); cur.amount += Number(m.amount);
+          byItem.set(m.estimate_item_id, cur);
+        }
+      }
+      out[b.id] = [...byItem.values()];
+    }
+    return out;
   }, [work]);
 
   const s = work?.summary;
@@ -207,6 +233,82 @@ export default function WorkReport({ view }) {
             <div>टीप.- (१) जेव्हा काम परिमाणामध्ये मोजण्यात येईल तेव्हा स्तंभ (३) व (९) भरण्यात यावेत.</div>
             <div>(२) स्तंभ (१२) अनुसार, मोजमापावरून मंडळाला दिलेली रक्कम वजा केल्यानंतर, शिल्लक निव्वळ रक्कम प्रदान करावी.</div>
           </div>
+        </div>
+      )}
+
+      {work && view === 'billdetail' && (
+        <div>
+          {work.bills.length === 0 && <p>या कामाची देयके नाहीत.</p>}
+          {work.bills.map((b) => {
+            const items = billItems[b.id] || [];
+            const itemsTotal = items.reduce((t, i) => t + i.amount, 0);
+            return (
+              <div key={b.id} className="a4-page cl-page">
+                <div style={{ textAlign: 'center', fontWeight: 800, fontSize: 16 }}>नमुना २०(ख)(१)</div>
+                <div style={{ textAlign: 'center', fontSize: 11 }}>(नियम २४ (२) (ग) (५) व ६१(ग) पाहा)</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <span style={{ flex: 1, textAlign: 'center', fontWeight: 800, fontSize: 15 }}>कामाचे देयक</span>
+                  <span style={{ fontSize: 12 }}>(आतील बाजू)</span>
+                </div>
+                <div style={{ fontSize: 12, margin: '2px 0 6px' }}>
+                  काम: <strong>{work.name}</strong> &nbsp;|&nbsp; देयक क्र. <strong>{b.bill_no || b.id}</strong> &nbsp;|&nbsp; दिनांक <strong>{fmtDate(b.bill_date)}</strong>
+                </div>
+                <table className="cl-table">
+                  <colgroup><col style={{ width: '10%' }} /><col style={{ width: '38%' }} /><col style={{ width: '9%' }} /><col style={{ width: '7%' }} /><col style={{ width: '10%' }} /><col style={{ width: '14%' }} /><col style={{ width: '12%' }} /></colgroup>
+                  <thead>
+                    <tr>
+                      <th rowSpan={2}>परिमाण</th>
+                      <th rowSpan={2}>कामाच्या बाबी किंवा सामग्रीचा पुरवठा (अर्थसंकल्पाच्या उप शीर्षाखालील सूचीनुसार)</th>
+                      <th colSpan={2}>दर</th>
+                      <th rowSpan={2}>परिमाण</th>
+                      <th rowSpan={2}>रक्कम</th>
+                      <th rowSpan={2}>शेरा</th>
+                    </tr>
+                    <tr><th>रुपये</th><th>पैसे</th></tr>
+                    <tr className="cl-numrow">{[1, 2, 3, 4, 5, 6, 7].map((n) => <th key={n}>({mnum(n)})</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {items.map((i, n) => {
+                      const rupees = Math.floor(i.rate);
+                      const paise = Math.round((i.rate - rupees) * 100);
+                      return (
+                        <tr key={n}>
+                          <td className="num">{qty(i.quantity)}</td><td className="cl-name">{i.description}</td>
+                          <td className="num">{rupees}</td><td className="num">{String(paise).padStart(2, '0')}</td>
+                          <td>{i.unit}</td><td className="num">{fmt(i.amount)}</td><td />
+                        </tr>
+                      );
+                    })}
+                    {items.length === 0 && <tr><td colSpan={7} style={{ textAlign: 'center' }}>या देयकासाठी बाबी जुळवता आल्या नाहीत (रक्कम: {fmt(b.this_bill_amount)})</td></tr>}
+                    <tr style={{ fontWeight: 700 }}><td colSpan={5} style={{ textAlign: 'right' }}>एकूण रक्कम</td><td className="num">{fmt(items.length ? itemsTotal : b.this_bill_amount)}</td><td /></tr>
+                    <tr><td colSpan={5} style={{ textAlign: 'right' }}>वजा: कपात{b.deduction_note ? ` (${b.deduction_note})` : ''}</td><td className="num">{fmt(b.deduction_amount)}</td><td /></tr>
+                    <tr style={{ fontWeight: 800 }}><td colSpan={5} style={{ textAlign: 'right' }}>निव्वळ देय रक्कम</td><td className="num">{fmt(b.net_payable)}</td><td /></tr>
+                  </tbody>
+                </table>
+
+                <div className="wf-box">
+                  <div>
+                    <div>मोजमाप नोंदविणाऱ्या अधिकाऱ्याचे नाव :- {dots(24)}</div>
+                    <div>पदनाम : {dots(18)} दिनांक {dots(10)}</div>
+                    <div>मोजमाप वही क्रमांक {dots(10)} पृष्ठ क्र. {dots(8)}</div>
+                    <div style={{ textAlign: 'center' }}>तपासणी अधिकाऱ्याची सही</div>
+                    <div>दिनांक : {dots(14)}</div>
+                    <div>देयक तयार करणाऱ्या अधिकाऱ्याचे नाव : {dots(18)}</div>
+                    <div>रोखीने/धनादेशाद्वारे देय रक्कम : <strong>{fmt(b.net_payable)}</strong></div>
+                    <div style={{ textAlign: 'center' }}>मंजुरी अधिकाऱ्याची सही</div>
+                    <div className="wf-split"><span>प्रदान रक्कम <strong>{fmt(b.net_payable)}</strong></span><span>सरपंच/सचिव</span></div>
+                  </div>
+                  <div>
+                    <div>कामासाठी देय असलेली रु. <strong>{fmt(b.net_payable)}</strong> इतकी रक्कम मिळाली.</div>
+                    <div style={{ marginTop: 14 }} className="wf-split"><span>पैसे घेणाऱ्याची सही</span><span>मुद्रांक</span><span>दिनांक</span></div>
+                    <div style={{ marginTop: 14 }} className="wf-split"><span>धनादेश क्रमांक {dots(20)}</span><span>दिनांक</span></div>
+                    <div style={{ marginTop: 14 }}>रोख {dots(14)} रुपये मी दिले.</div>
+                    <div className="wf-split" style={{ marginTop: 28 }}><span /><span>आदात्याची सही व दिनांक</span></div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 

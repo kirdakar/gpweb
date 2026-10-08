@@ -112,6 +112,7 @@ const MENUS = [
       { to: '/gp1to33/reports/work-estimate', label: 'कामाच्या अंदाजाची नोंदवही (नमुना २०)', screen: 'reports_work_estimate' },
       { to: '/gp1to33/reports/work-measurement', label: 'मोजमाप वही (नमुना २०क)', screen: 'reports_work_measurement' },
       { to: '/gp1to33/reports/work-bills', label: 'कामाचे देयक (नमुना २०ख)', screen: 'reports_work_bills' },
+      { to: '/gp1to33/reports/work-bill-detail', label: 'कामाचे देयक - आतील बाजू (नमुना २०ख(१))', screen: 'reports_work_bills' },
       { to: '/gp1to33/reports/staff-salary', label: 'मासिक वेतन देयक अहवाल (नमुना २१)', screen: 'reports_staff_salary_bills' },
       { to: '/gp1to33/reports/immovable-assets', label: 'स्थावर मालमत्ता अहवाल (नमुना २२)', screen: 'reports_fixed_assets' },
       { to: '/gp1to33/reports/roads', label: 'रस्ते अहवाल (नमुना २३)', screen: 'reports_fixed_assets' },

@@ -724,3 +724,8 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
 .wf-table .wf-numrow th { font-weight: 600; padding: 2px; }
 .wf-table .wf-total td { font-weight: 800; }
 @media print { .work-form { max-width: none; font-size: 13px; } .work-form .wf-sheet { border: none; padding: 0; margin: 0; } }
+/* नमुना २०(ख)(१) - देयकाची आतील बाजू: खालची दोन भागांची सही/प्रदान चौकट (आडवे A4) */
+.wf-box { display: grid; grid-template-columns: 1fr 1fr; border: 1.5px solid #000; margin-top: 12px; font-size: 12px; line-height: 1.9; }
+.wf-box > div { padding: 8px 14px; }
+.wf-box > div:first-child { border-right: 1.5px solid #000; }
+.wf-box .wf-split { display: flex; justify-content: space-between; gap: 16px; }
