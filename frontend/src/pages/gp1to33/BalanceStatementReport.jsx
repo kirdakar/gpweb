@@ -10,7 +10,7 @@ const MONTHS = [
   'जुलै', 'ऑगस्ट', 'सप्टेंबर', 'ऑक्टोबर', 'नोव्हेंबर', 'डिसेंबर',
 ];
 
-// नमुना २६-ख - मासिक शिल्लक विवरण अहवाल (प्रिंट). डाटाएंट्री
+// नमुना २६-क - मासिक शिल्लक विवरण अहवाल (प्रिंट). डाटाएंट्री
 // BalanceStatementEntry.jsx (दैनिक व्यवहार) वर.
 export default function BalanceStatementReport() {
   const { yearId, currentYear } = useYear();
@@ -32,7 +32,7 @@ export default function BalanceStatementReport() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <h1>मासिक शिल्लक विवरण अहवाल (नमुना २६-ख) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
+        <h1>मासिक शिल्लक विवरण अहवाल (नमुना २६-क) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn secondary" onClick={() => window.print()} disabled={!can('reports_balance_statements', 'print')}>प्रिंट</button>
           <CloseReportButton />
@@ -41,7 +41,7 @@ export default function BalanceStatementReport() {
 
       <div className="print-header">
         <h2>{gpLine}</h2>
-        <p style={{ fontWeight: 700 }}>सन {currentYear?.year_label || ''} या वर्षाचे मासिक शिल्लक विवरण (नमुना २६-ख)</p>
+        <p style={{ fontWeight: 700 }}>सन {currentYear?.year_label || ''} या वर्षाचे मासिक शिल्लक विवरण (नमुना २६-क)</p>
       </div>
 
       {loading ? <p>लोड होत आहे...</p> : (
@@ -73,7 +73,7 @@ export default function BalanceStatementReport() {
           <p style={{ marginTop: 16 }}>
             {allMatch
               ? 'प्रमाणित करण्यात येते की, वरील प्रत्येक महिन्याची शिल्लक नमुना क्र. ५ मधील रोख वहीतील शिल्लकेएवढी आहे.'
-              : 'सूचना: काही महिन्यांची विभागणी अद्याप भरलेली नाही किंवा एकूण शिल्लक रोकड वहीतील शिल्लकेशी जुळत नाही - दैनिक व्यवहारमधील नमुना २६-ख नोंदणीत "फरक" तपासा.'}
+              : 'सूचना: काही महिन्यांची विभागणी अद्याप भरलेली नाही किंवा एकूण शिल्लक रोकड वहीतील शिल्लकेशी जुळत नाही - दैनिक व्यवहारमधील नमुना २६-क नोंदणीत "फरक" तपासा.'}
           </p>
         </>
       )}

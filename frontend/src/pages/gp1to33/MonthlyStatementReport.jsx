@@ -35,7 +35,15 @@ function sums(node, byParent) {
   return acc;
 }
 
-// वृक्ष एका सपाट यादीत: गट = ठळक शीर्ष, leaf = "(१) नाव" + रकमा, गटानंतर "एकूण ..." ओळ - कागदी नमुना २६-क प्रमाणे.
+// गटांच्या "एकूण" ओळींची नावे कागदी नमुना २६-ख प्रमाणे (शीर्ष कोडनुसार); नसेल तर "एकूण <नाव>".
+const TOTAL_LABELS = {
+  '1.a': 'एकूण (एक) (अ) कर', '1.b': 'एकूण (एक) (ब) करेतर उत्पन्न', '1.c': 'एकूण (एक) (क)', 1: 'एकूण (एक) (अ+ब+क)',
+  '2.a': 'एकूण दोन (अ)', 2: 'एकूण (दोन) (अ+ब)', 3: 'एकूण (तीन)', 4: 'एकूण (चार)', 5: 'एकूण (पाच)', 6: 'एकूण (सहा)',
+  K1: 'एकूण (एक) ग्राम निधी', K2: 'एकूण (दोन)', K3: 'एकूण (तीन)', K4: 'एकूण (चार)', K5: 'एकूण (पाच)', K6: 'एकूण (सहा)',
+};
+const GRAND_LABEL = 'एकूण (एक)+(दोन)+(तीन)+(चार)+(पाच)+(सहा)';
+
+// वृक्ष एका सपाट यादीत: गट = ठळक शीर्ष, leaf = "(१) नाव" + रकमा, गटानंतर "एकूण ..." ओळ - कागदी नमुना २६-ख प्रमाणे.
 function flatten(node, byParent, depth, out, seq) {
   const children = byParent.get(node.id) || [];
   if (node.is_leaf) {
@@ -44,8 +52,25 @@ function flatten(node, byParent, depth, out, seq) {
   }
   out.push({ kind: 'head', label: node.name, vals: null, depth });
   let n = 0;
-  for (const c of children) flatten(c, byParent, depth + 1, out, c.is_leaf ? ++n : 0);
-  out.push({ kind: 'total', label: `एकूण ${node.name}`, vals: sums(node, byParent), depth });
+  for (const c of children) {
+    if (c.code === 'K1.11') continue; // K1.10 सोबत "विद्युत देयके (अ)/(ब)" म्हणून खाली छापले
+    if (c.code === 'K1.10') {
+      // कागदावर (१०) विद्युत देयके - (अ) पाणीपुरवठा, (ब) रस्त्यावरील दिवाबत्ती - एकूण १० (अ+ब)
+      const other = children.find((x) => x.code === 'K1.11');
+      const a = sums(c, byParent);
+      const b = other ? sums(other, byParent) : [0, 0, 0, 0];
+      out.push({ kind: 'head', label: `(${mnum(++n)}) विद्युत देयके`, vals: null, depth: depth + 1 });
+      out.push({ kind: 'item', label: '(अ) पाणीपुरवठा', vals: a, depth: depth + 2 });
+      out.push({ kind: 'item', label: '(ब) रस्त्यावरील दिवाबत्ती', vals: b, depth: depth + 2 });
+      out.push({ kind: 'total', label: 'एकूण १० (अ+ब)', vals: a.map((v, i) => v + b[i]), depth: depth + 1 });
+      continue;
+    }
+    // "(दोन) (ब) आमदार, खासदार..." कागदावर क्रमांकाशिवाय
+    flatten(c, byParent, depth + 1, out, c.is_leaf && c.code !== '2.b' ? ++n : 0);
+    // कागदी नमुन्यात (९) जकात कर ही ओळ आहे (शीर्ष यादीत नाही) - रिकामी ओळ म्हणून, टोल टॅक्स नंतर
+    if (c.code === '1.a.8') out.push({ kind: 'item', label: `(${mnum(++n)}) जकात कर`, vals: [0, 0, 0, 0], depth: depth + 1 });
+  }
+  out.push({ kind: 'total', label: TOTAL_LABELS[node.code] || `एकूण ${node.name}`, vals: sums(node, byParent), depth });
 }
 function flatSide(byParent) {
   const out = [];
@@ -66,7 +91,7 @@ function cells(r, split) {
   return out;
 }
 
-// नमुना २६-क (नियम २५(६) पाहा) - माहे ___ वर्ष ___ साठीचे जमा व खर्चाचे मासिक विवरण, कागदी नमुन्याप्रमाणे A4 आडव्या पानावर: जमा (१-५)
+// नमुना २६-ख (नियम २५(६) पाहा) - माहे ___ वर्ष ___ साठीचे जमा व खर्चाचे मासिक विवरण, कागदी नमुन्याप्रमाणे A4 आडव्या पानावर: जमा (१-५)
 // व खर्च (६-१०) समोरासमोर एकाच तक्त्यात - अर्थसंकल्पीय तरतूद, मागील महिन्यापर्यंतचा प्रत्यक्ष, चालू महिन्यातील, एकूण. सर्व रकमा नमुना १
 // (अर्थसंकल्प) व नमुना ५ (रोकड वही) वरून आपोआप.
 export default function MonthlyStatementReport() {
@@ -100,7 +125,7 @@ export default function MonthlyStatementReport() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <h1>मासिक जमा-खर्च विवरण (नमुना २६-क)</h1>
+        <h1>मासिक जमा-खर्च विवरण (नमुना २६-ख)</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn secondary" onClick={() => window.print()} disabled={heads.length === 0 || !can('reports_monthly_statement', 'print')}>प्रिंट</button>
           <CloseReportButton />
@@ -120,7 +145,7 @@ export default function MonthlyStatementReport() {
 
       {loading ? <p>लोड होत आहे...</p> : (
         <div className="cashbook-form">
-          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: 16 }}>नमुना २६-क</div>
+          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: 16 }}>नमुना २६-ख</div>
           <div style={{ textAlign: 'center', fontSize: 12 }}>(नियम २५(६) पाहा)</div>
           <div style={{ textAlign: 'center', fontWeight: 800, fontSize: 15, margin: '2px 0' }}>
             माहे <strong>{MONTHS[month - 1]}</strong> वर्ष <strong>{currentYear?.year_label || year}</strong> साठीचे जमा व खर्चाचे मासिक विवरण
@@ -143,8 +168,8 @@ export default function MonthlyStatementReport() {
                   return <tr key={i}>{cells(left[i], false)}{cells(right[i], true)}</tr>;
                 })}
                 <tr className="cb-total">
-                  <td style={{ textAlign: 'right' }}>एकूण जमा</td>{jt.map((v, i) => <td key={i} className="num">{fmt(v)}</td>)}
-                  <td className="cb-split" style={{ textAlign: 'right' }}>एकूण खर्च</td>{kt.map((v, i) => <td key={i} className="num">{fmt(v)}</td>)}
+                  <td style={{ textAlign: 'right' }}>{GRAND_LABEL}</td>{jt.map((v, i) => <td key={i} className="num">{fmt(v)}</td>)}
+                  <td className="cb-split" style={{ textAlign: 'right' }}>{GRAND_LABEL}</td>{kt.map((v, i) => <td key={i} className="num">{fmt(v)}</td>)}
                 </tr>
               </tbody>
             </table>

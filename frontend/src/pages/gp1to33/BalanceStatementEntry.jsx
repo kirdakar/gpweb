@@ -16,7 +16,7 @@ const FIELDS = [
   { key: 'fixed_deposits', label: 'बँक मुदत ठेव' },
 ];
 
-// नमुना २६-ख - मासिक शिल्लक विवरण नोंदणी. प्रारंभिक/अखेरची शिल्लक रोकड वहीवरून
+// नमुना २६-क - मासिक शिल्लक विवरण नोंदणी. प्रारंभिक/अखेरची शिल्लक रोकड वहीवरून
 // (नमुना ५) आपोआप येते; फक्त ती कोठे ठेवली आहे याची विभागणी भरायची, आणि
 // बेरीज रोकड वहीशी जुळत नसल्यास फरक दिसतो.
 export default function BalanceStatementEntry() {
@@ -71,7 +71,7 @@ export default function BalanceStatementEntry() {
   return (
     <div className="page data-entry-page">
       <div className="page-header no-print">
-        <h1>मासिक शिल्लक विवरण नोंदणी (नमुना २६-ख) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
+        <h1>मासिक शिल्लक विवरण नोंदणी (नमुना २६-क) {currentYear ? `— ${currentYear.year_label}` : ''}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           {canEdit && <button className="btn" type="button" onClick={handleSave} disabled={saving}>{saving ? 'जतन होत आहे...' : 'जतन करा'}</button>}
           <CloseReportButton />

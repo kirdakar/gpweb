@@ -32,13 +32,13 @@ const SCREENS = [
   { code: 'reports_ledger_classified', label: 'वर्गीकृत नोंदवही (नमुना ६)', actions: ['view', 'print'] },
   { code: 'assets_liabilities', label: 'भत्ते व दायित्वे नोंदणी (नमुना ४)', actions: ['view', 'add', 'edit'] },
   { code: 'reports_assets_liabilities', label: 'भत्ते व दायित्वे अहवाल (नमुना ४)', actions: ['view', 'print'] },
-  // फेज २: अंदाजपत्रक व मासिक अहवाल (नमुना १, २, ३, २६-क, २८)
+  // फेज २: अंदाजपत्रक व मासिक अहवाल (नमुना १, २, ३, २६-ख, २८)
   { code: 'budget_entries', label: 'वार्षिक अंदाजपत्रक नोंदणी (नमुना १)', actions: ['view', 'edit'] },
   { code: 'reports_budget', label: 'वार्षिक अंदाजपत्रक अहवाल (नमुना १)', actions: ['view', 'print'] },
   { code: 'budget_revisions', label: 'पुनर्विनियोजन नोंदणी (नमुना २)', actions: ['view', 'edit'] },
   { code: 'reports_budget_revision', label: 'पुनर्विनियोजन अहवाल (नमुना २)', actions: ['view', 'print'] },
   { code: 'reports_annual_summary', label: 'वार्षिक जमा-खर्च (नमुना ३)', actions: ['view', 'print'] },
-  { code: 'reports_monthly_statement', label: 'मासिक जमा-खर्च विवरण (नमुना २६-क)', actions: ['view', 'print'] },
+  { code: 'reports_monthly_statement', label: 'मासिक जमा-खर्च विवरण (नमुना २६-ख)', actions: ['view', 'print'] },
   { code: 'reports_welfare_expenditure', label: 'मागासवर्गीय/महिला-बाल मासिक विवरण (नमुना २८)', actions: ['view', 'print'] },
   // फेज ३अ: किरकोळ रोकडवही (नमुना १८), पावती/प्रमाणक (नमुना ७/१२), मालमत्ता नोंदवह्या (नमुना १६/२२/२३/२४)
   { code: 'reports_receipt_voucher', label: 'पावती/प्रमाणक/परतावा आदेश प्रिंट (नमुना ७/१२/३२)', actions: ['view', 'print'] },
@@ -59,12 +59,12 @@ const SCREENS = [
   // फेज ३ड: प्रवास भत्ता देयक (नमुना ३१); परतावा आदेश (नमुना ३२) वेगळी स्क्रीन नाही - reports_receipt_voucher वापरते
   { code: 'travel_bills', label: 'प्रवास भत्ता देयक नोंदणी (नमुना ३१)', actions: ['view', 'add', 'edit'] },
   { code: 'reports_travel_bills', label: 'प्रवास भत्ता देयक अहवाल (नमुना ३१)', actions: ['view', 'print'] },
-  // फेज ३इ: लेखापरीक्षण आक्षेप (नमुना ३०, २७) व मासिक शिल्लक विवरण (नमुना २६-ख)
+  // फेज ३इ: लेखापरीक्षण आक्षेप (नमुना ३०, २७) व मासिक शिल्लक विवरण (नमुना २६-क)
   { code: 'audit_reports', label: 'लेखापरीक्षण आक्षेप नोंदणी (नमुना ३०)', actions: ['view', 'add', 'edit', 'delete'] },
   { code: 'reports_audit_register', label: 'लेखापरीक्षण आक्षेप पूर्तता नोंदवही (नमुना ३०)', actions: ['view', 'print'] },
   { code: 'reports_audit_monthly', label: 'आक्षेप पूर्ततेचे मासिक विवरण (नमुना २७)', actions: ['view', 'print'] },
-  { code: 'balance_statements', label: 'मासिक शिल्लक विवरण नोंदणी (नमुना २६-ख)', actions: ['view', 'edit'] },
-  { code: 'reports_balance_statements', label: 'मासिक शिल्लक विवरण अहवाल (नमुना २६-ख)', actions: ['view', 'print'] },
+  { code: 'balance_statements', label: 'मासिक शिल्लक विवरण नोंदणी (नमुना २६-क)', actions: ['view', 'edit'] },
+  { code: 'reports_balance_statements', label: 'मासिक शिल्लक विवरण अहवाल (नमुना २६-क)', actions: ['view', 'print'] },
   // फेज ३फ: सार्वजनिक बांधकाम (नमुना २०, २०क, २०ख) व हजेरीपट (नमुना १९)
   { code: 'contractors', label: 'कंत्राटदार मास्टर', actions: ['view', 'add', 'edit', 'delete'] },
   { code: 'rate_schedule', label: 'दरसूची मास्टर', actions: ['view', 'add', 'edit', 'delete'] },
