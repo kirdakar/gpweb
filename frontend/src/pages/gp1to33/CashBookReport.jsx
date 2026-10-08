@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import client from '../../api/client';
 import { useYear } from '../../context/YearContext';
 import { usePermissions } from '../../context/PermissionsContext';
@@ -12,13 +12,27 @@ function firstOfMonth() {
 }
 
 const REGISTERS = ['मुख्य', 'किरकोळ'];
+const MR = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+const mnum = (n) => String(n).split('').map((d) => MR[Number(d)]).join('');
+const fmt = (n) => Number(n || 0).toFixed(2);
+const dateKey = (v) => String(v).slice(0, 10);
+// कर जमा पावतीवरून आलेल्या नोंदीच्या narration मधील "कोड X - नाव -" भाग "कोणाकडून" रकान्यात आधीच असल्याने वगळतो.
+function purpose(r) {
+  const n = r.narration || '';
+  if (!r.owner_name) return n;
+  return n.replace(` - कोड ${r.property_code} - ${r.owner_name}`, '').replace(` - ${r.owner_name}`, '');
+}
+const WIDTHS = [7, 3, 9, 8, 6.5, 7, 6.5, 7, 4, 4, 7, 7.5, 5.5, 7, 6.5, 4.5];
 
-// नमुना ५ (मुख्य) / नमुना १८ (किरकोळ) - रोकड वही अहवाल (कालावधीसाठी जमा व
-// खर्च दोन्ही स्वतंत्र तक्त्यांत, चढती बेरीज (शिल्लक) सह).
+// नमुना ५ (मुख्य) / नमुना १८ (किरकोळ) - कागदी "सामान्य रोकड वही" प्रमाणे A4 आडव्या पानावर
+// जमा (१-८) डावीकडे व खर्च (९-१६) उजवीकडे. दिवसानुसार गट: त्या दिवसाच्या जमा/खर्च नोंदी समोरासमोर,
+// नंतर एकूण ओळ (प्रारंभिक शिल्लकेसह जमा = खर्च + अखेरची शिल्लक). शिल्लक त्या आर्थिक वर्षातील
+// आधीच्या सर्व नोंदींवरून आपोआप चालत येते - हाताने टाईप करायची नाही.
 export default function CashBookReport() {
   const { yearId, currentYear } = useYear();
   const { can } = usePermissions();
-  const { gpLine } = useGpSettings();
+  const { settings } = useGpSettings();
+  const gpName = (settings?.gp_name || '').replace(/^ग्रामपंचायत\s*/, '');
   const [register, setRegister] = useState('मुख्य');
   const [from, setFrom] = useState(firstOfMonth());
   const [to, setTo] = useState(() => new Date().toISOString().slice(0, 10));
@@ -28,49 +42,40 @@ export default function CashBookReport() {
   function load() {
     if (!yearId) return;
     setLoading(true);
-    client.get('/cash-book', { params: { financialYearId: yearId, from, to, register } })
+    // संपूर्ण वर्षाच्या नोंदी (शिल्लक चालू ठेवण्यासाठी) - दाखवताना फक्त निवडलेला कालावधी.
+    client.get('/cash-book', { params: { financialYearId: yearId, to, register } })
       .then(({ data }) => setRows(data))
       .finally(() => setLoading(false));
   }
   useEffect(() => { load(); }, [yearId, register]);
 
-  const jamaRows = rows.filter((r) => r.entry_type === 'जमा');
-  const kharchRows = rows.filter((r) => r.entry_type === 'खर्च');
-  const jamaTotal = jamaRows.reduce((s, r) => s + Number(r.amount), 0);
-  const kharchTotal = kharchRows.reduce((s, r) => s + Number(r.amount), 0);
+  const { days, jamaTotal, kharchTotal } = useMemo(() => {
+    let balance = 0;
+    const byDay = new Map();
+    for (const r of rows) {
+      const k = dateKey(r.entry_date);
+      if (k < from) { balance += (r.entry_type === 'जमा' ? 1 : -1) * Number(r.amount); continue; }
+      if (k > to) continue;
+      if (!byDay.has(k)) byDay.set(k, { date: k, jama: [], kharch: [] });
+      byDay.get(k)[r.entry_type === 'जमा' ? 'jama' : 'kharch'].push(r);
+    }
+    let serial = 0;
+    let jt = 0;
+    let kt = 0;
+    const list = [...byDay.values()].sort((a, b) => (a.date < b.date ? -1 : 1)).map((d) => {
+      const opening = balance;
+      const dj = d.jama.reduce((s, r) => s + Number(r.amount), 0);
+      const dk = d.kharch.reduce((s, r) => s + Number(r.amount), 0);
+      balance = opening + dj - dk;
+      jt += dj; kt += dk;
+      const serialStart = serial;
+      serial += d.jama.length;
+      return { ...d, opening, closing: balance, dj, dk, serialStart };
+    });
+    return { days: list, jamaTotal: jt, kharchTotal: kt };
+  }, [rows, from, to]);
 
-  function EntryTable({ title, list, total }) {
-    return (
-      <div style={{ marginBottom: 24 }}>
-        <h3 style={{ marginBottom: 8 }}>{title}</h3>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr><th>दिनांक</th><th>लेखाशीर्ष</th><th>संदर्भ</th><th>मोड</th><th>नोंद</th><th className="num">रक्कम</th></tr>
-            </thead>
-            <tbody>
-              {list.map((r) => (
-                <tr key={r.id}>
-                  <td>{fmtDate(r.entry_date)}</td>
-                  <td>{r.head_code} - {r.head_name}</td>
-                  <td>{r.reference_no || '-'}</td>
-                  <td>{r.payment_mode}</td>
-                  <td>{r.narration || '-'}</td>
-                  <td className="num">{Number(r.amount).toFixed(2)}</td>
-                </tr>
-              ))}
-              {list.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center' }}>नोंदी नाहीत</td></tr>}
-            </tbody>
-            {list.length > 0 && (
-              <tfoot>
-                <tr className="total-row"><td colSpan={5}>एकूण</td><td className="num">{total.toFixed(2)}</td></tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
-      </div>
-    );
-  }
+  const title = register === 'मुख्य' ? 'सामान्य रोकड वही' : 'किरकोळ रोकडवही';
 
   return (
     <div className="page">
@@ -91,24 +96,115 @@ export default function CashBookReport() {
         ))}
       </div>
 
-      <div className="print-header">
-        <h2>{gpLine}</h2>
-        <p style={{ fontWeight: 700 }}>{register === 'मुख्य' ? 'दैनिक रोकड वही (नमुना ५)' : 'किरकोळ रोकडवही (नमुना १८)'}</p>
-        <p>आर्थिक वर्ष: {currentYear?.year_label || ''} | कालावधी: {fmtDate(from)} ते {fmtDate(to)}</p>
-      </div>
-
       {loading ? <p>लोड होत आहे...</p> : (
-        <>
-          <EntryTable title="जमा" list={jamaRows} total={jamaTotal} />
-          <EntryTable title="खर्च" list={kharchRows} total={kharchTotal} />
-          <div className="card" style={{ maxWidth: 320 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>एकूण जमा</span><strong>{jamaTotal.toFixed(2)}</strong></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>एकूण खर्च</span><strong>{kharchTotal.toFixed(2)}</strong></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border)', marginTop: 6, paddingTop: 6 }}>
-              <span>निव्वळ (जमा - खर्च)</span><strong>{(jamaTotal - kharchTotal).toFixed(2)}</strong>
-            </div>
+        <div className="cashbook-form">
+          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: 16 }}>नमुना {register === 'मुख्य' ? '५' : '१८'}</div>
+          <div style={{ textAlign: 'center', fontSize: 12 }}>
+            {register === 'मुख्य' ? '(नियम १९(७), २२(२), (३), (६), (७), (१०), २३, २४(ख) व २५(२) पाहा)' : '(किरकोळ रोकडवही)'}
           </div>
-        </>
+          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: 15 }}>{title}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, margin: '4px 0 6px' }}>
+            <span>वर्ष <strong>{currentYear?.year_label || '20....'}</strong> &nbsp; (कालावधी: {fmtDate(from)} ते {fmtDate(to)})</span>
+            <span>ग्रामपंचायत {gpName ? <strong>{gpName}</strong> : '.........................'}</span>
+          </div>
+
+          <div className="cb-scroll">
+            <table className="cb-table">
+              <colgroup>
+                {WIDTHS.map((w, i) => <col key={i} style={{ width: `${w}%` }} />)}
+              </colgroup>
+              <thead>
+                <tr>
+                  <th rowSpan={2}>महिना व रक्कम जमा केल्याची तारीख</th>
+                  <th rowSpan={2}>अनुक्रमांक</th>
+                  <th colSpan={2}>जमा रकमांचा तपशील</th>
+                  <th rowSpan={2}>लेखा शीर्ष</th>
+                  <th rowSpan={2}>रक्कम</th>
+                  <th rowSpan={2}>प्रारंभिक शिल्लकेसह रोजची एकूण रक्कम</th>
+                  <th rowSpan={2}>रक्कम दिल्याची तारीख व पावती क्रमांक</th>
+                  <th rowSpan={2} className="cb-split">धनादेश (चेक) क्रमांक</th>
+                  <th rowSpan={2}>प्रमाणक (व्हाऊचर) क्रमांक</th>
+                  <th colSpan={2}>रक्कम दिल्याचा तपशील</th>
+                  <th rowSpan={2}>लेखा शीर्ष</th>
+                  <th rowSpan={2}>रक्कम</th>
+                  <th rowSpan={2}>अखेरच्या शिल्लकेसह रोजची एकूण रक्कम</th>
+                  <th rowSpan={2}>स्वाक्षरी</th>
+                </tr>
+                <tr>
+                  <th>कोणाकडून मिळालीत</th><th>कशाबद्दल मिळाली ते</th>
+                  <th>कोणास दिली ते</th><th>कोणत्या कारणासाठी दिली ते</th>
+                </tr>
+                <tr className="cb-numrow">
+                  {Array.from({ length: 16 }, (_, i) => <th key={i} className={i === 8 ? 'cb-split' : ''}>({mnum(i + 1)})</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {days.length === 0 && <tr><td colSpan={16} style={{ textAlign: 'center', padding: 14 }}>या कालावधीत नोंदी नाहीत</td></tr>}
+                {days.map((d) => {
+                  const n = Math.max(d.jama.length, d.kharch.length, 1);
+                  const trs = [];
+                  for (let i = 0; i < n; i += 1) {
+                    const j = d.jama[i];
+                    const k = d.kharch[i];
+                    trs.push(
+                      <tr key={`${d.date}-${i}`}>
+                        <td>{i === 0 ? fmtDate(d.date) : ''}</td>
+                        <td className="num">{j ? mnum(d.serialStart + i + 1) : ''}</td>
+                        <td>{j && j.owner_name ? `${j.property_code ? `कोड ${j.property_code} - ` : ''}${j.owner_name}` : ''}</td>
+                        <td>{j ? purpose(j) : ''}</td>
+                        <td>{j ? `${j.head_code} ${j.head_name}` : ''}</td>
+                        <td className="num">{j ? fmt(j.amount) : ''}</td>
+                        <td />
+                        <td>{j ? [j.reference_date ? fmtDate(j.reference_date) : '', j.reference_no || ''].filter(Boolean).join(' / ') : ''}</td>
+                        <td className="cb-split" />
+                        <td>{k ? (k.reference_no || '') : ''}</td>
+                        <td />
+                        <td>{k ? (k.narration || '') : ''}</td>
+                        <td>{k ? `${k.head_code} ${k.head_name}` : ''}</td>
+                        <td className="num">{k ? fmt(k.amount) : ''}</td>
+                        <td />
+                        <td />
+                      </tr>
+                    );
+                  }
+                  trs.push(
+                    <tr key={`${d.date}-t`} className="cb-total">
+                      <td colSpan={5} style={{ textAlign: 'right' }}>प्रारंभिक शिल्लक {fmt(d.opening)} सह एकूण जमा</td>
+                      <td className="num">{fmt(d.dj)}</td>
+                      <td className="num">{fmt(d.opening + d.dj)}</td>
+                      <td />
+                      <td className="cb-split" colSpan={4} style={{ textAlign: 'right' }}>एकूण खर्च (अखेरची शिल्लक {fmt(d.closing)} सह)</td>
+                      <td />
+                      <td className="num">{fmt(d.dk)}</td>
+                      <td className="num">{fmt(d.dk + d.closing)}</td>
+                      <td />
+                    </tr>
+                  );
+                  return trs;
+                })}
+              </tbody>
+              {days.length > 0 && (
+                <tfoot>
+                  <tr className="cb-total">
+                    <td colSpan={5} style={{ textAlign: 'right' }}>कालावधीची एकूण जमा</td>
+                    <td className="num">{fmt(jamaTotal)}</td>
+                    <td colSpan={2} />
+                    <td className="cb-split" colSpan={4} style={{ textAlign: 'right' }}>कालावधीचा एकूण खर्च</td>
+                    <td />
+                    <td className="num">{fmt(kharchTotal)}</td>
+                    <td colSpan={2} />
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+
+          <div className="cb-note">
+            <div>टीप.- (१) प्रत्येक दिवशी व्यवहार बंद झाल्यानंतर रोख शिल्लक अंकात व अक्षरात लिहावी. सरपंचाने ती तपासून दिनांकासह स्वाक्षरी करावी.</div>
+            <div>(२) प्रारंभिक व अखेरच्या शिल्लक रकमेचे स्पष्टीकरण द्यावे. उदा. पोस्ट, बँक, मुदत ठेव, इतर गुंतवणूक (गुंतवणूक नोंदवहीवरून).</div>
+            <div>(३) नमुना ५ मध्ये महिन्याच्या अखेरीस, आर्थिक व्यवहाराची नोंद घेऊन त्याबाबतची एकत्रित माहिती नमुना २६क मध्ये नोंदवायची असते.</div>
+          </div>
+        </div>
       )}
     </div>
   );

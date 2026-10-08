@@ -672,3 +672,22 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
 .an-table tr { page-break-inside: avoid; }
 .an-table .an-grand td { border-top: 1.5px solid #000; font-weight: 800; padding: 6px; }
 @media print { .annual-form { font-size: 12px; } }
+
+/* नमुना ५ / १८ - सामान्य रोकड वही (A4 आडवे, जमा १-८ | खर्च ९-१६) */
+.cashbook-form { font-size: 12px; line-height: 1.35; }
+.cb-scroll { overflow-x: auto; }
+.cb-table { width: 100%; min-width: 1100px; table-layout: fixed; border-collapse: collapse; }
+.cb-table th, .cb-table td { border: 1px solid #000; padding: 3px 4px; vertical-align: top; background: none; color: #000; white-space: normal; overflow-wrap: anywhere; }
+.cb-table td.num { white-space: nowrap; overflow-wrap: normal; }
+.cb-table th { font-weight: 700; text-align: center; font-size: 11px; }
+.cb-table .cb-numrow th { font-weight: 600; padding: 1px 2px; }
+.cb-table .cb-split { border-left: 2.5px solid #000; }
+.cb-table .cb-total td { font-weight: 700; border-top: 1.5px solid #000; }
+.cb-table tr { page-break-inside: avoid; }
+.cb-table thead { display: table-header-group; }
+.cb-note { margin-top: 8px; font-size: 11px; }
+@media print {
+  .cashbook-form { page: gp-register-landscape; font-size: 10px; }
+  .cb-table { min-width: 0; }
+  .cb-table th { font-size: 9px; }
+}
