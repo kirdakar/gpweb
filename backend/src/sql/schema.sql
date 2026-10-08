@@ -907,3 +907,21 @@ ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS cash_paid_amount DECIMAL(14,2) N
 
 -- नमुना २१ रकाना (९) - पुढील अधिदानासाठी ठेवलेली रक्कम (निव्वळ देयातून वजा होते).
 ALTER TABLE staff_salary_bills ADD COLUMN IF NOT EXISTS reserved_amount DECIMAL(12,2) NOT NULL DEFAULT 0;
+
+-- नमुना २२ (स्थावर मालमत्ता) कागदी नमुन्याचे अतिरिक्त रकाने: भूखंड/भूमापन क्रमांक, वापराचे कारण, मालमत्तेचा वर्ग (१-४, घसाऱ्याचा दर
+-- ठरवण्यासाठी) व वर्षभरातील दुरुस्ती/फेरफार खर्चाच्या स्वतंत्र नोंदी.
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS survey_no VARCHAR(100) NULL;
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS purpose VARCHAR(255) NULL;
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS asset_class TINYINT NULL;
+CREATE TABLE IF NOT EXISTS fixed_asset_expenses (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  asset_id INT NOT NULL,
+  expense_date DATE NOT NULL,
+  current_repairs DECIMAL(14,2) NOT NULL DEFAULT 0,
+  special_repairs DECIMAL(14,2) NOT NULL DEFAULT 0,
+  original_construction DECIMAL(14,2) NOT NULL DEFAULT 0,
+  work_nature VARCHAR(255) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_fa_exp_asset (asset_id),
+  CONSTRAINT fk_fa_exp_asset FOREIGN KEY (asset_id) REFERENCES fixed_assets(id) ON DELETE CASCADE
+) ENGINE=InnoDB;

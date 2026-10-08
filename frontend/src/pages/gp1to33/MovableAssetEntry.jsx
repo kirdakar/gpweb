@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import client from '../../api/client';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
-import { fmtDate } from '../../utils/formatDate';
+import { fmtDate, toDateInput } from '../../utils/formatDate';
 
 const emptyForm = {
   description: '', acquired_mode: '', acquired_date: '', quantity_or_measure: '', cost_amount: '',
@@ -35,11 +35,11 @@ export default function MovableAssetEntry() {
     setEditingId(r.id);
     setForm({
       description: r.description || '', acquired_mode: r.acquired_mode || '',
-      acquired_date: r.acquired_date ? fmtDate(r.acquired_date) : '', quantity_or_measure: r.quantity_or_measure || '',
-      cost_amount: r.cost_amount ?? '', disposal_date: r.disposal_date ? fmtDate(r.disposal_date) : '',
+      acquired_date: r.acquired_date ? toDateInput(r.acquired_date) : '', quantity_or_measure: r.quantity_or_measure || '',
+      cost_amount: r.cost_amount ?? '', disposal_date: r.disposal_date ? toDateInput(r.disposal_date) : '',
       disposal_quantity: r.disposal_quantity || '', disposal_details: r.disposal_details || '',
       disposal_authority: r.disposal_authority || '', recovered_amount: r.recovered_amount ?? '',
-      recovered_deposit_date: r.recovered_deposit_date ? fmtDate(r.recovered_deposit_date) : '', remark: r.remark || '',
+      recovered_deposit_date: r.recovered_deposit_date ? toDateInput(r.recovered_deposit_date) : '', remark: r.remark || '',
     });
   }
   function cancelEdit() { setEditingId(null); setForm(emptyForm); }

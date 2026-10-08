@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from 'react';
 import client from '../../api/client';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
-import { fmtDate } from '../../utils/formatDate';
+import { fmtDate, toDateInput } from '../../utils/formatDate';
 
 const emptyForm = {
   report_year: '', received_date: '', total_objections: '', info_only_count: '', objection_numbers: '',
@@ -36,7 +36,7 @@ export default function AuditReportEntry() {
     setEditingId(r.id);
     const f = {};
     for (const k of Object.keys(emptyForm)) f[k] = r[k] == null ? '' : String(r[k]);
-    f.received_date = r.received_date ? fmtDate(r.received_date) : '';
+    f.received_date = r.received_date ? toDateInput(r.received_date) : '';
     setForm(f);
   }
   function cancelEdit() { setEditingId(null); setForm(emptyForm); }

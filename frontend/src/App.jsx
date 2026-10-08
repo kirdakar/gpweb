@@ -52,6 +52,8 @@ import VoucherPrint from './pages/gp1to33/VoucherPrint';
 import FixedAssetsEntry from './pages/gp1to33/FixedAssetsEntry';
 import MovableAssetEntry from './pages/gp1to33/MovableAssetEntry';
 import MovableAssetsReport from './pages/gp1to33/MovableAssetsReport';
+import ImmovableAssetEntry from './pages/gp1to33/ImmovableAssetEntry';
+import ImmovableAssetsReport from './pages/gp1to33/ImmovableAssetsReport';
 import FixedAssetsReport from './pages/gp1to33/FixedAssetsReport';
 import StaffMaster from './pages/gp1to33/StaffMaster';
 import StaffRosterReport from './pages/gp1to33/StaffRosterReport';
@@ -152,10 +154,10 @@ export default function App() {
             <Route path="/gp1to33/reports/voucher/:id" element={<RequireView screen="reports_receipt_voucher"><VoucherPrint /></RequireView>} />
             <Route path="/gp1to33/movable-assets" element={<RequireView screen="fixed_assets"><MovableAssetEntry /></RequireView>} />
             <Route path="/gp1to33/reports/movable-assets" element={<RequireView screen="reports_fixed_assets"><MovableAssetsReport /></RequireView>} />
-            <Route path="/gp1to33/immovable-assets" element={<RequireView screen="fixed_assets"><FixedAssetsEntry category="स्थावर" title="स्थावर मालमत्ता नोंदणी (नमुना २२)" /></RequireView>} />
+            <Route path="/gp1to33/immovable-assets" element={<RequireView screen="fixed_assets"><ImmovableAssetEntry /></RequireView>} />
             <Route path="/gp1to33/roads" element={<RequireView screen="fixed_assets"><FixedAssetsEntry category="रस्ते" title="ताब्यातील रस्त्यांची नोंदणी (नमुना २३)" /></RequireView>} />
             <Route path="/gp1to33/lands" element={<RequireView screen="fixed_assets"><FixedAssetsEntry category="जमीन" title="जमिनींची नोंदणी (नमुना २४)" /></RequireView>} />
-            <Route path="/gp1to33/reports/immovable-assets" element={<RequireView screen="reports_fixed_assets"><FixedAssetsReport category="स्थावर" title="स्थावर मालमत्ता नोंदवही (नमुना २२)" /></RequireView>} />
+            <Route path="/gp1to33/reports/immovable-assets" element={<RequireView screen="reports_fixed_assets"><ImmovableAssetsReport /></RequireView>} />
             <Route path="/gp1to33/reports/roads" element={<RequireView screen="reports_fixed_assets"><FixedAssetsReport category="रस्ते" title="ताब्यातील रस्त्यांची नोंदवही (नमुना २३)" /></RequireView>} />
             <Route path="/gp1to33/reports/lands" element={<RequireView screen="reports_fixed_assets"><FixedAssetsReport category="जमीन" title="जमिनींची नोंदवही (नमुना २४)" /></RequireView>} />
             <Route path="/gp1to33/staff" element={<RequireView screen="staff_master"><StaffMaster /></RequireView>} />

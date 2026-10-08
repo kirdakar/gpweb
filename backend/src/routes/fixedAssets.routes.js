@@ -25,7 +25,17 @@ router.get('/', async (req, res) => {
     `SELECT * FROM fixed_assets ${whereSql} ORDER BY category, acquired_date, id`,
     params
   );
-  res.json(rows);
+  // नमुना २२ (स्थावर): प्रत्येक मालमत्तेवरील दुरुस्ती/फेरफार खर्चाच्या नोंदी (तारखा 'YYYY-MM-DD' मजकूर - dateStrings)
+  const [exp] = await pool.query(
+    `SELECT id, asset_id, expense_date, current_repairs, special_repairs, original_construction, work_nature
+     FROM fixed_asset_expenses ORDER BY expense_date, id`
+  );
+  const byAsset = new Map();
+  for (const e of exp) {
+    if (!byAsset.has(e.asset_id)) byAsset.set(e.asset_id, []);
+    byAsset.get(e.asset_id).push(e);
+  }
+  res.json(rows.map((r) => ({ ...r, expenses: byAsset.get(r.id) || [] })));
 });
 
 router.get('/totals', async (req, res) => {
@@ -43,6 +53,7 @@ router.post('/', requirePermission('fixed_assets', 'add'), async (req, res) => {
     category, description, acquired_date, acquired_mode, quantity_or_measure,
     cost_amount, disposal_date, disposal_details, remark,
     disposal_quantity, disposal_authority, recovered_amount, recovered_deposit_date,
+    survey_no, purpose, asset_class,
   } = req.body || {};
   if (!CATEGORIES.includes(category)) return res.status(400).json({ error: 'अवैध category' });
   if (!description || !description.trim()) return res.status(400).json({ error: 'वस्तूचे/मालमत्तेचे वर्णन आवश्यक आहे' });
@@ -50,12 +61,13 @@ router.post('/', requirePermission('fixed_assets', 'add'), async (req, res) => {
   const [result] = await pool.query(
     `INSERT INTO fixed_assets
        (category, description, acquired_date, acquired_mode, quantity_or_measure, cost_amount, disposal_date, disposal_details, remark,
-        disposal_quantity, disposal_authority, recovered_amount, recovered_deposit_date)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        disposal_quantity, disposal_authority, recovered_amount, recovered_deposit_date, survey_no, purpose, asset_class)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [category, description.trim(), acquired_date || null, acquired_mode || null, quantity_or_measure || null,
       Number(cost_amount) || 0, disposal_date || null, disposal_details || null, remark || null,
       disposal_quantity || null, disposal_authority || null,
-      recovered_amount === '' || recovered_amount == null ? null : Number(recovered_amount) || 0, recovered_deposit_date || null]
+      recovered_amount === '' || recovered_amount == null ? null : Number(recovered_amount) || 0, recovered_deposit_date || null,
+      survey_no || null, purpose || null, [1, 2, 3, 4].includes(Number(asset_class)) ? Number(asset_class) : null]
   );
   const [[row]] = await pool.query('SELECT * FROM fixed_assets WHERE id = ?', [result.insertId]);
   res.status(201).json(row);
@@ -66,6 +78,7 @@ router.put('/:id', requirePermission('fixed_assets', 'edit'), async (req, res) =
     description, acquired_date, acquired_mode, quantity_or_measure,
     cost_amount, disposal_date, disposal_details, remark,
     disposal_quantity, disposal_authority, recovered_amount, recovered_deposit_date,
+    survey_no, purpose, asset_class,
   } = req.body || {};
   if (!description || !description.trim()) return res.status(400).json({ error: 'वस्तूचे/मालमत्तेचे वर्णन आवश्यक आहे' });
 
@@ -76,6 +89,9 @@ router.put('/:id', requirePermission('fixed_assets', 'edit'), async (req, res) =
   if (disposal_authority !== undefined) { extraSets.push('disposal_authority = ?'); extraParams.push(disposal_authority || null); }
   if (recovered_amount !== undefined) { extraSets.push('recovered_amount = ?'); extraParams.push(recovered_amount === '' || recovered_amount == null ? null : Number(recovered_amount) || 0); }
   if (recovered_deposit_date !== undefined) { extraSets.push('recovered_deposit_date = ?'); extraParams.push(recovered_deposit_date || null); }
+  if (survey_no !== undefined) { extraSets.push('survey_no = ?'); extraParams.push(survey_no || null); }
+  if (purpose !== undefined) { extraSets.push('purpose = ?'); extraParams.push(purpose || null); }
+  if (asset_class !== undefined) { extraSets.push('asset_class = ?'); extraParams.push([1, 2, 3, 4].includes(Number(asset_class)) ? Number(asset_class) : null); }
 
   const [result] = await pool.query(
     `UPDATE fixed_assets SET description = ?, acquired_date = ?, acquired_mode = ?, quantity_or_measure = ?,
@@ -90,6 +106,31 @@ router.put('/:id', requirePermission('fixed_assets', 'edit'), async (req, res) =
 
 router.delete('/:id', requirePermission('fixed_assets', 'delete'), async (req, res) => {
   const [result] = await pool.query('DELETE FROM fixed_assets WHERE id = ?', [req.params.id]);
+  if (result.affectedRows === 0) return res.status(404).json({ error: 'सापडले नाही' });
+  res.json({ ok: true });
+});
+
+// नमुना २२ रकाने (७)-(११): मालमत्तेवर वर्षभरात दुरुस्त्या/फेरफारासाठी केलेला खर्च - प्रत्येक खर्चाची स्वतंत्र नोंद.
+router.post('/:id/expenses', requirePermission('fixed_assets', 'edit'), async (req, res) => {
+  const b = req.body || {};
+  const [[asset]] = await pool.query('SELECT id FROM fixed_assets WHERE id = ?', [req.params.id]);
+  if (!asset) return res.status(404).json({ error: 'मालमत्ता सापडली नाही' });
+  if (!b.expense_date) return res.status(400).json({ error: 'खर्चाची तारीख आवश्यक आहे' });
+  const cur = Number(b.current_repairs) || 0;
+  const spe = Number(b.special_repairs) || 0;
+  const orig = Number(b.original_construction) || 0;
+  if (cur < 0 || spe < 0 || orig < 0) return res.status(400).json({ error: 'रक्कम ऋण असू शकत नाही' });
+  if (cur + spe + orig <= 0) return res.status(400).json({ error: 'किमान एक रक्कम भरा' });
+  await pool.query(
+    `INSERT INTO fixed_asset_expenses (asset_id, expense_date, current_repairs, special_repairs, original_construction, work_nature)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [req.params.id, b.expense_date, cur, spe, orig, b.work_nature || null]
+  );
+  res.status(201).json({ ok: true });
+});
+
+router.delete('/expenses/:expenseId', requirePermission('fixed_assets', 'delete'), async (req, res) => {
+  const [result] = await pool.query('DELETE FROM fixed_asset_expenses WHERE id = ?', [req.params.expenseId]);
   if (result.affectedRows === 0) return res.status(404).json({ error: 'सापडले नाही' });
   res.json({ ok: true });
 });

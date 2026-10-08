@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import client from '../../api/client';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
-import { fmtDate } from '../../utils/formatDate';
+import { fmtDate, toDateInput } from '../../utils/formatDate';
 
 const emptyForm = {
   description: '', acquired_date: '', acquired_mode: '', quantity_or_measure: '',
@@ -35,11 +35,11 @@ export default function FixedAssetsEntry({ category, title }) {
     setEditingId(row.id);
     setForm({
       description: row.description || '',
-      acquired_date: row.acquired_date ? fmtDate(row.acquired_date) : '',
+      acquired_date: row.acquired_date ? toDateInput(row.acquired_date) : '',
       acquired_mode: row.acquired_mode || '',
       quantity_or_measure: row.quantity_or_measure || '',
       cost_amount: row.cost_amount ?? '',
-      disposal_date: row.disposal_date ? fmtDate(row.disposal_date) : '',
+      disposal_date: row.disposal_date ? toDateInput(row.disposal_date) : '',
       disposal_details: row.disposal_details || '',
       remark: row.remark || '',
     });

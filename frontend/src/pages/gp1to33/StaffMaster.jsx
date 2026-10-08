@@ -3,7 +3,7 @@ import client from '../../api/client';
 import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
-import { fmtDate } from '../../utils/formatDate';
+import { fmtDate, toDateInput } from '../../utils/formatDate';
 
 const EMPLOYMENT_TYPES = ['पूर्णकालिक', 'अंशकालिक'];
 
@@ -36,9 +36,9 @@ export default function StaffMaster() {
     setEditingId(row.id);
     setForm({
       post_name: row.post_name || '', post_count: String(row.post_count ?? 1),
-      sanction_order_no: row.sanction_order_no || '', sanction_date: row.sanction_date ? fmtDate(row.sanction_date) : '',
+      sanction_order_no: row.sanction_order_no || '', sanction_date: row.sanction_date ? toDateInput(row.sanction_date) : '',
       employment_type: row.employment_type || 'पूर्णकालिक', pay_scale: row.pay_scale || '',
-      employee_name: row.employee_name || '', appointment_date: row.appointment_date ? fmtDate(row.appointment_date) : '',
+      employee_name: row.employee_name || '', appointment_date: row.appointment_date ? toDateInput(row.appointment_date) : '',
       is_active: !!row.is_active, remark: row.remark || '',
     });
   }
