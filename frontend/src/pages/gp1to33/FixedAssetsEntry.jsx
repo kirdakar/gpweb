@@ -4,25 +4,18 @@ import { usePermissions } from '../../context/PermissionsContext';
 import CloseReportButton from '../../components/CloseReportButton';
 import { fmtDate } from '../../utils/formatDate';
 
-const CATEGORIES = [
-  { value: 'जंगम', label: 'जंगम मालमत्ता (नमुना १६)' },
-  { value: 'स्थावर', label: 'स्थावर मालमत्ता (नमुना २२)' },
-  { value: 'रस्ते', label: 'रस्ते (नमुना २३)' },
-  { value: 'जमीन', label: 'जमिनी (नमुना २४)' },
-];
-
 const emptyForm = {
   description: '', acquired_date: '', acquired_mode: '', quantity_or_measure: '',
   cost_amount: '', disposal_date: '', disposal_details: '', remark: '',
 };
 
-// नमुना १६ (जंगम), २२ (स्थावर), २३ (रस्ते), २४ (जमिनी) - एकाच सामायिक
-// टेबलवर आधारित चार वेगळ्या मालमत्ता नोंदवह्या (category tabs). स्थावर/
+// नमुना २२ (स्थावर), २३ (रस्ते), २४ (जमिनी) - सामायिक टेबलवर आधारित तीन मालमत्ता नोंदवह्या (category tabs);
+// नमुना १६ (जंगम) ची स्वतंत्र स्क्रीन MovableAssetEntry.jsx. स्थावर/
 // रस्ते/जमीन च्या बेरजा नमुना ४ च्या A6/A7/A8 ओळींना आपोआप पुरवतात
 // (assets_liabilities.routes.js) - तिथे त्या हाताने पुन्हा टाईप करायच्या नाहीत.
-export default function FixedAssetsEntry() {
+// category: 'स्थावर' (नमुना २२) | 'रस्ते' (नमुना २३) | 'जमीन' (नमुना २४) - प्रत्येक स्वतंत्र मेन्यू/स्क्रीन.
+export default function FixedAssetsEntry({ category, title }) {
   const { can } = usePermissions();
-  const [category, setCategory] = useState('जंगम');
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
@@ -36,7 +29,7 @@ export default function FixedAssetsEntry() {
       .then(({ data }) => setRows(data))
       .finally(() => setLoading(false));
   }
-  useEffect(() => { load(); }, [category]);
+  useEffect(() => { setForm(emptyForm); setEditingId(null); load(); }, [category]);
 
   function startEdit(row) {
     setEditingId(row.id);
@@ -100,17 +93,8 @@ export default function FixedAssetsEntry() {
   return (
     <div className="page data-entry-page">
       <div className="page-header no-print">
-        <h1>मालमत्ता नोंदणी (नमुना १६/२२/२३/२४)</h1>
+        <h1>{title}</h1>
         <CloseReportButton />
-      </div>
-
-      <div className="card no-print" style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {CATEGORIES.map((c) => (
-            <button key={c.value} type="button" className={`btn ${category === c.value ? '' : 'secondary'}`}
-              onClick={() => { setCategory(c.value); cancelEdit(); }}>{c.label}</button>
-          ))}
-        </div>
       </div>
 
       {canEdit && (
@@ -160,7 +144,7 @@ export default function FixedAssetsEntry() {
       )}
 
       <div className="card no-print">
-        <h2 style={{ fontSize: 15, marginTop: 0 }}>{CATEGORIES.find((c) => c.value === category)?.label} - यादी</h2>
+        <h2 style={{ fontSize: 15, marginTop: 0 }}>{title} - यादी</h2>
         {loading ? <p>लोड होत आहे...</p> : (
           <div className="table-wrap">
             <table>

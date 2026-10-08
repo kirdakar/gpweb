@@ -877,3 +877,10 @@ CREATE TABLE IF NOT EXISTS tax_demand_bills (
   UNIQUE KEY uq_bill_year_no (financial_year_id, bill_no),
   CONSTRAINT fk_bill_year FOREIGN KEY (financial_year_id) REFERENCES financial_years(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- नमुना १६ (जंगम मालमत्ता/जडवस्तू संग्रह) कागदी नमुन्याचे अतिरिक्त रकाने: अंतिम विल्हेवाटीची संख्या/परिमाण,
+-- प्राधिकार पत्र किंवा प्रमाणक, वसूल केलेली रक्कम व ती कोषागारात भरल्याची तारीख (विल्हेवाट दिनांक/स्वरूप आधीचेच).
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS disposal_quantity VARCHAR(150) NULL;
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS disposal_authority VARCHAR(255) NULL;
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS recovered_amount DECIMAL(14,2) NULL;
+ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS recovered_deposit_date DATE NULL;

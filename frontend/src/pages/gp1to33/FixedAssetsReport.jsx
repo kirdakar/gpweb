@@ -5,16 +5,10 @@ import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
 import { fmtDate } from '../../utils/formatDate';
 
-const CATEGORIES = [
-  { value: 'जंगम', label: 'जंगम मालमत्ता नोंदवही (नमुना १६)' },
-  { value: 'स्थावर', label: 'स्थावर मालमत्ता नोंदवही (नमुना २२)' },
-  { value: 'रस्ते', label: 'रस्त्यांची नोंदवही (नमुना २३)' },
-  { value: 'जमीन', label: 'जमिनींची नोंदवही (नमुना २४)' },
-];
-
 // नमुना १६/२२/२३/२४ - चारही मालमत्ता नोंदवह्यांचा प्रिंट अहवाल, एकाच
 // पानावर एकत्र (डाटाएंट्री FixedAssetsEntry.jsx वर, दैनिक व्यवहार मध्ये).
-export default function FixedAssetsReport() {
+// category: 'स्थावर' (नमुना २२) | 'रस्ते' (नमुना २३) | 'जमीन' (नमुना २४) - प्रत्येक स्वतंत्र मेन्यू/अहवाल.
+export default function FixedAssetsReport({ category, title }) {
   const { can } = usePermissions();
   const { gpLine } = useGpSettings();
   const [rows, setRows] = useState([]);
@@ -25,7 +19,7 @@ export default function FixedAssetsReport() {
     client.get('/fixed-assets').then(({ data }) => setRows(data)).finally(() => setLoading(false));
   }, []);
 
-  function CategoryTable({ category, label }) {
+  function CategoryTable({ label }) {
     const list = rows.filter((r) => r.category === category);
     const total = list.reduce((s, r) => s + Number(r.cost_amount || 0), 0);
     return (
@@ -63,7 +57,7 @@ export default function FixedAssetsReport() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <h1>मालमत्ता अहवाल (नमुना १६/२२/२३/२४)</h1>
+        <h1>{title}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn secondary" onClick={() => window.print()} disabled={!can('reports_fixed_assets', 'print')}>प्रिंट</button>
           <CloseReportButton />
@@ -72,11 +66,11 @@ export default function FixedAssetsReport() {
 
       <div className="print-header">
         <h2>{gpLine}</h2>
-        <p style={{ fontWeight: 700 }}>मालमत्ता नोंदवही (नमुना १६/२२/२३/२४)</p>
+        <p style={{ fontWeight: 700 }}>{title}</p>
       </div>
 
       {loading ? <p>लोड होत आहे...</p> : (
-        CATEGORIES.map((c) => <CategoryTable key={c.value} category={c.value} label={c.label} />)
+        <CategoryTable label={title} />
       )}
     </div>
   );
