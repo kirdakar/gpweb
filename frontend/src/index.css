@@ -660,3 +660,15 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
   .budget-revision-form { font-size: 13px; }
   .budget-revision-form .br-table { page-break-inside: avoid; }
 }
+
+/* नमुना ३ - जमा व खर्च समोरासमोर (कागदी नमुन्याप्रमाणे, A4 उभा, अनेक पाने) */
+.annual-form { font-size: 13px; line-height: 1.45; }
+.an-table { width: 100%; table-layout: fixed; border-collapse: collapse; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; }
+.an-table th { font-weight: 700; text-align: center; padding: 6px 4px; background: none; color: #000; border: 0; border-bottom: 1px solid #000; }
+.an-table .an-numrow th { border-bottom: 1.5px solid #000; padding: 3px 4px; font-weight: 600; }
+.an-table td { padding: 3px 6px; border: 0; vertical-align: top; background: none; }
+.an-table .an-split { border-left: 1.5px solid #000; }
+.an-table .an-name { word-break: break-word; }
+.an-table tr { page-break-inside: avoid; }
+.an-table .an-grand td { border-top: 1.5px solid #000; font-weight: 800; padding: 6px; }
+@media print { .annual-form { font-size: 12px; } }

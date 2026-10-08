@@ -26,27 +26,45 @@ function subtotal(node, byParent) {
   return children.reduce((s, c) => s + subtotal(c, byParent), 0);
 }
 
-function TreeRows({ node, byParent, depth }) {
+const MR = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+const mnum = (n) => String(n).split('').map((d) => MR[Number(d)]).join('');
+
+// वृक्ष एका सपाट यादीत: गट = ठळक शीर्ष, leaf = "(१) नाव", गटानंतर "एकूण ..." ओळ - कागदी नमुना ३ प्रमाणे.
+function flatten(node, byParent, depth, out, seq) {
   const children = byParent.get(node.id) || [];
   const amount = subtotal(node, byParent);
-  return (
-    <>
-      <tr>
-        <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{node.code}</td>
-        <td style={{ paddingLeft: 12 + depth * 18 }}>
-          <span style={{ fontWeight: node.is_leaf ? 400 : 700 }}>{node.name}</span>
-        </td>
-        <td className="num" style={{ fontWeight: node.is_leaf ? 400 : 700 }}>{amount.toFixed(2)}</td>
-      </tr>
-      {children.map((child) => <TreeRows key={child.id} node={child} byParent={byParent} depth={depth + 1} />)}
-    </>
-  );
+  if (node.is_leaf) {
+    out.push({ kind: 'item', label: `${seq ? `(${mnum(seq)}) ` : ''}${node.name}`, amount, depth });
+    return;
+  }
+  out.push({ kind: 'head', label: node.name, amount: null, depth });
+  let n = 0;
+  for (const c of children) flatten(c, byParent, depth + 1, out, c.is_leaf ? ++n : 0);
+  out.push({ kind: 'total', label: `एकूण ${node.name}`, amount, depth });
+}
+
+function flatSide(byParent) {
+  const out = [];
+  for (const root of byParent.get('root') || []) flatten(root, byParent, 0, out, 0);
+  return out;
+}
+
+const fmt = (n) => Number(n || 0).toFixed(2);
+
+function cells(r, split) {
+  const bold = !!r && r.kind !== 'item';
+  const pad = r ? 6 + (r.kind === 'item' ? r.depth : Math.max(r.depth - 1, 0)) * 14 : 6;
+  return [
+    <td key="l" className={split ? 'an-split an-name' : 'an-name'} style={{ paddingLeft: pad, fontWeight: bold ? 700 : 400, textAlign: r && r.kind === 'total' ? 'right' : 'left' }}>{r ? r.label : ''}</td>,
+    <td key="a" className="num" style={{ fontWeight: bold ? 700 : 400 }}>{r && r.amount !== null ? fmt(r.amount) : ''}</td>,
+  ];
 }
 
 export default function AnnualSummaryReport() {
   const { yearId, currentYear } = useYear();
   const { can } = usePermissions();
-  const { gpLine } = useGpSettings();
+  const { settings } = useGpSettings();
+  const gpName = (settings?.gp_name || '').replace(/^ग्रामपंचायत\s*/, '');
   const [heads, setHeads] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,6 +79,8 @@ export default function AnnualSummaryReport() {
 
   const jamaTree = useMemo(() => buildTree(heads.filter((h) => h.group_type === 'जमा')), [heads]);
   const kharchTree = useMemo(() => buildTree(heads.filter((h) => h.group_type === 'खर्च')), [heads]);
+  const left = useMemo(() => flatSide(jamaTree), [jamaTree]);
+  const right = useMemo(() => flatSide(kharchTree), [kharchTree]);
   const jamaTotal = useMemo(() => (jamaTree.get('root') || []).reduce((s, n) => s + subtotal(n, jamaTree), 0), [jamaTree]);
   const kharchTotal = useMemo(() => (kharchTree.get('root') || []).reduce((s, n) => s + subtotal(n, kharchTree), 0), [kharchTree]);
 
@@ -74,41 +94,32 @@ export default function AnnualSummaryReport() {
         </div>
       </div>
 
-      <div className="print-header">
-        <h2>{gpLine}</h2>
-        <p style={{ fontWeight: 700 }}>सन {currentYear?.year_label || ''} चा जमा व खर्च (नमुना ३)</p>
-      </div>
-
       {loading ? <p>लोड होत आहे...</p> : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-          <div>
-            <h3 style={{ color: '#1d4ed8' }}>जमा तपशील</h3>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>कोड</th><th>जमा तपशील</th><th className="num">रक्कम</th></tr></thead>
-                <tbody>
-                  {(jamaTree.get('root') || []).map((n) => <TreeRows key={n.id} node={n} byParent={jamaTree} depth={0} />)}
-                </tbody>
-                <tfoot>
-                  <tr className="total-row"><td colSpan={2}>एकूण जमा</td><td className="num">{jamaTotal.toFixed(2)}</td></tr>
-                </tfoot>
-              </table>
-            </div>
+        <div className="annual-form">
+          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: 17 }}>नमुना - ३</div>
+          <div style={{ textAlign: 'center', fontWeight: 700, fontSize: 15, margin: '4px 0' }}>
+            सन <strong>{currentYear?.year_label || '.......'}</strong> या वर्षाचा जमा व खर्च ग्रामपंचायत {gpName || '.........'}
           </div>
-          <div>
-            <h3 style={{ color: '#dc2626' }}>खर्चाचा तपशील</h3>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>कोड</th><th>खर्चाचा तपशील</th><th className="num">रक्कम</th></tr></thead>
-                <tbody>
-                  {(kharchTree.get('root') || []).map((n) => <TreeRows key={n.id} node={n} byParent={kharchTree} depth={0} />)}
-                </tbody>
-                <tfoot>
-                  <tr className="total-row"><td colSpan={2}>एकूण खर्च</td><td className="num">{kharchTotal.toFixed(2)}</td></tr>
-                </tfoot>
-              </table>
-            </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, margin: '6px 0' }}>
+            <span>{settings?.taluka ? `${settings.taluka} ` : '------------ '}पंचायत</span>
+            <span>{settings?.district ? `${settings.district} ` : '------- '}जिल्हा</span>
           </div>
+          <table className="an-table">
+            <colgroup><col style={{ width: '37%' }} /><col style={{ width: '13%' }} /><col style={{ width: '37%' }} /><col style={{ width: '13%' }} /></colgroup>
+            <thead>
+              <tr><th>जमा रकमांचा तपशील</th><th>रक्कम</th><th className="an-split">खर्चाचा तपशील</th><th>रक्कम</th></tr>
+              <tr className="an-numrow"><th>(१)</th><th>(२)</th><th className="an-split">(३)</th><th>(४)</th></tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: Math.max(left.length, right.length) }, (_, i) => {
+                return <tr key={i}>{cells(left[i], false)}{cells(right[i], true)}</tr>;
+              })}
+              <tr className="an-grand">
+                <td style={{ textAlign: 'right' }}>एकूण जमा</td><td className="num">{fmt(jamaTotal)}</td>
+                <td className="an-split" style={{ textAlign: 'right' }}>एकूण खर्च</td><td className="num">{fmt(kharchTotal)}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       )}
     </div>
