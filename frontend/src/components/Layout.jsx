@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useYear } from '../context/YearContext';
 import { usePermissions } from '../context/PermissionsContext';
 
-// मेनू पट्टी - मास्टर, दैनिक व्यवहार, रिपोर्ट, इतर सुविधा, बाहेर. प्रत्येक
+// मेनू पट्टी - मास्टर, दैनिक व्यवहार, रिपोर्ट, नमुना रिपोर्ट (१ ते ३३), इतर सुविधा, बाहेर. प्रत्येक
 // सबमेन्यू आयटम एका screen कोडशी जोडलेला (अधिकार नसलेल्याला दिसू नये -
 // RequireView राऊट-गार्ड कडून URL टाकूनही रोखलेलेच आहे, हे फक्त मेनू स्वच्छ
 // ठेवण्यासाठी); adminOnly आयटम फक्त प्रशासकाला दिसतात (बॅकएंडवरही
@@ -84,43 +84,47 @@ const MENUS = [
       { to: '/reports/property-list', label: 'मिळकत यादी', screen: 'reports_property_list' },
       { to: '/reports/old-new', label: 'येणे बाकी अहवाल', screen: 'reports_old_new' },
       { to: '/reports/summary', label: 'सारांश', screen: 'reports_summary' },
-      {
-        label: 'ग्रामपंचायत १ ते ३३ नमूना',
-        submenu: [
-          { to: '/gp1to33/reports/budget', label: 'वार्षिक अंदाजपत्रक अहवाल (नमुना १)', screen: 'reports_budget' },
-          { to: '/gp1to33/reports/budget-revision', label: 'पुनर्विनियोजन अहवाल (नमुना २)', screen: 'reports_budget_revision' },
-          { to: '/gp1to33/reports/annual-summary', label: 'वार्षिक जमा-खर्च (नमुना ३)', screen: 'reports_annual_summary' },
-          { to: '/gp1to33/reports/assets-liabilities', label: 'भत्ते व दायित्वे अहवाल (नमुना ४)', screen: 'reports_assets_liabilities' },
-          { to: '/gp1to33/reports/cash-book', label: 'रोकड वही अहवाल (नमुना ५/१८)', screen: 'reports_cash_book' },
-          { to: '/gp1to33/reports/daily-cash', label: 'दैनिक रोकड वही अहवाल (नमुना ५-क)', screen: 'reports_daily_cash' },
-          { to: '/gp1to33/reports/ledger-classified', label: 'वर्गीकृत नोंदवही (नमुना ६)', screen: 'reports_ledger_classified' },
-          { to: '/gp1to33/reports/receipts', label: 'सामान्य पावती (नमुना ७)', screen: 'reports_receipt_voucher' },
-          { to: '/gp1to33/reports/misc-demands', label: 'किरकोळ मागणी अहवाल (नमुना ११)', screen: 'reports_misc_demands' },
-          { to: '/gp1to33/reports/vouchers', label: 'आकस्मिक खर्चाचे प्रमाणक (नमुना १२)', screen: 'reports_receipt_voucher' },
-          { to: '/gp1to33/reports/staff', label: 'कर्मचारी सूची व वेतनश्रेणी अहवाल (नमुना १३)', screen: 'reports_staff_master' },
-          { to: '/gp1to33/reports/stamps', label: 'मुद्रांक हिशोब अहवाल (नमुना १४)', screen: 'reports_stamps' },
-          { to: '/gp1to33/reports/stock', label: 'उपभोग्य वस्तू साठा अहवाल (नमुना १५)', screen: 'reports_stock' },
-          { to: '/gp1to33/reports/movable-assets', label: 'जंगम मालमत्ता अहवाल (नमुना १६)', screen: 'reports_fixed_assets' },
-          { to: '/gp1to33/reports/advance-deposits', label: 'अग्रिम/अनामत अहवाल (नमुना १७)', screen: 'reports_advance_deposits' },
-          { to: '/gp1to33/reports/muster-roll', label: 'हजेरीपट अहवाल (नमुना १९)', screen: 'reports_muster_roll' },
-          { to: '/gp1to33/reports/work-estimate', label: 'कामाच्या अंदाजाची नोंदवही (नमुना २०)', screen: 'reports_work_estimate' },
-          { to: '/gp1to33/reports/work-measurement', label: 'मोजमाप वही (नमुना २०क)', screen: 'reports_work_measurement' },
-          { to: '/gp1to33/reports/work-bills', label: 'कामाचे देयक (नमुना २०ख)', screen: 'reports_work_bills' },
-          { to: '/gp1to33/reports/staff-salary', label: 'मासिक वेतन देयक अहवाल (नमुना २१)', screen: 'reports_staff_salary_bills' },
-          { to: '/gp1to33/reports/immovable-assets', label: 'स्थावर मालमत्ता अहवाल (नमुना २२)', screen: 'reports_fixed_assets' },
-          { to: '/gp1to33/reports/roads', label: 'रस्ते अहवाल (नमुना २३)', screen: 'reports_fixed_assets' },
-          { to: '/gp1to33/reports/lands', label: 'जमिनी अहवाल (नमुना २४)', screen: 'reports_fixed_assets' },
-          { to: '/gp1to33/reports/investments', label: 'गुंतवणूक अहवाल (नमुना २५)', screen: 'reports_investments' },
-          { to: '/gp1to33/reports/monthly-statement', label: 'मासिक जमा-खर्च विवरण (नमुना २६-क)', screen: 'reports_monthly_statement' },
-          { to: '/gp1to33/reports/balance-statements', label: 'मासिक शिल्लक विवरण अहवाल (नमुना २६-ख)', screen: 'reports_balance_statements' },
-          { to: '/gp1to33/reports/audit-monthly', label: 'आक्षेप पूर्ततेचे मासिक विवरण (नमुना २७)', screen: 'reports_audit_monthly' },
-          { to: '/gp1to33/reports/welfare-expenditure', label: 'मागासवर्गीय/महिला-बाल विवरण (नमुना २८)', screen: 'reports_welfare_expenditure' },
-          { to: '/gp1to33/reports/loans', label: 'कर्ज अहवाल (नमुना २९)', screen: 'reports_loans' },
-          { to: '/gp1to33/reports/audit-register', label: 'लेखापरीक्षण आक्षेप नोंदवही (नमुना ३०)', screen: 'reports_audit_register' },
-          { to: '/gp1to33/reports/travel-bills', label: 'प्रवास भत्ता देयक अहवाल (नमुना ३१)', screen: 'reports_travel_bills' },
-          { to: '/gp1to33/reports/trees', label: 'वृक्ष नोंदवही अहवाल (नमुना ३३)', screen: 'reports_trees' },
-        ],
-      },
+    ],
+  },
+  {
+    label: 'नमुना रिपोर्ट (१ ते ३३)',
+    tall: true,
+    items: [
+      { to: '/gp1to33/reports/budget', label: 'वार्षिक अंदाजपत्रक अहवाल (नमुना १)', screen: 'reports_budget' },
+      { to: '/gp1to33/reports/budget-revision', label: 'पुनर्विनियोजन अहवाल (नमुना २)', screen: 'reports_budget_revision' },
+      { to: '/gp1to33/reports/annual-summary', label: 'वार्षिक जमा-खर्च (नमुना ३)', screen: 'reports_annual_summary' },
+      { to: '/gp1to33/reports/assets-liabilities', label: 'भत्ते व दायित्वे अहवाल (नमुना ४)', screen: 'reports_assets_liabilities' },
+      { to: '/gp1to33/reports/cash-book', label: 'रोकड वही अहवाल (नमुना ५/१८)', screen: 'reports_cash_book' },
+      { to: '/gp1to33/reports/daily-cash', label: 'दैनिक रोकड वही अहवाल (नमुना ५-क)', screen: 'reports_daily_cash' },
+      { to: '/gp1to33/reports/ledger-classified', label: 'वर्गीकृत नोंदवही (नमुना ६)', screen: 'reports_ledger_classified' },
+      { to: '/gp1to33/reports/receipts', label: 'सामान्य पावती (नमुना ७)', screen: 'reports_receipt_voucher' },
+      { to: '/reports/assessment-register', label: 'आकारणी यादी (नमुना ८)', screen: 'reports_assessment_register' },
+      { to: '/reports/tax-demand-bill', label: 'कर मागणी बिल (नमुना ९ क)', screen: 'reports_tax_demand_bill' },
+      { to: '/reports/payment-receipts', label: 'जमा पावती अहवाल (नमुना १०)', screen: 'reports_payment_receipts' },
+      { to: '/gp1to33/reports/misc-demands', label: 'किरकोळ मागणी अहवाल (नमुना ११)', screen: 'reports_misc_demands' },
+      { to: '/gp1to33/reports/vouchers', label: 'आकस्मिक खर्चाचे प्रमाणक (नमुना १२)', screen: 'reports_receipt_voucher' },
+      { to: '/gp1to33/reports/staff', label: 'कर्मचारी सूची व वेतनश्रेणी अहवाल (नमुना १३)', screen: 'reports_staff_master' },
+      { to: '/gp1to33/reports/stamps', label: 'मुद्रांक हिशोब अहवाल (नमुना १४)', screen: 'reports_stamps' },
+      { to: '/gp1to33/reports/stock', label: 'उपभोग्य वस्तू साठा अहवाल (नमुना १५)', screen: 'reports_stock' },
+      { to: '/gp1to33/reports/movable-assets', label: 'जंगम मालमत्ता अहवाल (नमुना १६)', screen: 'reports_fixed_assets' },
+      { to: '/gp1to33/reports/advance-deposits', label: 'अग्रिम/अनामत अहवाल (नमुना १७)', screen: 'reports_advance_deposits' },
+      { to: '/gp1to33/reports/muster-roll', label: 'हजेरीपट अहवाल (नमुना १९)', screen: 'reports_muster_roll' },
+      { to: '/gp1to33/reports/work-estimate', label: 'कामाच्या अंदाजाची नोंदवही (नमुना २०)', screen: 'reports_work_estimate' },
+      { to: '/gp1to33/reports/work-measurement', label: 'मोजमाप वही (नमुना २०क)', screen: 'reports_work_measurement' },
+      { to: '/gp1to33/reports/work-bills', label: 'कामाचे देयक (नमुना २०ख)', screen: 'reports_work_bills' },
+      { to: '/gp1to33/reports/staff-salary', label: 'मासिक वेतन देयक अहवाल (नमुना २१)', screen: 'reports_staff_salary_bills' },
+      { to: '/gp1to33/reports/immovable-assets', label: 'स्थावर मालमत्ता अहवाल (नमुना २२)', screen: 'reports_fixed_assets' },
+      { to: '/gp1to33/reports/roads', label: 'रस्ते अहवाल (नमुना २३)', screen: 'reports_fixed_assets' },
+      { to: '/gp1to33/reports/lands', label: 'जमिनी अहवाल (नमुना २४)', screen: 'reports_fixed_assets' },
+      { to: '/gp1to33/reports/investments', label: 'गुंतवणूक अहवाल (नमुना २५)', screen: 'reports_investments' },
+      { to: '/gp1to33/reports/monthly-statement', label: 'मासिक जमा-खर्च विवरण (नमुना २६-क)', screen: 'reports_monthly_statement' },
+      { to: '/gp1to33/reports/balance-statements', label: 'मासिक शिल्लक विवरण अहवाल (नमुना २६-ख)', screen: 'reports_balance_statements' },
+      { to: '/gp1to33/reports/audit-monthly', label: 'आक्षेप पूर्ततेचे मासिक विवरण (नमुना २७)', screen: 'reports_audit_monthly' },
+      { to: '/gp1to33/reports/welfare-expenditure', label: 'मागासवर्गीय/महिला-बाल विवरण (नमुना २८)', screen: 'reports_welfare_expenditure' },
+      { to: '/gp1to33/reports/loans', label: 'कर्ज अहवाल (नमुना २९)', screen: 'reports_loans' },
+      { to: '/gp1to33/reports/audit-register', label: 'लेखापरीक्षण आक्षेप नोंदवही (नमुना ३०)', screen: 'reports_audit_register' },
+      { to: '/gp1to33/reports/travel-bills', label: 'प्रवास भत्ता देयक अहवाल (नमुना ३१)', screen: 'reports_travel_bills' },
+      { to: '/gp1to33/reports/trees', label: 'वृक्ष नोंदवही अहवाल (नमुना ३३)', screen: 'reports_trees' },
     ],
   },
   {
@@ -207,7 +211,7 @@ export default function Layout() {
                   {menu.label} ▾
                 </button>
                 {openMenu === menu.label && (
-                  <div className="menubar-dropdown">
+                  <div className={`menubar-dropdown${menu.tall ? ' menubar-dropdown-tall' : ''}`}>
                     {items.map((item) => (
                       item.submenu ? (
                         <div className="menubar-subitem" key={item.label}>
