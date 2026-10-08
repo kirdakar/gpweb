@@ -706,3 +706,21 @@ body:has(.dashboard-page) .main-content { background: rgba(244, 246, 248, 0.05);
 /* "नमुना रिपोर्ट (१ ते ३३)" - ३० हून अधिक ओळींची एकच यादी; स्क्रीनपेक्षा उंच झाल्यास आतच स्क्रोल */
 .menubar-dropdown-tall { max-height: calc(100vh - 80px); overflow-y: auto; min-width: 380px; left: auto; right: 0; }
 @media (max-width: 820px) { .menubar-dropdown-tall { max-height: none; min-width: 0; left: auto; right: auto; } }
+
+/* नमुना २० / २०(ख) - उभ्या A4 वरील फॉर्म (एका बाजूला एक पान); नमुना २०(क) .cashbook-form (आडवे) वापरतो */
+.work-form { font-size: 14px; line-height: 1.6; max-width: 820px; margin: 0 auto; }
+.work-form .wf-sheet { background: #fff; padding: 18px 22px; margin-bottom: 18px; border: 1px solid var(--border); page-break-after: always; }
+.work-form .wf-sheet:last-child { page-break-after: auto; margin-bottom: 0; }
+.work-form .wf-center { text-align: center; }
+.work-form .wf-h1 { font-weight: 800; font-size: 18px; }
+.work-form .wf-h2 { font-weight: 800; font-size: 16px; margin: 4px 0; }
+.work-form .wf-line { margin: 3px 0; }
+.work-form .wf-split { display: flex; justify-content: space-between; gap: 16px; }
+.work-form .wf-sign { display: flex; justify-content: space-between; margin-top: 28px; }
+.wf-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 8px; }
+.wf-table th, .wf-table td { border: 1px solid #000; padding: 5px 6px; background: none; color: #000; vertical-align: top; white-space: normal; overflow-wrap: anywhere; }
+.wf-table th { text-align: center; font-weight: 700; }
+.wf-table td.num { text-align: right; white-space: nowrap; overflow-wrap: normal; }
+.wf-table .wf-numrow th { font-weight: 600; padding: 2px; }
+.wf-table .wf-total td { font-weight: 800; }
+@media print { .work-form { max-width: none; font-size: 13px; } .work-form .wf-sheet { border: none; padding: 0; margin: 0; } }
