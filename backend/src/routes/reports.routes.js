@@ -592,8 +592,28 @@ router.get('/welfare-expenditure', async (req, res) => {
     );
     const priorTotal = round2(Number(priorRow.total));
     const monthTotal = round2(entries.reduce((s, e) => s + Number(e.amount), 0));
+
+    // नमुना २८ रकाना (१) - त्या शीर्षासाठी वर्षातील अर्थसंकल्पीय तरतूद (नमुना १ मंजूर रक्कम)
+    const [[budgetRow]] = await pool.query(
+      'SELECT COALESCE(SUM(approved_amount), 0) AS total FROM budget_entries WHERE financial_year_id = ? AND ledger_head_id = ?',
+      [financialYearId, head.id]
+    );
+    // रकाने (४)-(७) - बाबवार/योजनावार (नोंदीच्या तपशीलानुसार) मागील महिन्यापर्यंतचा व चालू महिन्यातील खर्च
+    const nextFirst = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`;
+    const [schemeRows] = await pool.query(
+      `SELECT COALESCE(NULLIF(TRIM(narration), ''), 'इतर') AS scheme,
+              SUM(CASE WHEN entry_date < ? THEN amount ELSE 0 END) AS prior,
+              SUM(CASE WHEN entry_date >= ? THEN amount ELSE 0 END) AS current
+       FROM cash_book_entries
+       WHERE financial_year_id = ? AND ledger_head_id = ? AND register = 'मुख्य' AND entry_date < ?
+       GROUP BY scheme ORDER BY MIN(entry_date), scheme`,
+      [firstOfMonth, firstOfMonth, financialYearId, head.id, nextFirst]
+    );
+    const schemes = schemeRows.map((r) => ({ name: r.scheme, prior: round2(Number(r.prior)), current: round2(Number(r.current)) }));
     return {
       head,
+      budgetAmount: round2(Number(budgetRow.total)),
+      schemes,
       entries,
       priorTotal,
       monthTotal,
