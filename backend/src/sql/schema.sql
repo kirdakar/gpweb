@@ -891,3 +891,16 @@ ALTER TABLE works ADD COLUMN IF NOT EXISTS contract_no VARCHAR(100) NULL;
 ALTER TABLE works ADD COLUMN IF NOT EXISTS contract_date DATE NULL;
 ALTER TABLE works ADD COLUMN IF NOT EXISTS rate_schedule_no VARCHAR(100) NULL;
 ALTER TABLE works ADD COLUMN IF NOT EXISTS rate_schedule_date DATE NULL;
+
+-- नमुना २०(ख)(१) (देयकाची आतील बाजू) - छापील देयकावरील अधिकाऱ्यांची नावे, मोजमाप वही/पृष्ठ क्रमांक, तारखा, धनादेश क्रमांक, रोख रक्कम.
+ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS measurer_name VARCHAR(150) NULL;
+ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS measurer_designation VARCHAR(100) NULL;
+ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS measurer_date DATE NULL;
+ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS measurement_book_no VARCHAR(50) NULL;
+ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS measurement_page_no VARCHAR(50) NULL;
+ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS checking_date DATE NULL;
+ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS preparer_name VARCHAR(150) NULL;
+ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS cheque_no VARCHAR(50) NULL;
+ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS cheque_date DATE NULL;
+ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS receipt_date DATE NULL;
+ALTER TABLE work_bills ADD COLUMN IF NOT EXISTS cash_paid_amount DECIMAL(14,2) NULL;

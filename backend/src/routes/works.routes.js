@@ -38,7 +38,11 @@ async function loadWork(id) {
      FROM work_measurements m WHERE m.work_id = ? ORDER BY m.measured_on, m.id`, [id]);
   const [bills] = await pool.query(
     `SELECT b.id, b.bill_no, DATE_FORMAT(b.bill_date, '%Y-%m-%d') AS bill_date, b.contractor_id, c.name AS contractor_name,
-            b.gross_to_date, b.previous_bills_total, b.deduction_amount, b.deduction_note, b.cash_book_entry_id
+            b.gross_to_date, b.previous_bills_total, b.deduction_amount, b.deduction_note, b.cash_book_entry_id,
+            b.measurer_name, b.measurer_designation, DATE_FORMAT(b.measurer_date, '%Y-%m-%d') AS measurer_date,
+            b.measurement_book_no, b.measurement_page_no, DATE_FORMAT(b.checking_date, '%Y-%m-%d') AS checking_date,
+            b.preparer_name, b.cheque_no, DATE_FORMAT(b.cheque_date, '%Y-%m-%d') AS cheque_date,
+            DATE_FORMAT(b.receipt_date, '%Y-%m-%d') AS receipt_date, b.cash_paid_amount
      FROM work_bills b LEFT JOIN contractors c ON c.id = b.contractor_id
      WHERE b.work_id = ? ORDER BY b.id`, [id]);
 
@@ -240,6 +244,24 @@ router.post('/:id/bills', requirePermission('works', 'add'), async (req, res) =>
     conn.release();
   }
   res.status(201).json(await loadWork(req.params.id));
+});
+
+// नमुना २०(ख)(१) च्या छापील देयकावरील अधिकाऱ्यांची नावे/तारखा/क्रमांक - फक्त वर्णनात्मक माहिती; रकमेचे आकडे (गोठवलेले
+// snapshot) कधीही बदलत नाहीत, म्हणून देयक नोंदल्यानंतरही हे भरता/बदलता येते.
+router.put('/:id/bills/:billId', requirePermission('works', 'edit'), async (req, res) => {
+  const b = req.body || {};
+  const [[bill]] = await pool.query('SELECT id FROM work_bills WHERE id = ? AND work_id = ?', [req.params.billId, req.params.id]);
+  if (!bill) return res.status(404).json({ error: 'देयक सापडले नाही' });
+  const txt = (v) => (v === undefined || v === null || String(v).trim() === '' ? null : String(v).trim());
+  const cash = b.cash_paid_amount === undefined || b.cash_paid_amount === null || b.cash_paid_amount === '' ? null : round2(Number(b.cash_paid_amount));
+  if (cash !== null && !(cash >= 0)) return res.status(400).json({ error: 'रोख रक्कम योग्य नाही' });
+  await pool.query(
+    `UPDATE work_bills SET measurer_name = ?, measurer_designation = ?, measurer_date = ?, measurement_book_no = ?, measurement_page_no = ?,
+       checking_date = ?, preparer_name = ?, cheque_no = ?, cheque_date = ?, receipt_date = ?, cash_paid_amount = ? WHERE id = ?`,
+    [txt(b.measurer_name), txt(b.measurer_designation), txt(b.measurer_date), txt(b.measurement_book_no), txt(b.measurement_page_no),
+      txt(b.checking_date), txt(b.preparer_name), txt(b.cheque_no), txt(b.cheque_date), txt(b.receipt_date), cash, req.params.billId]
+  );
+  res.json(await loadWork(req.params.id));
 });
 
 module.exports = router;

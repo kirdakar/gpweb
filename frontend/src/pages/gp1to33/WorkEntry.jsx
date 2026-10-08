@@ -23,6 +23,20 @@ export default function WorkEntry() {
   const [workId, setWorkId] = useState('');
   const [work, setWork] = useState(null);
   const [tab, setTab] = useState('estimate');
+  // नमुना २०(ख)(१) च्या छापील देयकावरील अधिकारी/क्रमांक/तारखा - निवडलेल्या देयकासाठी (देयक नोंदल्यानंतरही भरता/बदलता येते)
+  const emptyDetail = { measurer_name: '', measurer_designation: '', measurer_date: '', measurement_book_no: '', measurement_page_no: '', checking_date: '', preparer_name: '', cheque_no: '', cheque_date: '', receipt_date: '', cash_paid_amount: '' };
+  const [detailBillId, setDetailBillId] = useState('');
+  const [detail, setDetail] = useState(emptyDetail);
+  const setD = (k) => (e) => setDetail({ ...detail, [k]: e.target.value });
+  useEffect(() => {
+    if (!work || work.bills.length === 0) { setDetailBillId(''); setDetail(emptyDetail); return; }
+    if (!work.bills.some((b) => String(b.id) === String(detailBillId))) setDetailBillId(String(work.bills[work.bills.length - 1].id));
+  }, [work]);
+  useEffect(() => {
+    const b = work?.bills.find((x) => String(x.id) === String(detailBillId));
+    setDetail(b ? Object.fromEntries(Object.keys(emptyDetail).map((k) => [k, b[k] ?? ''])) : emptyDetail);
+  }, [detailBillId, work]);
+
   // नमुना २०(ख) च्या छापील देयकावरील कंत्राट तपशील (कामावर एकदा भरला की प्रत्येक देयकावर येतो)
   const [contract, setContract] = useState({ supplier_name: '', contract_no: '', contract_date: '', rate_schedule_no: '', rate_schedule_date: '' });
   useEffect(() => {
@@ -128,6 +142,10 @@ export default function WorkEntry() {
   }
   function setStatus(status) {
     run(() => client.put(`/works/${workId}`, { ...work, status }), ({ data }) => setWork(data));
+  }
+  function saveBillDetail(e) {
+    e.preventDefault();
+    run(() => client.put(`/works/${workId}/bills/${detailBillId}`, detail), ({ data }) => setWork(data));
   }
   function saveContract(e) {
     e.preventDefault();
@@ -377,6 +395,33 @@ export default function WorkEntry() {
                   </tbody>
                 </table>
               </div>
+
+              {canEdit && work.bills.length > 0 && (
+                <form onSubmit={saveBillDetail} style={{ marginTop: 20, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+                  <h3 style={{ fontSize: 14, margin: '0 0 10px' }}>देयकाची आतील बाजू - अधिकारी/सही तपशील (नमुना २०ख(१))</h3>
+                  <div className="form-grid">
+                    <div className="field">
+                      <label>कोणते देयक</label>
+                      <select value={detailBillId} onChange={(e) => setDetailBillId(e.target.value)}>
+                        {work.bills.map((b) => <option key={b.id} value={b.id}>{b.bill_no || b.id} - {fmtDate(b.bill_date)}</option>)}
+                      </select>
+                    </div>
+                    <div className="field"><label>मोजमाप नोंदविणाऱ्या अधिकाऱ्याचे नाव</label><input value={detail.measurer_name} onChange={setD('measurer_name')} /></div>
+                    <div className="field"><label>पदनाम</label><input value={detail.measurer_designation} onChange={setD('measurer_designation')} /></div>
+                    <div className="field"><label>मोजमाप नोंदविल्याचा दिनांक</label><input type="date" value={detail.measurer_date} onChange={setD('measurer_date')} /></div>
+                    <div className="field"><label>मोजमाप वही क्रमांक</label><input value={detail.measurement_book_no} onChange={setD('measurement_book_no')} /></div>
+                    <div className="field"><label>पृष्ठ क्र.</label><input value={detail.measurement_page_no} onChange={setD('measurement_page_no')} /></div>
+                    <div className="field"><label>तपासणीचा दिनांक</label><input type="date" value={detail.checking_date} onChange={setD('checking_date')} /></div>
+                    <div className="field"><label>देयक तयार करणाऱ्या अधिकाऱ्याचे नाव</label><input value={detail.preparer_name} onChange={setD('preparer_name')} /></div>
+                    <div className="field"><label>धनादेश क्रमांक</label><input value={detail.cheque_no} onChange={setD('cheque_no')} /></div>
+                    <div className="field"><label>धनादेश दिनांक</label><input type="date" value={detail.cheque_date} onChange={setD('cheque_date')} /></div>
+                    <div className="field"><label>पैसे घेतल्याचा दिनांक</label><input type="date" value={detail.receipt_date} onChange={setD('receipt_date')} /></div>
+                    <div className="field"><label>रोख दिलेली रक्कम (रु.)</label><input type="number" step="0.01" min="0" value={detail.cash_paid_amount} onChange={setD('cash_paid_amount')} /></div>
+                  </div>
+                  <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>सह्या, मुद्रांक व आदात्याची सही कागदावर हाताने; देय/प्रदान रक्कम देयकावरून आपोआप छापली जाते.</div>
+                  <div style={{ marginTop: 10 }}><button className="btn secondary" type="submit" disabled={busy || !detailBillId}>तपशील जतन करा</button></div>
+                </form>
+              )}
             </div>
           )}
         </>

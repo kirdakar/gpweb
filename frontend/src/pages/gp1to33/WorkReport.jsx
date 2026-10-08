@@ -12,6 +12,9 @@ const mnum = (n) => String(n).split('').map((d) => MR[Number(d)]).join('');
 const fmt = (n) => Number(n || 0).toFixed(2);
 const qty = (n) => String(Number(Number(n || 0).toFixed(3)));
 const dots = (n) => '.'.repeat(n);
+// भरलेले मूल्य ठळक, नसेल तर ठिपक्यांची रेघ (हाताने लिहायला)
+const v = (val, n) => (val ? <strong>{val}</strong> : dots(n));
+const vd = (val, n) => (val ? <strong>{fmtDate(val)}</strong> : dots(n));
 
 const VIEWS = {
   estimate: { screen: 'reports_work_estimate', title: 'कामाच्या अंदाजाची नोंदवही (नमुना २०)' },
@@ -288,21 +291,21 @@ export default function WorkReport({ view }) {
 
                 <div className="wf-box">
                   <div>
-                    <div>मोजमाप नोंदविणाऱ्या अधिकाऱ्याचे नाव :- {dots(24)}</div>
-                    <div>पदनाम : {dots(18)} दिनांक {dots(10)}</div>
-                    <div>मोजमाप वही क्रमांक {dots(10)} पृष्ठ क्र. {dots(8)}</div>
+                    <div>मोजमाप नोंदविणाऱ्या अधिकाऱ्याचे नाव :- {v(b.measurer_name, 24)}</div>
+                    <div>पदनाम : {v(b.measurer_designation, 18)} दिनांक {vd(b.measurer_date, 10)}</div>
+                    <div>मोजमाप वही क्रमांक {v(b.measurement_book_no, 10)} पृष्ठ क्र. {v(b.measurement_page_no, 8)}</div>
                     <div style={{ textAlign: 'center' }}>तपासणी अधिकाऱ्याची सही</div>
-                    <div>दिनांक : {dots(14)}</div>
-                    <div>देयक तयार करणाऱ्या अधिकाऱ्याचे नाव : {dots(18)}</div>
+                    <div>दिनांक : {vd(b.checking_date, 14)}</div>
+                    <div>देयक तयार करणाऱ्या अधिकाऱ्याचे नाव : {v(b.preparer_name, 18)}</div>
                     <div>रोखीने/धनादेशाद्वारे देय रक्कम : <strong>{fmt(b.net_payable)}</strong></div>
                     <div style={{ textAlign: 'center' }}>मंजुरी अधिकाऱ्याची सही</div>
                     <div className="wf-split"><span>प्रदान रक्कम <strong>{fmt(b.net_payable)}</strong></span><span>सरपंच/सचिव</span></div>
                   </div>
                   <div>
                     <div>कामासाठी देय असलेली रु. <strong>{fmt(b.net_payable)}</strong> इतकी रक्कम मिळाली.</div>
-                    <div style={{ marginTop: 14 }} className="wf-split"><span>पैसे घेणाऱ्याची सही</span><span>मुद्रांक</span><span>दिनांक</span></div>
-                    <div style={{ marginTop: 14 }} className="wf-split"><span>धनादेश क्रमांक {dots(20)}</span><span>दिनांक</span></div>
-                    <div style={{ marginTop: 14 }}>रोख {dots(14)} रुपये मी दिले.</div>
+                    <div style={{ marginTop: 14 }} className="wf-split"><span>पैसे घेणाऱ्याची सही</span><span>मुद्रांक</span><span>दिनांक {b.receipt_date ? <strong>{fmtDate(b.receipt_date)}</strong> : ''}</span></div>
+                    <div style={{ marginTop: 14 }} className="wf-split"><span>धनादेश क्रमांक {v(b.cheque_no, 20)}</span><span>दिनांक {b.cheque_date ? <strong>{fmtDate(b.cheque_date)}</strong> : ''}</span></div>
+                    <div style={{ marginTop: 14 }}>रोख {b.cash_paid_amount != null ? <strong>{fmt(b.cash_paid_amount)}</strong> : dots(14)} रुपये मी दिले.</div>
                     <div className="wf-split" style={{ marginTop: 28 }}><span /><span>आदात्याची सही व दिनांक</span></div>
                   </div>
                 </div>
