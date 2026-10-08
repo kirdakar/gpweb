@@ -16,6 +16,8 @@ const WORK_SELECT = `
   SELECT w.id, w.name, w.financial_year_id, w.ledger_head_id, w.sanction_order_no,
          DATE_FORMAT(w.sanction_date, '%Y-%m-%d') AS sanction_date, w.sanctioning_authority,
          w.contractor_id, w.status, w.remark,
+         w.supplier_name, w.contract_no, DATE_FORMAT(w.contract_date, '%Y-%m-%d') AS contract_date,
+         w.rate_schedule_no, DATE_FORMAT(w.rate_schedule_date, '%Y-%m-%d') AS rate_schedule_date,
          lh.code AS head_code, lh.name AS head_name, c.name AS contractor_name
   FROM works w
   JOIN ledger_heads lh ON lh.id = w.ledger_head_id
@@ -102,18 +104,22 @@ router.post('/', requirePermission('works', 'add'), async (req, res) => {
   const headErr = await checkHead(b.ledger_head_id);
   if (headErr) return res.status(400).json({ error: headErr });
   const [result] = await pool.query(
-    `INSERT INTO works (name, financial_year_id, ledger_head_id, sanction_order_no, sanction_date, sanctioning_authority, contractor_id, remark)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO works (name, financial_year_id, ledger_head_id, sanction_order_no, sanction_date, sanctioning_authority, contractor_id, remark,
+       supplier_name, contract_no, contract_date, rate_schedule_no, rate_schedule_date)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [b.name.trim(), b.financial_year_id, b.ledger_head_id, b.sanction_order_no || null, b.sanction_date || null,
-      b.sanctioning_authority || null, b.contractor_id || null, b.remark || null]
+      b.sanctioning_authority || null, b.contractor_id || null, b.remark || null,
+      b.supplier_name || null, b.contract_no || null, b.contract_date || null, b.rate_schedule_no || null, b.rate_schedule_date || null]
   );
   res.status(201).json(await loadWork(result.insertId));
 });
 
+const pick = (b, k, cur) => (b[k] !== undefined ? (b[k] || null) : cur[k]);
+
 router.put('/:id', requirePermission('works', 'edit'), async (req, res) => {
   const b = req.body || {};
   if (!b.name || !b.name.trim()) return res.status(400).json({ error: 'कामाचे नाव आवश्यक आहे' });
-  const [[cur]] = await pool.query('SELECT id, ledger_head_id FROM works WHERE id = ?', [req.params.id]);
+  const [[cur]] = await pool.query('SELECT * FROM works WHERE id = ?', [req.params.id]);
   if (!cur) return res.status(404).json({ error: 'काम सापडले नाही' });
   const headId = b.ledger_head_id || cur.ledger_head_id;
   if (Number(headId) !== cur.ledger_head_id) {
@@ -122,9 +128,13 @@ router.put('/:id', requirePermission('works', 'edit'), async (req, res) => {
   }
   await pool.query(
     `UPDATE works SET name = ?, ledger_head_id = ?, sanction_order_no = ?, sanction_date = ?, sanctioning_authority = ?,
-       contractor_id = ?, status = ?, remark = ? WHERE id = ?`,
+       contractor_id = ?, status = ?, remark = ?, supplier_name = ?, contract_no = ?, contract_date = ?,
+       rate_schedule_no = ?, rate_schedule_date = ? WHERE id = ?`,
     [b.name.trim(), headId, b.sanction_order_no || null, b.sanction_date || null, b.sanctioning_authority || null,
-      b.contractor_id || null, b.status === 'पूर्ण' ? 'पूर्ण' : 'चालू', b.remark || null, req.params.id]
+      b.contractor_id || null, b.status === 'पूर्ण' ? 'पूर्ण' : 'चालू', b.remark || null,
+      // नमुना २०(ख) चे कंत्राट तपशील - body मध्ये आले नसतील तर आहेत ते तसेच ठेवतो
+      pick(b, 'supplier_name', cur), pick(b, 'contract_no', cur), pick(b, 'contract_date', cur),
+      pick(b, 'rate_schedule_no', cur), pick(b, 'rate_schedule_date', cur), req.params.id]
   );
   res.json(await loadWork(req.params.id));
 });

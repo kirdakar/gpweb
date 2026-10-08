@@ -224,9 +224,9 @@ export default function WorkReport({ view }) {
               <div className="wf-line">कामाचे वर्णन <strong>{work.name}</strong></div>
               <div className="wf-line">कंत्राटदाराचे नाव <strong>{b.contractor_name || work.contractor_name || dots(30)}</strong></div>
               <div className="wf-line">कंत्राटदार {dots(34)}</div>
-              <div className="wf-line">पुरवठाकार {dots(34)}</div>
-              <div className="wf-line wf-split"><span>कंत्राट क्रमांक {dots(26)}</span><span>दिनांक {dots(14)}</span></div>
-              <div className="wf-line wf-split"><span>दरसूची क्रमांक {dots(26)}</span><span>दिनांक {dots(8)}</span></div>
+              <div className="wf-line">पुरवठाकार {work.supplier_name ? <strong>{work.supplier_name}</strong> : dots(34)}</div>
+              <div className="wf-line wf-split"><span>कंत्राट क्रमांक {work.contract_no ? <strong>{work.contract_no}</strong> : dots(26)}</span><span>दिनांक {work.contract_date ? <strong>{fmtDate(work.contract_date)}</strong> : dots(14)}</span></div>
+              <div className="wf-line wf-split"><span>दरसूची क्रमांक {work.rate_schedule_no ? <strong>{work.rate_schedule_no}</strong> : dots(26)}</span><span>दिनांक {work.rate_schedule_date ? <strong>{fmtDate(work.rate_schedule_date)}</strong> : dots(8)}</span></div>
 
               <table className="wf-table" style={{ marginTop: 22, maxWidth: 520 }}>
                 <tbody>

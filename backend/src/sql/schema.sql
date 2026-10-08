@@ -884,3 +884,10 @@ ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS disposal_quantity VARCHAR(150)
 ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS disposal_authority VARCHAR(255) NULL;
 ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS recovered_amount DECIMAL(14,2) NULL;
 ALTER TABLE fixed_assets ADD COLUMN IF NOT EXISTS recovered_deposit_date DATE NULL;
+
+-- नमुना २०(ख) (कामाचे देयक) च्या छापील देयकावरील कंत्राट तपशील - कामावर एकदा भरला की प्रत्येक देयकावर येतो.
+ALTER TABLE works ADD COLUMN IF NOT EXISTS supplier_name VARCHAR(150) NULL;
+ALTER TABLE works ADD COLUMN IF NOT EXISTS contract_no VARCHAR(100) NULL;
+ALTER TABLE works ADD COLUMN IF NOT EXISTS contract_date DATE NULL;
+ALTER TABLE works ADD COLUMN IF NOT EXISTS rate_schedule_no VARCHAR(100) NULL;
+ALTER TABLE works ADD COLUMN IF NOT EXISTS rate_schedule_date DATE NULL;

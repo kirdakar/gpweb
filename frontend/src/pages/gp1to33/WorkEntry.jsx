@@ -23,6 +23,17 @@ export default function WorkEntry() {
   const [workId, setWorkId] = useState('');
   const [work, setWork] = useState(null);
   const [tab, setTab] = useState('estimate');
+  // नमुना २०(ख) च्या छापील देयकावरील कंत्राट तपशील (कामावर एकदा भरला की प्रत्येक देयकावर येतो)
+  const [contract, setContract] = useState({ supplier_name: '', contract_no: '', contract_date: '', rate_schedule_no: '', rate_schedule_date: '' });
+  useEffect(() => {
+    if (!work) return;
+    setContract({
+      supplier_name: work.supplier_name || '', contract_no: work.contract_no || '',
+      contract_date: work.contract_date ? String(work.contract_date).slice(0, 10) : '',
+      rate_schedule_no: work.rate_schedule_no || '',
+      rate_schedule_date: work.rate_schedule_date ? String(work.rate_schedule_date).slice(0, 10) : '',
+    });
+  }, [work?.id, work?.supplier_name, work?.contract_no, work?.contract_date, work?.rate_schedule_no, work?.rate_schedule_date]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -117,6 +128,10 @@ export default function WorkEntry() {
   }
   function setStatus(status) {
     run(() => client.put(`/works/${workId}`, { ...work, status }), ({ data }) => setWork(data));
+  }
+  function saveContract(e) {
+    e.preventDefault();
+    run(() => client.put(`/works/${workId}`, { ...work, ...contract }), ({ data }) => setWork(data));
   }
   function deleteWork() {
     if (!window.confirm('हे काम मिटवायचे आहे का?')) return;
@@ -308,6 +323,19 @@ export default function WorkEntry() {
 
           {tab === 'bill' && (
             <div className="card no-print">
+              {canEdit && (
+                <form onSubmit={saveContract} style={{ marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
+                  <h3 style={{ fontSize: 14, margin: '0 0 10px' }}>देयकावरील कंत्राट तपशील (नमुना २०ख)</h3>
+                  <div className="form-grid">
+                    <div className="field"><label>पुरवठाकार</label><input value={contract.supplier_name} onChange={(e) => setContract({ ...contract, supplier_name: e.target.value })} /></div>
+                    <div className="field"><label>कंत्राट क्रमांक</label><input value={contract.contract_no} onChange={(e) => setContract({ ...contract, contract_no: e.target.value })} /></div>
+                    <div className="field"><label>कंत्राट दिनांक</label><input type="date" value={contract.contract_date} onChange={(e) => setContract({ ...contract, contract_date: e.target.value })} /></div>
+                    <div className="field"><label>दरसूची क्रमांक</label><input value={contract.rate_schedule_no} onChange={(e) => setContract({ ...contract, rate_schedule_no: e.target.value })} /></div>
+                    <div className="field"><label>दरसूची दिनांक</label><input type="date" value={contract.rate_schedule_date} onChange={(e) => setContract({ ...contract, rate_schedule_date: e.target.value })} /></div>
+                  </div>
+                  <div style={{ marginTop: 10 }}><button className="btn secondary" type="submit" disabled={busy}>कंत्राट तपशील जतन करा</button></div>
+                </form>
+              )}
               {canAdd && (
                 <form onSubmit={addBill} style={{ marginBottom: 14 }}>
                   <div className="form-grid">
