@@ -6,12 +6,16 @@ import CloseReportButton from '../../components/CloseReportButton';
 import useGpSettings from '../../hooks/useGpSettings';
 
 const MONTHS = [
-  '१ जानेवारी', '२ फेब्रुवारी', '३ मार्च', '४ एप्रिल', '५ मे', '६ जून',
-  '७ जुलै', '८ ऑगस्ट', '९ सप्टेंबर', '१० ऑक्टोबर', '११ नोव्हेंबर', '१२ डिसेंबर',
+  'जानेवारी', 'फेब्रुवारी', 'मार्च', 'एप्रिल', 'मे', 'जून',
+  'जुलै', 'ऑगस्ट', 'सप्टेंबर', 'ऑक्टोबर', 'नोव्हेंबर', 'डिसेंबर',
 ];
+const MR = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+const mnum = (n) => String(n).split('').map((d) => MR[Number(d)]).join('');
+const fmt = (n) => Number(n || 0).toFixed(2);
+const cell = (n) => (Number(n) ? Number(n).toFixed(2) : '');
+const WIDTHS = [20, 7.5, 7.5, 7.5, 7.5, 20, 7.5, 7.5, 7.5, 7.5];
+const FIELDS = ['approved_amount', 'prior_total', 'current_total', 'total'];
 
-// नमुना २६-क - माह ___ वर्ष ___ चे जमा व खर्चाचे मासिक विवरण. संपूर्ण
-// वृक्षासाठी अर्थसंकल्पीय तरतूद + मागील महिन्यापर्यंत + चालू महिना + एकूण.
 function buildTree(rows) {
   const byParent = new Map();
   for (const r of rows) {
@@ -23,38 +27,53 @@ function buildTree(rows) {
   return byParent;
 }
 
-function subtotalOf(node, byParent, field) {
-  if (node.is_leaf) return Number(node[field] || 0);
-  const children = byParent.get(node.id) || [];
-  return children.reduce((s, c) => s + subtotalOf(c, byParent, field), 0);
+// गटातील सर्व leaf वंशजांची बेरीज (प्रत्येक रकान्यासाठी).
+function sums(node, byParent) {
+  if (node.is_leaf) return FIELDS.map((f) => Number(node[f] || 0));
+  const acc = [0, 0, 0, 0];
+  for (const c of byParent.get(node.id) || []) sums(c, byParent).forEach((v, i) => { acc[i] += v; });
+  return acc;
 }
 
-function TreeRows({ node, byParent, depth }) {
+// वृक्ष एका सपाट यादीत: गट = ठळक शीर्ष, leaf = "(१) नाव" + रकमा, गटानंतर "एकूण ..." ओळ - कागदी नमुना २६-क प्रमाणे.
+function flatten(node, byParent, depth, out, seq) {
   const children = byParent.get(node.id) || [];
-  const budget = subtotalOf(node, byParent, 'approved_amount');
-  const prior = subtotalOf(node, byParent, 'prior_total');
-  const current = subtotalOf(node, byParent, 'current_total');
-  const total = subtotalOf(node, byParent, 'total');
-  const bold = node.is_leaf ? 400 : 700;
-  return (
-    <>
-      <tr>
-        <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{node.code}</td>
-        <td style={{ paddingLeft: 12 + depth * 18 }}><span style={{ fontWeight: bold }}>{node.name}</span></td>
-        <td className="num" style={{ fontWeight: bold }}>{budget.toFixed(2)}</td>
-        <td className="num" style={{ fontWeight: bold }}>{prior.toFixed(2)}</td>
-        <td className="num" style={{ fontWeight: bold }}>{current.toFixed(2)}</td>
-        <td className="num" style={{ fontWeight: bold }}>{total.toFixed(2)}</td>
-      </tr>
-      {children.map((child) => <TreeRows key={child.id} node={child} byParent={byParent} depth={depth + 1} />)}
-    </>
-  );
+  if (node.is_leaf) {
+    out.push({ kind: 'item', label: `${seq ? `(${mnum(seq)}) ` : ''}${node.name}`, vals: sums(node, byParent), depth });
+    return;
+  }
+  out.push({ kind: 'head', label: node.name, vals: null, depth });
+  let n = 0;
+  for (const c of children) flatten(c, byParent, depth + 1, out, c.is_leaf ? ++n : 0);
+  out.push({ kind: 'total', label: `एकूण ${node.name}`, vals: sums(node, byParent), depth });
+}
+function flatSide(byParent) {
+  const out = [];
+  for (const root of byParent.get('root') || []) flatten(root, byParent, 0, out, 0);
+  return out;
 }
 
+function cells(r, split) {
+  const bold = !!r && r.kind !== 'item';
+  const pad = r ? 6 + (r.kind === 'item' ? r.depth : Math.max(r.depth - 1, 0)) * 12 : 6;
+  const out = [
+    <td key="l" className={split ? 'cb-split cb-name' : 'cb-name'} style={{ paddingLeft: pad, fontWeight: bold ? 700 : 400, textAlign: r && r.kind === 'total' ? 'right' : 'left' }}>{r ? r.label : ''}</td>,
+  ];
+  for (let i = 0; i < 4; i += 1) {
+    const v = r && r.vals ? r.vals[i] : null;
+    out.push(<td key={i} className="num" style={{ fontWeight: bold ? 700 : 400 }}>{v == null ? '' : (r.kind === 'item' ? cell(v) : fmt(v))}</td>);
+  }
+  return out;
+}
+
+// नमुना २६-क (नियम २५(६) पाहा) - माहे ___ वर्ष ___ साठीचे जमा व खर्चाचे मासिक विवरण, कागदी नमुन्याप्रमाणे A4 आडव्या पानावर: जमा (१-५)
+// व खर्च (६-१०) समोरासमोर एकाच तक्त्यात - अर्थसंकल्पीय तरतूद, मागील महिन्यापर्यंतचा प्रत्यक्ष, चालू महिन्यातील, एकूण. सर्व रकमा नमुना १
+// (अर्थसंकल्प) व नमुना ५ (रोकड वही) वरून आपोआप.
 export default function MonthlyStatementReport() {
   const { yearId, currentYear } = useYear();
   const { can } = usePermissions();
-  const { gpLine } = useGpSettings();
+  const { settings } = useGpSettings();
+  const gpName = (settings?.gp_name || '').replace(/^ग्रामपंचायत\s*/, '');
 
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -69,32 +88,14 @@ export default function MonthlyStatementReport() {
       .then(({ data }) => setHeads(data.heads))
       .finally(() => setLoading(false));
   }
-  useEffect(() => { load(); }, [yearId]);
+  useEffect(() => { load(); }, [yearId, year, month]);
 
-  const jamaTree = useMemo(() => buildTree(heads.filter((h) => h.group_type === 'जमा')), [heads]);
-  const kharchTree = useMemo(() => buildTree(heads.filter((h) => h.group_type === 'खर्च')), [heads]);
-
-  function Table({ title, tree }) {
-    const roots = tree.get('root') || [];
-    return (
-      <div style={{ marginBottom: 24 }}>
-        <h3>{title}</h3>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>कोड</th><th>शीर्ष</th><th className="num">अर्थसंकल्पीय तरतूद</th>
-                <th className="num">मागील महिन्यापर्यंत</th><th className="num">चालू महिना</th><th className="num">एकूण</th>
-              </tr>
-            </thead>
-            <tbody>
-              {roots.map((n) => <TreeRows key={n.id} node={n} byParent={tree} depth={0} />)}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  }
+  const left = useMemo(() => flatSide(buildTree(heads.filter((h) => h.group_type === 'जमा'))), [heads]);
+  const right = useMemo(() => flatSide(buildTree(heads.filter((h) => h.group_type === 'खर्च'))), [heads]);
+  const grand = (rows) => rows.filter((r) => r.kind === 'total' && r.depth === 0).reduce((acc, r) => acc.map((v, i) => v + r.vals[i]), [0, 0, 0, 0]);
+  const jt = useMemo(() => grand(left), [left]);
+  const kt = useMemo(() => grand(right), [right]);
+  const count = Math.max(left.length, right.length);
 
   return (
     <div className="page">
@@ -107,28 +108,48 @@ export default function MonthlyStatementReport() {
       </div>
 
       <div className="card no-print" style={{ marginBottom: 20 }}>
-        <div className="search-bar">
+        <div className="search-bar" style={{ marginBottom: 0 }}>
           <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
             {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
           <select value={month} onChange={(e) => setMonth(Number(e.target.value))}>
             {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
           </select>
-          <button className="btn secondary" type="button" onClick={load}>दाखवा</button>
         </div>
       </div>
 
-      <div className="print-header">
-        <h2>{gpLine}</h2>
-        <p style={{ fontWeight: 700 }}>मासिक जमा-खर्च विवरण (नमुना २६-क)</p>
-        <p>आर्थिक वर्ष: {currentYear?.year_label || ''} | महिना: {MONTHS[month - 1]} {year}</p>
-      </div>
-
       {loading ? <p>लोड होत आहे...</p> : (
-        <>
-          <Table title="जमा शीर्ष" tree={jamaTree} />
-          <Table title="खर्च शीर्ष" tree={kharchTree} />
-        </>
+        <div className="cashbook-form">
+          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: 16 }}>नमुना २६-क</div>
+          <div style={{ textAlign: 'center', fontSize: 12 }}>(नियम २५(६) पाहा)</div>
+          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: 15, margin: '2px 0' }}>
+            माहे <strong>{MONTHS[month - 1]}</strong> वर्ष <strong>{currentYear?.year_label || year}</strong> साठीचे जमा व खर्चाचे मासिक विवरण
+          </div>
+          <div style={{ fontSize: 13, margin: '4px 0 6px' }}>ग्रामपंचायत : {gpName ? <strong>{gpName}</strong> : '.........................'}</div>
+
+          <div className="cb-scroll">
+            <table className="cb-table">
+              <colgroup>{WIDTHS.map((w, i) => <col key={i} style={{ width: `${w}%` }} />)}</colgroup>
+              <thead>
+                <tr><th colSpan={5}>जमा</th><th colSpan={5} className="cb-split">खर्च</th></tr>
+                <tr>
+                  <th>जमेचा प्रमुख प्रकार</th><th>अर्थसंकल्पीय तरतूद</th><th>मागील महिन्यापर्यंतचा प्रत्यक्ष जमा</th><th>चालू महिन्यातील जमा</th><th>एकूण जमा</th>
+                  <th className="cb-split">खर्चाचा प्रमुख प्रकार</th><th>अर्थसंकल्पीय तरतूद</th><th>मागील महिन्यापर्यंत झालेला प्रत्यक्ष खर्च</th><th>चालू महिन्यात झालेला खर्च</th><th>एकूण</th>
+                </tr>
+                <tr className="cb-numrow">{Array.from({ length: 10 }, (_, i) => <th key={i} className={i === 5 ? 'cb-split' : ''}>({mnum(i + 1)})</th>)}</tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: count }, (_, i) => {
+                  return <tr key={i}>{cells(left[i], false)}{cells(right[i], true)}</tr>;
+                })}
+                <tr className="cb-total">
+                  <td style={{ textAlign: 'right' }}>एकूण जमा</td>{jt.map((v, i) => <td key={i} className="num">{fmt(v)}</td>)}
+                  <td className="cb-split" style={{ textAlign: 'right' }}>एकूण खर्च</td>{kt.map((v, i) => <td key={i} className="num">{fmt(v)}</td>)}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
     </div>
   );
