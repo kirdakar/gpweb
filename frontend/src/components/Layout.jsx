@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { rememberMenu, REOPEN_MENU_EVENT } from '../utils/menuMemory';
 import { useAuth } from '../context/AuthContext';
 import { useYear } from '../context/YearContext';
 import { usePermissions } from '../context/PermissionsContext';
@@ -144,6 +145,19 @@ export default function Layout() {
     return () => document.removeEventListener('mousedown', onOutsideClick);
   }, []);
 
+  // रिपोर्ट/स्क्रीनवर "बंद करा" दाबल्यावर (CloseReportButton) ज्या मेनू/उपमेनूतून ते उघडले होते तोच पुन्हा उघडतो.
+  useEffect(() => {
+    function reopen(e) {
+      const { menu, submenu } = e.detail || {};
+      if (!menu) return;
+      setOpenMenu(menu);
+      setOpenSubmenu(submenu || null);
+      setMobileOpen(true); // फोनवर संपूर्ण मेनू पॅनेल उघडतो; संगणकावर या स्थितीचा परिणाम नाही
+    }
+    window.addEventListener(REOPEN_MENU_EVENT, reopen);
+    return () => window.removeEventListener(REOPEN_MENU_EVENT, reopen);
+  }, []);
+
   function closeAll() {
     setOpenMenu(null);
     setOpenSubmenu(null);
@@ -197,7 +211,7 @@ export default function Layout() {
                           {openSubmenu === item.label && (
                             <div className="menubar-submenu">
                               {item.submenu.map((sub) => (
-                                <NavLink key={sub.to} to={sub.to} onClick={closeAll}>
+                                <NavLink key={sub.to} to={sub.to} onClick={() => { rememberMenu(sub.to, menu.label, item.label); closeAll(); }}>
                                   {sub.label}
                                 </NavLink>
                               ))}
@@ -205,7 +219,7 @@ export default function Layout() {
                           )}
                         </div>
                       ) : (
-                        <NavLink key={item.to} to={item.to} onClick={closeAll}>
+                        <NavLink key={item.to} to={item.to} onClick={() => { rememberMenu(item.to, menu.label, null); closeAll(); }}>
                           {item.label}
                         </NavLink>
                       )
