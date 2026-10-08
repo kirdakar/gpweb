@@ -31,6 +31,8 @@ export default function ClassifiedLedgerReport() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [search, setSearch] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedHeadId, setSelectedHeadId] = useState(null);
   const [showEmpty, setShowEmpty] = useState(false);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -44,13 +46,28 @@ export default function ClassifiedLedgerReport() {
   }
   useEffect(() => { load(); }, [yearId, entryType, year, month]);
 
-  const shown = useMemo(() => {
+  // ड्रॉपडाउन यादी: टाइप केलेल्या मजकुरावरून सर्व शीर्षे (नोंद असो वा नसो); निवडलेले शीर्ष असल्यास फक्त तेच दाखवतो.
+  const options = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return rows.filter((h) => {
-      if (term && !(h.name.toLowerCase().includes(term) || h.code.toLowerCase().includes(term))) return false;
-      return showEmpty || h.monthTotal !== 0 || h.priorTotal !== 0;
-    });
-  }, [rows, search, showEmpty]);
+    if (!term || selectedHeadId) return rows;
+    return rows.filter((h) => h.name.toLowerCase().includes(term) || h.code.toLowerCase().includes(term));
+  }, [rows, search, selectedHeadId]);
+
+  const shown = useMemo(() => {
+    if (selectedHeadId) return rows.filter((h) => h.id === selectedHeadId);
+    return rows.filter((h) => showEmpty || h.monthTotal !== 0 || h.priorTotal !== 0);
+  }, [rows, selectedHeadId, showEmpty]);
+
+  function selectHead(h) {
+    setSelectedHeadId(h.id);
+    setSearch(`${h.code} - ${h.name}`);
+    setDropdownOpen(false);
+  }
+  function clearHead() {
+    setSelectedHeadId(null);
+    setSearch('');
+    setDropdownOpen(false);
+  }
 
   const pages = useMemo(() => {
     const out = [];
@@ -74,8 +91,8 @@ export default function ClassifiedLedgerReport() {
 
       <div className="card no-print" style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-          <button type="button" className={`btn ${entryType === 'जमा' ? '' : 'secondary'}`} onClick={() => setEntryType('जमा')}>जमा</button>
-          <button type="button" className={`btn ${entryType === 'खर्च' ? '' : 'secondary'}`} onClick={() => setEntryType('खर्च')}>खर्च</button>
+          <button type="button" className={`btn ${entryType === 'जमा' ? '' : 'secondary'}`} onClick={() => { setEntryType('जमा'); clearHead(); }}>जमा</button>
+          <button type="button" className={`btn ${entryType === 'खर्च' ? '' : 'secondary'}`} onClick={() => { setEntryType('खर्च'); clearHead(); }}>खर्च</button>
         </div>
         <div className="search-bar" style={{ alignItems: 'center' }}>
           <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
@@ -84,7 +101,27 @@ export default function ClassifiedLedgerReport() {
           <select value={month} onChange={(e) => setMonth(Number(e.target.value))}>
             {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
           </select>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="लेखाशीर्ष शोधा (नाव/कोड) - रिकामे = सर्व" style={{ flex: 1, minWidth: 200, padding: 8, border: '1px solid var(--border)', borderRadius: 6 }} />
+          <div className="combo-wrap" style={{ flex: 1, minWidth: 260 }}>
+            <input
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setSelectedHeadId(null); setDropdownOpen(true); }}
+              onFocus={() => setDropdownOpen(true)}
+              onBlur={() => setDropdownOpen(false)}
+              placeholder="लेखाशीर्ष शोधा - क्लिक केल्यावर संपूर्ण यादी दिसेल (रिकामे = सर्व शीर्षे)"
+              style={{ width: '100%', padding: '8px 30px 8px 8px', border: '1px solid var(--border)', borderRadius: 6 }}
+            />
+            {search && (
+              <button type="button" className="combo-clear-btn" title="सर्व शीर्षे दाखवा"
+                onMouseDown={(e) => { e.preventDefault(); clearHead(); }}>×</button>
+            )}
+            {dropdownOpen && (
+              <div className="combo-dropdown">
+                <div className="combo-option" style={{ fontWeight: 700 }} onMouseDown={clearHead}>सर्व शीर्षे</div>
+                {options.length === 0 && <div className="combo-empty">जुळणारे शीर्ष सापडले नाही</div>}
+                {options.map((h) => <div key={h.id} className="combo-option" onMouseDown={() => selectHead(h)}>{h.code} - {h.name}</div>)}
+              </div>
+            )}
+          </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input type="checkbox" checked={showEmpty} onChange={(e) => setShowEmpty(e.target.checked)} /> नोंद नसलेली शीर्षेही
           </label>
