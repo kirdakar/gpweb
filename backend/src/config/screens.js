@@ -46,6 +46,7 @@ const SCREENS = [
   { code: 'reports_fixed_assets', label: 'मालमत्ता अहवाल (नमुना १६/२२/२३/२४)', actions: ['view', 'print'] },
   // फेज ३ब: कर्मचारी सूची (नमुना १३) व मासिक वेतन देयक (नमुना २१)
   { code: 'staff_master', label: 'कर्मचारी सूची व वेतनश्रेणी (नमुना १३)', actions: ['view', 'add', 'edit', 'delete', 'print'] },
+  { code: 'reports_staff_master', label: 'कर्मचारी सूची व वेतनश्रेणी अहवाल (नमुना १३)', actions: ['view', 'print'] },
   { code: 'staff_salary_bills', label: 'मासिक वेतन देयक नोंदणी (नमुना २१)', actions: ['view', 'edit'] },
   { code: 'reports_staff_salary_bills', label: 'मासिक वेतन देयक अहवाल (नमुना २१)', actions: ['view', 'print'] },
   // फेज ३क: अग्रिम/अनामत (नमुना १७), गुंतवणूक (नमुना २५), कर्ज (नमुना २९)
